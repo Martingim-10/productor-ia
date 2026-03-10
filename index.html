@@ -453,6 +453,7 @@ const RAMO_MAP = {
   1800:'Combinado Familiar', 2100:'Seg. Integral', 2500:'Salud', 3100:'Motovehículo'
 };
 
+const AUTO_SIN_COMERCIAL = new Set(["30548970837", "30714342025", "30708600659", "30708153520", "30532565975", "30715038303", "30715099671"]);
 const AUTO_SIN_COMBINADO = new Set(["7808972", "26889129", "17310756", "33771148", "25948643", "23791463", "20844183", "8396049", "29692129", "16421093", "30532565975", "29050533", "31959026", "37860321", "32587015", "23291393", "33345439", "14757124", "46465259", "22203028", "24644955", "22277805", "22271267", "33946690", "31956294", "26568871", "30938661", "30714342025", "28055209", "14757182", "23863822", "28054523", "16173225", "26889259", "30008170", "31020012", "30517666", "30708153520", "28990966", "22260922", "6189814", "30284197", "14281858", "30717012530", "40739360", "30708600659", "30715099671", "30366317", "39441224", "13390837", "29235658", "29689628", "30716703432", "21959267", "26889096", "16998238", "29983514", "30134895", "29983546", "40384867", "30712177809", "30715581465", "28156197", "35381921", "17130636", "30548970837", "31469548", "7888645", "16421452", "32932228", "30715038303", "31148660", "13814769", "10147458", "35989970", "11444785", "14396743", "5388591", "29066556", "23791268", "27092695", "32801268", "25138673", "31914810", "24926653", "6665616", "31148894", "35730546", "31334145", "33478402", "31504859", "26975588", "31280484", "20542837", "25011905", "25138697"]);
 
 
@@ -608,8 +609,10 @@ function renderTabla(data) {
       accion += `<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
     if (r.pf)
       accion += `<button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
-    if (r.crossell && r.ramo === 200)
+    if (r.crossell && r.ramo === 200 && r.pf)
       accion += `<button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
+    if (r.ramo === 200 && !r.pf && typeof AUTO_SIN_COMERCIAL !== 'undefined' && AUTO_SIN_COMERCIAL.has(r.id))
+      accion += `<button class="btn btn-secondary btn-sm" style="background:#fce4ec" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral/Incendio</button>`;
     if (!accion)
       accion = `<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
 
@@ -757,6 +760,7 @@ async function accionIA(tipo, nombre, ramo) {
     renovacion: `Redactame un WhatsApp de renovación de póliza. Cordial, muy breve (máx 3 líneas), que proponga coordinar antes del vencimiento.\n${ctx}`,
     upsell:     `Este cliente tiene ${ramo} en Sancor. Sugerí por WhatsApp una cobertura complementaria que le podría interesar. Sin presión, plantando la idea. Muy breve.\n${ctx}`,
     combinado:  `Este cliente tiene seguro de auto pero no tiene Combinado Familiar. Redactame un WhatsApp breve y natural que abra la conversación. Arrancar con algo del tipo "ya tenés el auto cubierto, ¿y la casa?". Sin presionar, plantando la semilla.\n${ctx}`,
+    comercial:  `Esta empresa tiene seguro de auto en Sancor pero no tiene Seguro Integral ni Incendio para su negocio. Redactame un WhatsApp breve y natural para abrir la conversación. Sin presionar, plantando la idea de que el auto está cubierto pero el local, equipos o mercancía también merecen protección. Tono profesional para empresa.\n${ctx}`,
   };
   const out = document.getElementById('cartera-out');
   out.classList.add('show');
