@@ -602,8 +602,9 @@ function renderTabla(data) {
     // Ramo name
     const ramoNombre = RAMO_MAP[r.ramo] || 'Ramo ' + r.ramo;
 
+    const ramoRenovaAuto = [200, 3100, 1720].includes(r.ramo);
     let accion = '';
-    if (dias !== null && dias >= 0 && dias <= 30)
+    if (!ramoRenovaAuto && dias !== null && dias >= 0 && dias <= 30)
       accion += `<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
     if (r.pf)
       accion += `<button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
