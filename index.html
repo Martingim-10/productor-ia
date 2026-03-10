@@ -859,12 +859,67 @@ function copiarMail(){navigator.clipboard.writeText(document.getElementById('m-a
 // INFORME
 // ═══════════════════════════════════════════════════════════
 function selTpl(el,tipo){document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');tplSel=tipo;}
+function calcularEstadisticasCartera() {
+  const hoy = new Date();
+  const c = carteraActiva;
+  const RAMO_NOMBRE = {200:'Automotores',300:'Incendio',600:'Acc. Personales',1000:'Casco Embarcaciones',1400:'Seg. Técnico',1500:'Resp. Civil',1600:'Caución',1720:'Vida Obligatorio',1730:'Vida Colectivo',1800:'Combinado Familiar',2100:'Seg. Integral',2500:'Salud',3100:'Motovehículo'};
+
+  const total = c.length;
+  const premioPorRamo = {};
+  const certPorRamo = {};
+  let premioTotal = 0;
+  let vencen7 = [], vencen30 = [];
+
+  c.forEach(r => {
+    const pm = r.premio || r.prima || 0;
+    premioPorRamo[r.ramo] = (premioPorRamo[r.ramo]||0) + pm;
+    certPorRamo[r.ramo] = (certPorRamo[r.ramo]||0) + 1;
+    premioTotal += pm;
+    if (r.venc) {
+      const dias = Math.ceil((new Date(r.venc) - hoy) / 86400000);
+      if (dias >= 0 && dias <= 7)  vencen7.push(r);
+      if (dias >= 0 && dias <= 30) vencen30.push(r);
+    }
+  });
+
+  // Clientes únicos
+  const idsUnicos = new Set(c.map(r => r.id));
+  const clientesTotal = idsUnicos.size;
+
+  // Personas físicas y empresas
+  const pfIds = new Set(c.filter(r=>r.pf).map(r=>r.id));
+  const empIds = new Set(c.filter(r=>!r.pf).map(r=>r.id));
+
+  // Cross-sell: PF con auto sin combinado
+  const autoSinCombinado = c.filter(r=>r.crossell && r.ramo===200 && r.pf);
+  const autoSinCombinadoUnicos = new Set(autoSinCombinado.map(r=>r.id)).size;
+
+  // Empresas con auto sin integral/incendio
+  const empSinComercial = typeof AUTO_SIN_COMERCIAL !== 'undefined' ? AUTO_SIN_COMERCIAL.size : 0;
+
+  // Distribución por ramo
+  const ramosSorted = Object.entries(premioPorRamo).sort((a,b)=>b[1]-a[1]);
+  const distribucion = ramosSorted.map(([ramo, pm]) => {
+    const pct = premioTotal > 0 ? ((pm/premioTotal)*100).toFixed(1) : '0';
+    return `- ${RAMO_NOMBRE[ramo]||'Ramo '+ramo}: ${pct}% — $${Math.round(pm).toLocaleString('es-AR')} (${certPorRamo[ramo]} certificados)`;
+  }).join('\n');
+
+  // Vencimientos detalle
+  const venc7Det = vencen7.slice(0,5).map(r=>`  • ${r.nombre} | ${RAMO_NOMBRE[r.ramo]||r.ramo} | $${Math.round(r.premio||r.prima||0).toLocaleString('es-AR')}/mes`).join('\n');
+  const venc30Det = vencen30.slice(0,8).map(r=>`  • ${r.nombre} | ${RAMO_NOMBRE[r.ramo]||r.ramo} | Vto: ${r.venc?new Date(r.venc).toLocaleDateString('es-AR'):'-'}`).join('\n');
+
+  return {
+    resumen: `DATOS REALES DE CARTERA (calculados al ${hoy.toLocaleDateString('es-AR')}):\n\nCERTIFICADOS TOTALES: ${total}\nCLIENTES ÚNICOS: ${clientesTotal} (${pfIds.size} personas físicas, ${empIds.size} empresas)\nPREMIO MENSUAL TOTAL: $${Math.round(premioTotal).toLocaleString('es-AR')}\n\nDISTRIBUCIÓN POR RAMO:\n${distribucion}\n\nVENCIMIENTOS CRÍTICOS (≤7 días): ${vencen7.length} certificados\n${venc7Det||'  (ninguno)'}\n\nVENCIMIENTOS PRÓXIMOS (≤30 días): ${vencen30.length} certificados\n${venc30Det||'  (ninguno)'}\n\nOPORTUNIDADES CROSS-SELL:\n- Personas físicas con Auto sin Combinado Familiar: ${autoSinCombinadoUnicos} clientes\n- Empresas con Auto sin Integral/Incendio: ${empSinComercial} empresas`
+  };
+}
+
 async function genInforme(){
   const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
   if(!tplSel){alert('Seleccioná un tipo de informe.');return;}
   const ctx=document.getElementById('inf-ctx').value.trim();
+  const stats = calcularEstadisticasCartera();
   const prompts={
-    resumen:`Generá un resumen ejecutivo de cartera para un productor de seguros de Sancor en Chubut. Incluí: estado general, alertas, oportunidades de upsell y recomendaciones para esta semana. ${ctx||'Usá datos de ejemplo realistas.'}`,
+    resumen:`Sos el asistente IA del productor de seguros Martín Giménez (Mat. 213038) de Sancor, Trelew, Chubut.\n\nTe paso los DATOS REALES de su cartera. Tu tarea es redactar un resumen ejecutivo profesional basándote EXCLUSIVAMENTE en estos datos reales — no inventes cifras, no agregues datos que no estén acá.\n\n${stats.resumen}\n\nContexto adicional del productor: ${ctx||'ninguno'}\n\nRedactá el informe con estas secciones: Estado General, Alertas de Vencimiento, Oportunidades Comerciales, y Recomendaciones para esta semana. Usá los números exactos que te pasé.`,
     propuesta:`Generá una propuesta comercial profesional para presentar a un cliente. Incluí: análisis de necesidades, coberturas recomendadas, beneficios clave, argumentos de valor. ${ctx||'Perfil: profesional independiente, 48 años, sin cobertura de vida.'}`,
     comparativo:`Generá un comparativo de coberturas entre las principales compañías del mercado argentino. Sancor vs competencia. ${ctx||''}`,
     guion:`Generá un guión de venta completo para una reunión comercial. Incluí: apertura, detección de necesidades, presentación, manejo de objeciones comunes en Argentina, y cierre. ${ctx||'Cliente tipo: empleado público, 50 años, preocupado por su jubilación.'}`,
