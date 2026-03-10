@@ -6,6 +6,8 @@
 <title>Productor IA — Sancor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
   --ink:#1a1a2e; --paper:#f5f0e8; --cream:#ede8dc; --gold:#c8953a;
@@ -376,6 +378,27 @@ textarea{resize:vertical;line-height:1.6}
 <div id="informe-panel" class="panel">
   <div class="ph"><div><div class="ph-title">Informes IA</div><div class="ph-sub">Documentos generados automáticamente</div></div></div>
   <div class="pb">
+
+    <!-- Google Drive connection -->
+    <div class="section-title">📁 Historial en Google Drive</div>
+    <div id="drive-status" style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--cream);border-radius:8px;margin-bottom:16px;border:1px solid var(--border)">
+      <span id="drive-status-icon" style="font-size:20px">☁️</span>
+      <div style="flex:1">
+        <div id="drive-status-txt" style="font-weight:500;font-size:13px">No conectado a Google Drive</div>
+        <div id="drive-status-sub" style="font-size:11px;color:var(--muted)">Conectate para guardar snapshots de cartera y ver evolución mensual</div>
+      </div>
+      <button id="drive-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 14px" onclick="driveAuth()">Conectar Drive</button>
+    </div>
+
+    <!-- Evolution chart -->
+    <div id="evolucion-wrap" style="display:none;margin-bottom:20px">
+      <div class="section-title">📈 Evolución de Cartera</div>
+      <div style="background:var(--white);border-radius:10px;padding:16px;border:1px solid var(--border)">
+        <canvas id="evolucion-chart" height="120"></canvas>
+        <div id="evolucion-detalle" style="margin-top:12px;font-size:12px;color:var(--muted)"></div>
+      </div>
+    </div>
+
     <div class="section-title">¿Qué generamos?</div>
     <div class="tpl-grid">
       <div class="tpl-card" onclick="selTpl(this,'resumen')"><div class="chk">✓</div><div class="tpl-icon">📊</div><div class="tpl-title">Resumen de cartera</div><div class="tpl-desc">Estado, alertas y oportunidades.</div></div>
@@ -711,6 +734,8 @@ function cargarExcel(input) {
       if (!nuevos.length) { alert('No se encontraron registros válidos en el archivo.'); return; }
       carteraActiva = nuevos.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
       renderStats(carteraActiva); renderTabla(carteraActiva);
+      // Guardar snapshot en Drive si está conectado
+      driveSnapshotActual();
       alert(`✅ ${nuevos.length} registros cargados correctamente.`);
     } catch(err) {
       alert('Error al leer el archivo: ' + err.message);
@@ -856,6 +881,184 @@ function abrirGmail(){
 function copiarMail(){navigator.clipboard.writeText(document.getElementById('m-asunto-prev').textContent+'\n\n'+mailTxt);alert('Copiado.');}
 
 // ═══════════════════════════════════════════════════════════
+// GOOGLE DRIVE — OAuth + Snapshots
+// ═══════════════════════════════════════════════════════════
+// IMPORTANTE: reemplazá con tu Client ID de Google Cloud Console
+// (APIs & Services > Credentials > OAuth 2.0 > Web application)
+const DRIVE_CLIENT_ID = localStorage.getItem('drive_client_id') || '';
+const DRIVE_FOLDER_NAME = 'ProductorIA_Snapshots';
+const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+let driveToken = null;
+let driveSnapshots = [];
+let evChart = null;
+
+// ── Configurar Client ID ─────────────────────────────────────────────────────
+function getDriveClientId() {
+  let id = localStorage.getItem('drive_client_id') || '';
+  if (!id) {
+    id = prompt('Para conectar Google Drive, ingresá tu Client ID de Google Cloud Console:\n\n(Instrucciones: console.cloud.google.com > APIs > Credentials > Create OAuth 2.0 Client ID > Web app)\n\nClient ID:');
+    if (id) localStorage.setItem('drive_client_id', id.trim());
+  }
+  return id ? id.trim() : null;
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function driveAuth() {
+  const clientId = getDriveClientId();
+  if (!clientId) return;
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: DRIVE_SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { alert('Error al conectar Drive: ' + resp.error); return; }
+      driveToken = resp.access_token;
+      document.getElementById('drive-status-icon').textContent = '✅';
+      document.getElementById('drive-status-txt').textContent = 'Conectado a Google Drive';
+      document.getElementById('drive-status-sub').textContent = 'Los snapshots se guardarán en la carpeta ProductorIA_Snapshots';
+      document.getElementById('drive-btn').textContent = 'Reconectar';
+      await driveCargarSnapshots();
+    }
+  });
+  client.requestAccessToken();
+}
+
+// ── Obtener o crear carpeta ───────────────────────────────────────────────────
+async function driveGetFolderId() {
+  const q = encodeURIComponent(`name='${DRIVE_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,
+    { headers: { Authorization: 'Bearer ' + driveToken } });
+  const d = await r.json();
+  if (d.files && d.files.length > 0) return d.files[0].id;
+  // Crear carpeta
+  const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + driveToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+  });
+  const cd = await cr.json();
+  return cd.id;
+}
+
+// ── Guardar snapshot ─────────────────────────────────────────────────────────
+async function driveGuardarSnapshot(stats) {
+  if (!driveToken) return;
+  try {
+    const folderId = await driveGetFolderId();
+    const fecha = new Date().toISOString().slice(0,10);
+    const nombre = `cartera_${fecha}.json`;
+    const payload = JSON.stringify({ fecha, ...stats }, null, 2);
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify({
+      name: nombre, parents: [folderId],
+      mimeType: 'application/json'
+    })], { type: 'application/json' }));
+    form.append('file', new Blob([payload], { type: 'application/json' }));
+    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + driveToken },
+      body: form
+    });
+    console.log('Snapshot guardado:', nombre);
+  } catch(e) { console.error('Error guardando snapshot:', e); }
+}
+
+// ── Cargar snapshots históricos ───────────────────────────────────────────────
+async function driveCargarSnapshots() {
+  if (!driveToken) return;
+  try {
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name contains 'cartera_' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&orderBy=name`,
+      { headers: { Authorization: 'Bearer ' + driveToken } });
+    const d = await r.json();
+    if (!d.files || !d.files.length) { console.log('Sin snapshots previos.'); return; }
+    driveSnapshots = [];
+    for (const f of d.files) {
+      const fr = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + driveToken } });
+      const snap = await fr.json();
+      driveSnapshots.push(snap);
+    }
+    driveSnapshots.sort((a,b) => a.fecha.localeCompare(b.fecha));
+    renderEvolucion();
+  } catch(e) { console.error('Error cargando snapshots:', e); }
+}
+
+// ── Renderizar gráfico de evolución ───────────────────────────────────────────
+function renderEvolucion() {
+  if (!driveSnapshots.length) return;
+  document.getElementById('evolucion-wrap').style.display = 'block';
+  const labels = driveSnapshots.map(s => {
+    const d = new Date(s.fecha + 'T12:00:00');
+    return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+  });
+  const premios = driveSnapshots.map(s => Math.round((s.premioTotal||0)/1000));
+  const certs   = driveSnapshots.map(s => s.totalCerts||0);
+
+  const ctx = document.getElementById('evolucion-chart').getContext('2d');
+  if (evChart) evChart.destroy();
+  evChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Premio mensual ($K)', data: premios, backgroundColor: 'rgba(200,149,58,0.7)', borderColor: '#c8953a', borderWidth: 1, yAxisID: 'y' },
+        { label: 'Certificados', data: certs, type: 'line', borderColor: '#2a5c45', backgroundColor: 'rgba(42,92,69,0.1)', pointBackgroundColor: '#2a5c45', tension: 0.3, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#1a1a2e' } } },
+      scales: {
+        y:  { type: 'linear', position: 'left',  ticks: { callback: v => '$'+v.toLocaleString('es-AR')+'K', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y2: { type: 'linear', position: 'right', ticks: { font: { size: 10 } }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+
+  // Delta vs anterior
+  if (driveSnapshots.length >= 2) {
+    const last = driveSnapshots[driveSnapshots.length-1];
+    const prev = driveSnapshots[driveSnapshots.length-2];
+    const dPremio = last.premioTotal - prev.premioTotal;
+    const dCerts  = last.totalCerts - prev.totalCerts;
+    const dCli    = (last.clientesUnicos||0) - (prev.clientesUnicos||0);
+    const fmt = v => (v>0?'+':'')+v.toLocaleString('es-AR');
+    document.getElementById('evolucion-detalle').innerHTML =
+      `Último período (${prev.fecha} → ${last.fecha}): ` +
+      `<strong>${fmt(dCerts)} certificados</strong> | ` +
+      `<strong>${fmt(dCli)} clientes</strong> | ` +
+      `Premio: <strong>${dPremio>0?'+':''} $${Math.round(dPremio).toLocaleString('es-AR')}/mes</strong>`;
+  }
+}
+
+// ── Snapshot al cargar Excel ─────────────────────────────────────────────────
+async function driveSnapshotActual() {
+  if (!driveToken) return;
+  const stats = calcularEstadisticasCartera();
+  const hoy = new Date();
+  const snap = {
+    fecha: hoy.toISOString().slice(0,10),
+    totalCerts: stats.totalCerts,
+    clientesUnicos: stats.clientesUnicos,
+    premioTotal: stats.premioTotal,
+    pfCount: stats.pfCount,
+    empCount: stats.empCount,
+    porRamo: {}
+  };
+  carteraActiva.forEach(r => {
+    snap.porRamo[r.ramo] = (snap.porRamo[r.ramo]||0) + (r.premio||r.prima||0);
+  });
+  await driveGuardarSnapshot(snap);
+  driveSnapshots.push(snap);
+  driveSnapshots.sort((a,b) => a.fecha.localeCompare(b.fecha));
+  renderEvolucion();
+  document.getElementById('drive-status-sub').textContent =
+    `Snapshot guardado: ${snap.totalCerts} certs | $${Math.round(snap.premioTotal).toLocaleString('es-AR')}/mes`;
+}
+
+// ═══════════════════════════════════════════════════════════
 // INFORME
 // ═══════════════════════════════════════════════════════════
 function selTpl(el,tipo){document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');tplSel=tipo;}
@@ -908,8 +1111,40 @@ function calcularEstadisticasCartera() {
   const venc7Det = vencen7.slice(0,5).map(r=>`  • ${r.nombre} | ${RAMO_NOMBRE[r.ramo]||r.ramo} | $${Math.round(r.premio||r.prima||0).toLocaleString('es-AR')}/mes`).join('\n');
   const venc30Det = vencen30.slice(0,8).map(r=>`  • ${r.nombre} | ${RAMO_NOMBRE[r.ramo]||r.ramo} | Vto: ${r.venc?new Date(r.venc).toLocaleDateString('es-AR'):'-'}`).join('\n');
 
+  // Vencimientos SOLO de ramos con gestión manual (excluir renovación automática: 200, 3100, 1720)
+  const ramosSinGestion = [200, 3100, 1720];
+  const vencen7Gestion  = vencen7.filter(r => !ramosSinGestion.includes(r.ramo));
+  const vencen30Gestion = vencen30.filter(r => !ramosSinGestion.includes(r.ramo));
+
+  const venc7GestDet  = vencen7Gestion.slice(0,5).map(r=>`  • ${r.nombre} | ${RAMO_MAP[r.ramo]||'Ramo '+r.ramo} | $${Math.round(r.premio||r.prima||0).toLocaleString('es-AR')}/mes`).join('\n');
+  const venc30GestDet = vencen30Gestion.slice(0,8).map(r=>`  • ${r.nombre} | ${RAMO_MAP[r.ramo]||'Ramo '+r.ramo} | Vto: ${r.venc?new Date(r.venc).toLocaleDateString('es-AR'):'-'}`).join('\n');
+
+  // Evolución histórica desde snapshots de Drive
+  let evolucionCtx = '';
+  if (typeof driveSnapshots !== 'undefined' && driveSnapshots.length >= 2) {
+    const snaps = driveSnapshots.slice(-6); // últimos 6 meses
+    const tabla = snaps.map(s =>
+      `  ${s.fecha}: ${s.totalCerts} certs | $${Math.round(s.premioTotal||0).toLocaleString('es-AR')}/mes | ${s.clientesUnicos||'?'} clientes`
+    ).join('\n');
+    const last = snaps[snaps.length-1];
+    const prev = snaps[snaps.length-2];
+    const dPremio = Math.round((last.premioTotal||0) - (prev.premioTotal||0));
+    const dCerts  = (last.totalCerts||0) - (prev.totalCerts||0);
+    const dCli    = (last.clientesUnicos||0) - (prev.clientesUnicos||0);
+    evolucionCtx = `\n\nEVOLUCIÓN HISTÓRICA (últimos ${snaps.length} snapshots):\n${tabla}\n\nVARIACIÓN ÚLTIMO PERÍODO:\n- Certificados: ${dCerts>0?'+':''}${dCerts}\n- Clientes: ${dCli>0?'+':''}${dCli}\n- Premio mensual: ${dPremio>0?'+':''}$${dPremio.toLocaleString('es-AR')}`;
+  } else if (typeof driveSnapshots !== 'undefined' && driveSnapshots.length === 1) {
+    evolucionCtx = '\n\nEVOLUCIÓN: Este es el primer snapshot guardado. A partir del próximo Excel habrá comparación histórica.';
+  } else {
+    evolucionCtx = '\n\nEVOLUCIÓN: Drive no conectado. Sin datos históricos aún.';
+  }
+
   return {
-    resumen: `DATOS REALES DE CARTERA (calculados al ${hoy.toLocaleDateString('es-AR')}):\n\nCERTIFICADOS TOTALES: ${total}\nCLIENTES ÚNICOS: ${clientesTotal} (${pfIds.size} personas físicas, ${empIds.size} empresas)\nPREMIO MENSUAL TOTAL: $${Math.round(premioTotal).toLocaleString('es-AR')}\n\nDISTRIBUCIÓN POR RAMO:\n${distribucion}\n\nVENCIMIENTOS CRÍTICOS (≤7 días): ${vencen7.length} certificados\n${venc7Det||'  (ninguno)'}\n\nVENCIMIENTOS PRÓXIMOS (≤30 días): ${vencen30.length} certificados\n${venc30Det||'  (ninguno)'}\n\nOPORTUNIDADES CROSS-SELL:\n- Personas físicas con Auto sin Combinado Familiar: ${autoSinCombinadoUnicos} clientes\n- Empresas con Auto sin Integral/Incendio: ${empSinComercial} empresas`
+    resumen: `DATOS REALES DE CARTERA (calculados al ${hoy.toLocaleDateString('es-AR')}):\n\nCERTIFICADOS TOTALES: ${total}\nCLIENTES ÚNICOS: ${clientesTotal} (${pfIds.size} personas físicas, ${empIds.size} empresas)\nPREMIO MENSUAL TOTAL: $${Math.round(premioTotal).toLocaleString('es-AR')}\n\nDISTRIBUCIÓN POR RAMO:\n${distribucion}\n\nVENCIMIENTOS QUE REQUIEREN GESTIÓN MANUAL (≤7 días): ${vencen7Gestion.length} certificados\n${venc7GestDet||'  (ninguno)'}\n\nVENCIMIENTOS QUE REQUIEREN GESTIÓN MANUAL (≤30 días): ${vencen30Gestion.length} certificados\n${venc30GestDet||'  (ninguno)'}\n\nNOTA: Automotores (R200), Motovehículo (R3100) y Vida Obligatorio (R1720) renuevan automáticamente — no se incluyen en alertas.\n\nOPORTUNIDADES CROSS-SELL:\n- Personas físicas con Auto sin Combinado Familiar: ${autoSinCombinadoUnicos} clientes\n- Empresas con Auto sin Integral/Incendio: ${empSinComercial} empresas${evolucionCtx}`,
+    totalCerts: total,
+    clientesUnicos: clientesTotal,
+    premioTotal,
+    pfCount: pfIds.size,
+    empCount: empIds.size
   };
 }
 
@@ -919,7 +1154,34 @@ async function genInforme(){
   const ctx=document.getElementById('inf-ctx').value.trim();
   const stats = calcularEstadisticasCartera();
   const prompts={
-    resumen:`Sos el asistente IA del productor de seguros Martín Giménez (Mat. 213038) de Sancor, Trelew, Chubut.\n\nTe paso los DATOS REALES de su cartera. Tu tarea es redactar un resumen ejecutivo profesional basándote EXCLUSIVAMENTE en estos datos reales — no inventes cifras, no agregues datos que no estén acá.\n\n${stats.resumen}\n\nContexto adicional del productor: ${ctx||'ninguno'}\n\nRedactá el informe con estas secciones: Estado General, Alertas de Vencimiento, Oportunidades Comerciales, y Recomendaciones para esta semana. Usá los números exactos que te pasé.`,
+    resumen:(()=>{
+      const hoy = new Date().toLocaleDateString('es-AR');
+      let histCtx = '';
+      if (driveSnapshots.length >= 2) {
+        const sorted = [...driveSnapshots].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+        const prev = sorted[sorted.length-2];
+        const last = sorted[sorted.length-1];
+        const dP = last.premioTotal - prev.premioTotal;
+        const dC = last.totalCerts - prev.totalCerts;
+        histCtx = `\n\nEVOLUCIÓN VS MES ANTERIOR (${prev.fecha} → ${last.fecha}):\n- Certificados: ${prev.totalCerts} → ${last.totalCerts} (${dC>=0?'+':''}${dC})\n- Premio mensual: $${Math.round(prev.premioTotal).toLocaleString('es-AR')} → $${Math.round(last.premioTotal).toLocaleString('es-AR')} (${dP>=0?'+':''}$${Math.round(dP).toLocaleString('es-AR')})\n- Clientes únicos: ${prev.clientesUnicos||'?'} → ${last.clientesUnicos||'?'}`;
+        if (sorted.length >= 3) {
+          histCtx += `\n\nHISTORIAL COMPLETO (${sorted.length} meses):\n` +
+            sorted.map(s=>`  ${s.fecha}: ${s.totalCerts} certs | $${Math.round(s.premioTotal/1000)}K/mes`).join('\n');
+        }
+      } else if (driveSnapshots.length === 0) {
+        histCtx = '\n\n(Sin historial previo — es el primer reporte.)';
+      }
+      const RAMOS_AUTO = [200, 3100, 1720];
+      const vencGestion = carteraActiva.filter(r => {
+        const d = diasA(r.venc);
+        return d !== null && d >= 0 && d <= 30 && !RAMOS_AUTO.includes(r.ramo);
+      });
+      const venc7 = vencGestion.filter(r => diasA(r.venc) <= 7);
+      const venc30 = vencGestion.filter(r => diasA(r.venc) > 7);
+      const venc7Det = venc7.map(r=>`  • ${r.nombre} | ${RAMO_MAP[r.ramo]||r.ramo} | $${Math.round(r.premio||r.prima||0).toLocaleString('es-AR')}/mes`).join('\n');
+      const venc30Det = venc30.slice(0,8).map(r=>`  • ${r.nombre} | ${RAMO_MAP[r.ramo]||r.ramo} | Vto: ${r.venc?new Date(r.venc).toLocaleDateString('es-AR'):'-'}`).join('\n');
+      return `Sos el asistente IA del productor de seguros Martín Giménez (Mat. 213038) de Sancor, Trelew, Chubut.\n\nRedactá un resumen ejecutivo profesional usando EXCLUSIVAMENTE los datos reales que te paso. No inventes cifras.\n\n${stats.resumen}\n\nVENCIMIENTOS QUE REQUIEREN GESTIÓN MANUAL (excluye Auto/Moto/Vida Obl. que renuevan solos):\n🔴 Críticos ≤7 días: ${venc7.length} certificados\n${venc7Det||'  (ninguno)'}\n🟡 Próximos 8-30 días: ${venc30.length} certificados\n${venc30Det||'  (ninguno)'}${histCtx}\n\nContexto adicional: ${ctx||'ninguno'}\n\nSecciones del informe: Estado General, Alertas de Vencimiento (solo ramos con gestión manual), Evolución vs mes anterior (si hay historial), Oportunidades Comerciales, Recomendaciones para esta semana.`;
+    })(),
     propuesta:`Generá una propuesta comercial profesional para presentar a un cliente. Incluí: análisis de necesidades, coberturas recomendadas, beneficios clave, argumentos de valor. ${ctx||'Perfil: profesional independiente, 48 años, sin cobertura de vida.'}`,
     comparativo:`Generá un comparativo de coberturas entre las principales compañías del mercado argentino. Sancor vs competencia. ${ctx||''}`,
     guion:`Generá un guión de venta completo para una reunión comercial. Incluí: apertura, detección de necesidades, presentación, manejo de objeciones comunes en Argentina, y cierre. ${ctx||'Cliente tipo: empleado público, 50 años, preocupado por su jubilación.'}`,
