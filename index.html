@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productor IA — Sancor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a2e; --paper:#f5f0e8; --cream:#ede8dc; --gold:#c8953a;
+  --gold-l:#e8b85a; --rust:#8b3a2a; --green:#2a5c45; --muted:#7a7570;
+  --border:#d4cfc5; --white:#ffffff;
+  --red-bg:#fee2e2; --red-fg:#991b1b;
+  --yellow-bg:#fef9ec; --yellow-fg:#92400e;
+  --green-bg:#d1fae5; --green-fg:#065f46;
+  --blue-bg:#dbeafe; --blue-fg:#1e40af;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{background:var(--ink);color:var(--paper);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:34px;height:34px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-text{font-family:'DM Serif Display',serif;font-size:19px}
+.logo-sub{font-size:10px;color:var(--gold-l);letter-spacing:.12em;text-transform:uppercase;margin-top:1px;font-weight:300}
+.hdr-meta{font-size:11px;color:rgba(245,240,232,.45);display:flex;align-items:center;gap:16px}
+.dot{width:7px;height:7px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* SHELL */
+.shell{display:flex;flex:1;min-height:calc(100vh - 60px)}
+
+/* SIDEBAR */
+nav{width:210px;background:var(--ink);padding:20px 0;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.nav-sec{padding:10px 18px 4px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,232,.3);font-weight:500;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(245,240,232,.6);cursor:pointer;font-size:13px;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.nav-item:hover{background:rgba(200,149,58,.08);color:var(--gold-l)}
+.nav-item.active{background:rgba(200,149,58,.12);color:var(--gold-l);border-left-color:var(--gold);font-weight:500}
+.nav-item .ic{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+
+/* MAIN */
+main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.panel.active{display:flex}
+
+/* PANEL HEADER */
+.ph{background:var(--white);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ph-title{font-family:'DM Serif Display',serif;font-size:21px}
+.ph-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* PANEL BODY */
+.pb{flex:1;overflow-y:auto;padding:24px 28px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--ink);color:var(--gold-l)}
+.btn-primary:hover{background:var(--gold);color:var(--ink)}
+.btn-secondary{background:var(--cream);color:var(--ink);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+/* ALERT */
+.alert{background:#fef9ec;border:1px solid #f0d070;border-radius:8px;padding:11px 15px;font-size:13px;color:#7a5a10;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.stat-val{font-family:'DM Serif Display',serif;font-size:26px;margin-top:5px}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .15s}
+.filters input:focus,.filters select:focus{border-color:var(--gold)}
+.filters input{width:240px}
+.filters select{width:140px}
+.f-count{font-size:12px;color:var(--muted)}
+
+/* TABLE */
+.tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--ink)}
+th{padding:10px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--gold-l);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--cream);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.even td{background:#fff}
+tr.odd td{background:var(--paper)}
+tr.urgent td{background:var(--red-bg)}
+tr.soon td{background:var(--yellow-bg)}
+tr:hover td{filter:brightness(.97)}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-red{background:var(--red-bg);color:var(--red-fg)}
+.b-yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
+.b-green{background:var(--green-bg);color:var(--green-fg)}
+.b-blue{background:var(--blue-bg);color:var(--blue-fg)}
+.b-ramo{background:#e0e7ff;color:#3730a3;font-family:'DM Mono',monospace;font-size:10px}
+
+/* OUTPUT BOX */
+.output-box{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:22px;margin-top:18px;font-size:13.5px;line-height:1.75;white-space:pre-wrap;display:none;position:relative}
+.output-box.show{display:block}
+.copy-btn{position:absolute;top:12px;right:12px;background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .15s}
+.copy-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* LOADER */
+.loader{display:none;align-items:center;gap:8px;color:var(--muted);font-size:13px;padding:12px 0}
+.loader.show{display:flex}
+.dots span{display:inline-block;width:6px;height:6px;background:var(--gold);border-radius:50%;animation:bounce 1.2s infinite ease-in-out;margin-right:3px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+
+/* CHAT */
+#chat-panel{background:var(--cream)}
+.chat-body{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:11px;max-width:820px;animation:fu .3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;font-weight:600}
+.msg.ai .av{background:var(--ink);color:var(--gold)}
+.msg.user .av{background:var(--gold);color:var(--ink)}
+.bubble{padding:11px 15px;border-radius:12px;font-size:14px;line-height:1.65;max-width:660px}
+.msg.ai .bubble{background:var(--white);border:1px solid var(--border);border-radius:2px 12px 12px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.msg.user .bubble{background:var(--ink);color:var(--paper);border-radius:12px 2px 12px 12px}
+.msg-meta{font-size:10px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace}
+.msg.user .msg-meta{text-align:right}
+.qa-wrap{display:flex;gap:8px;flex-wrap:wrap;padding:0 28px 14px;flex-shrink:0}
+.qa{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.qa:hover{background:var(--ink);color:var(--gold-l);border-color:var(--ink)}
+.chat-foot{background:var(--white);border-top:1px solid var(--border);padding:14px 28px;flex-shrink:0}
+.inp-row{display:flex;gap:10px;align-items:flex-end}
+.chat-inp{flex:1;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);resize:none;min-height:44px;max-height:130px;outline:none;transition:border-color .15s;line-height:1.5}
+.chat-inp:focus{border-color:var(--gold)}
+.send{width:44px;height:44px;background:var(--ink);color:var(--gold);border:none;border-radius:10px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
+.send:hover{background:var(--gold);color:var(--ink)}
+.send:disabled{opacity:.5;cursor:default}
+
+/* FORMS */
+.fg{margin-bottom:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+input[type=text],input[type=email],textarea,select{width:100%;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+textarea{resize:vertical;line-height:1.6}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* TEMPLATE GRID */
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.tpl-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;position:relative}
+.tpl-card:hover,.tpl-card.sel{border-color:var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.tpl-card.sel{background:#fffbf2}
+.tpl-card .chk{position:absolute;top:10px;right:10px;width:16px;height:16px;background:var(--gold);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:9px;color:#fff}
+.tpl-card.sel .chk{display:flex}
+.tpl-icon{font-size:24px;margin-bottom:9px}
+.tpl-title{font-weight:600;font-size:13px;margin-bottom:3px}
+.tpl-desc{font-size:11px;color:var(--muted);line-height:1.4}
+
+/* MAIL PREVIEW */
+.mail-prev{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-top:18px;display:none}
+.mail-prev.show{display:block}
+.mail-prev-hdr{border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px;font-size:13px}
+.mail-prev-hdr span{color:var(--muted);font-size:11px;display:block}
+.mail-body{font-size:13.5px;line-height:1.7;white-space:pre-wrap}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.section-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:12px}
+.gmail-badge{background:#ea4335;color:#fff;font-size:10px;padding:1px 7px;border-radius:8px;font-weight:600;margin-left:6px;vertical-align:middle}
+
+/* UPLOAD ZONE */
+.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 28px;text-align:center;flex:1}
+.uz-icon{font-size:48px;margin-bottom:16px}
+.uz-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:9px}
+.uz-sub{color:var(--muted);max-width:420px;line-height:1.65;font-size:14px;margin-bottom:24px}
+.uz-label{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;background:var(--ink);color:var(--gold-l);border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500;transition:all .15s}
+.uz-label:hover{background:var(--gold);color:var(--ink)}
+.uz-note{font-size:11px;color:var(--muted);margin-top:10px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* CONN BADGE */
+.conn-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <div class="logo-text">Productor IA</div>
+      <div class="logo-sub">Sancor Seguros · Chubut</div>
+    </div>
+  </div>
+  <div class="hdr-meta">
+    <span><span class="dot"></span>IA activa</span>
+    <span id="hdr-fecha"></span>
+  </div>
+</header>
+
+<div class="shell">
+
+<nav>
+  <div class="nav-sec">Principal</div>
+  <div class="nav-item active" data-panel="cartera">
+    <span class="ic">📋</span>Mi Cartera
+    <span class="nav-badge" id="badge-urgente"></span>
+  </div>
+  <div class="nav-item" data-panel="chat">
+    <span class="ic">💬</span>Asistente
+  </div>
+  <div class="nav-sec">Herramientas</div>
+  <div class="nav-item" data-panel="mail">
+    <span class="ic">📧</span>Redactar Mail
+  </div>
+  <div class="nav-item" data-panel="informe">
+    <span class="ic">📄</span>Informes IA
+  </div>
+  <div class="nav-item" data-panel="comercial">
+    <span class="ic">📣</span>Comercial
+  </div>
+  <div class="nav-sec">Config</div>
+  <div class="nav-item" data-panel="config">
+    <span class="ic">⚙️</span>Configurar
+  </div>
+</nav>
+
+<main>
+
+<!-- ══ CARTERA ══════════════════════════════════════════════════════════ -->
+<div id="cartera-panel" class="panel active">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Mi Cartera</div>
+      <div class="ph-sub" id="ph-sub-cartera">Cargando datos...</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="btn btn-secondary" style="cursor:pointer;margin:0" for="excel-inp">📂 Actualizar Excel</label>
+      <input type="file" id="excel-inp" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarExcel(this)">
+      <button class="btn btn-primary" onclick="analizarCartera()">🤖 Analizar con IA</button>
+    </div>
+  </div>
+  <div class="pb">
+    <div id="alert-box" class="alert" style="display:none">
+      ⚠️ <span id="alert-txt"></span>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Certificados</div><div class="stat-val" id="st-total">—</div><div class="stat-sub" id="st-sub">cargando</div></div>
+      <div class="stat-card"><div class="stat-label">Vencen ≤ 7 días</div><div class="stat-val" id="st-urgente" style="color:var(--rust)">—</div><div class="stat-sub">Acción inmediata</div></div>
+      <div class="stat-card"><div class="stat-label">Vencen 8–30 días</div><div class="stat-val" id="st-pronto" style="color:#92400e">—</div><div class="stat-sub">Contactar esta semana</div></div>
+      <div class="stat-card"><div class="stat-label">Premio mensual total</div><div class="stat-val" id="st-premio" style="font-size:20px">—</div><div class="stat-sub">Cartera Sancor</div></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="f-buscar" placeholder="🔍 Nombre, póliza, ramo..." oninput="filtrar()">
+      <select id="f-ramo" onchange="filtrar()"><option value="">Todos los ramos</option></select>
+      <select id="f-estado" onchange="filtrar()">
+        <option value="">Todos los estados</option>
+        <option value="urgente">🔴 Vence ≤ 7 días</option>
+        <option value="pronto">🟡 Vence 8–30 días</option>
+        <option value="ok">🟢 Más de 30 días</option>
+      </select>
+      <span class="f-count" id="f-count"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Vencimiento</th>
+            <th>Días</th>
+            <th>Cliente / Denominación</th>
+            <th>Ramo</th>
+            <th>Póliza</th>
+            <th>Cert.</th>
+            <th>Premio mensual</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+    <div class="output-box" id="cartera-out">
+      <button class="copy-btn" onclick="copiar('cartera-out')">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CHAT ═════════════════════════════════════════════════════════════ -->
+<div id="chat-panel" class="panel">
+  <div class="ph">
+    <div><div class="ph-title">Asistente de Seguros</div><div class="ph-sub">Consultor IA especializado en mercado asegurador argentino</div></div>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="msg ai">
+      <div class="av">IA</div>
+      <div>
+        <div class="bubble">Buen día. Soy tu asistente especializado en producción de seguros.<br><br>Puedo ayudarte con consultas sobre coberturas, redactar comunicaciones, generar argumentos de venta, o analizar tu cartera. ¿Con qué empezamos?</div>
+        <div class="msg-meta">Productor IA · ahora</div>
+      </div>
+    </div>
+  </div>
+  <div class="qa-wrap" id="qa-wrap">
+    <button class="qa" onclick="qs('¿Cómo explico la diferencia entre un seguro de retiro y la jubilación ANSES?')">💡 Retiro vs ANSES</button>
+    <button class="qa" onclick="qs('Redactame un argumento de venta para un autónomo de 45 años sin cobertura de vida')">🎯 Argumento de venta</button>
+    <button class="qa" onclick="qs('¿Qué preguntas hacer en una entrevista inicial con un cliente nuevo?')">🗣️ Entrevista inicial</button>
+    <button class="qa" onclick="qs('¿Cuál es la diferencia entre ART y Accidentes Personales en Argentina?')">⚖️ ART vs Acc. Personales</button>
+  </div>
+  <div class="chat-foot">
+    <div class="loader" id="chat-loader"><div class="dots"><span></span><span></span><span></span></div><span>Redactando...</span></div>
+    <div class="inp-row">
+      <textarea class="chat-inp" id="chat-inp" placeholder="Consultá sobre coberturas, pedí argumentos de venta..." rows="1" onkeydown="hkey(event)" oninput="aresize(this)"></textarea>
+      <button class="send" id="send-btn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIL ══════════════════════════════════════════════════════════════ -->
+<div id="mail-panel" class="panel">
+  <div class="ph">
+    <div><div class="ph-title">Redactar Mail con IA <span class="gmail-badge">Gmail</span></div><div class="ph-sub">Comunicaciones profesionales para clientes y aseguradoras</div></div>
+  </div>
+  <div class="pb">
+    <div class="row2">
+      <div class="fg"><label>Destinatario</label><input type="text" id="m-dest" placeholder="Nombre del cliente"></div>
+      <div class="fg"><label>Tipo</label>
+        <select id="m-tipo">
+          <option value="renovacion">Renovación de póliza</option>
+          <option value="vencimiento">Aviso de vencimiento</option>
+          <option value="bienvenida">Bienvenida nuevo cliente</option>
+          <option value="siniestro">Seguimiento de siniestro</option>
+          <option value="propuesta">Propuesta comercial</option>
+          <option value="cobranza">Cobranza amigable</option>
+          <option value="endoso">Notificación de endoso</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Contexto adicional</label><textarea id="m-ctx" rows="3" placeholder="Ej: Póliza auto 20012805, premio $309K mensual, vence en 5 días..."></textarea></div>
+    <div class="row2">
+      <div class="fg"><label>Tono</label>
+        <select id="m-tono">
+          <option>Profesional y cordial</option>
+          <option>Cercano y directo</option>
+          <option>Formal institucional</option>
+          <option>Urgente pero respetuoso</option>
+        </select>
+      </div>
+      <div class="fg"><label>Mi firma</label><input type="text" id="m-firma" placeholder="Martín Giménez — Productor Matriculado"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="genMail()">🤖 Generar</button>
+      <button class="btn btn-secondary" onclick="limpiarMail()">🗑️ Limpiar</button>
+    </div>
+    <div class="loader" id="mail-loader"><div class="dots"><span></span><span></span><span></span></div><span>Redactando...</span></div>
+    <div class="mail-prev" id="mail-prev">
+      <div class="mail-prev-hdr">
+        <strong id="m-asunto-prev">—</strong>
+        <span>Para: <span id="m-para-prev">—</span></span>
+      </div>
+      <div class="mail-body" id="m-body-prev"></div>
+      <hr class="divider">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="abrirGmail()">📧 Abrir en Gmail</button>
+        <button class="btn btn-secondary" onclick="copiarMail()">📋 Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INFORME ══════════════════════════════════════════════════════════ -->
+<div id="informe-panel" class="panel">
+  <div class="ph"><div><div class="ph-title">Informes IA</div><div class="ph-sub">Documentos generados automáticamente</div></div></div>
+  <div class="pb">
+    <div class="section-title">¿Qué generamos?</div>
+    <div class="tpl-grid">
+      <div class="tpl-card" onclick="selTpl(this,'resumen')"><div class="chk">✓</div><div class="tpl-icon">📊</div><div class="tpl-title">Resumen de cartera</div><div class="tpl-desc">Estado, alertas y oportunidades.</div></div>
+      <div class="tpl-card" onclick="selTpl(this,'propuesta')"><div class="chk">✓</div><div class="tpl-icon">📑</div><div class="tpl-title">Propuesta para cliente</div><div class="tpl-desc">Documento profesional con argumentos de venta.</div></div>
+      <div class="tpl-card" onclick="selTpl(this,'comparativo')"><div class="chk">✓</div><div class="tpl-icon">⚖️</div><div class="tpl-title">Comparativo coberturas</div><div class="tpl-desc">Tabla comparativa entre compañías.</div></div>
+      <div class="tpl-card" onclick="selTpl(this,'guion')"><div class="chk">✓</div><div class="tpl-icon">🎯</div><div class="tpl-title">Guión de venta</div><div class="tpl-desc">Script para reunión comercial específica.</div></div>
+      <div class="tpl-card" onclick="selTpl(this,'newsletter')"><div class="chk">✓</div><div class="tpl-icon">📰</div><div class="tpl-title">Newsletter mensual</div><div class="tpl-desc">Contenido para enviar a toda la cartera.</div></div>
+      <div class="tpl-card" onclick="selTpl(this,'jubilacion')"><div class="chk">✓</div><div class="tpl-icon">👴</div><div class="tpl-title">Análisis de jubilación</div><div class="tpl-desc">ANSES vs retiro privado para un perfil.</div></div>
+    </div>
+    <div class="fg"><label>Contexto / datos del cliente</label><textarea id="inf-ctx" rows="4" placeholder="Ej: Varón, 52 años, autónomo, $800K/mes, sin cobertura de vida..."></textarea></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="genInforme()">🤖 Generar</button></div>
+    <div class="loader" id="inf-loader"><div class="dots"><span></span><span></span><span></span></div><span>Generando...</span></div>
+    <div class="output-box" id="inf-out"><button class="copy-btn" onclick="copiar('inf-out')">Copiar</button></div>
+  </div>
+</div>
+
+<!-- ══ COMERCIAL ════════════════════════════════════════════════════════ -->
+<div id="comercial-panel" class="panel">
+  <div class="ph"><div><div class="ph-title">Herramientas Comerciales</div><div class="ph-sub">Contenido para captar y retener clientes</div></div></div>
+  <div class="pb">
+    <div class="tpl-grid">
+      <div class="tpl-card" onclick="genCom('wa_frio')"><div class="tpl-icon">📱</div><div class="tpl-title">WhatsApp frío</div><div class="tpl-desc">Primer contacto con prospecto.</div></div>
+      <div class="tpl-card" onclick="genCom('post')"><div class="tpl-icon">📲</div><div class="tpl-title">Post para redes</div><div class="tpl-desc">Contenido educativo Facebook/IG.</div></div>
+      <div class="tpl-card" onclick="genCom('objecion')"><div class="tpl-icon">💬</div><div class="tpl-title">Manejo de objeciones</div><div class="tpl-desc">Respuestas a "está muy caro".</div></div>
+      <div class="tpl-card" onclick="genCom('referido')"><div class="tpl-icon">🤝</div><div class="tpl-title">Pedir referidos</div><div class="tpl-desc">Mensaje a cliente activo satisfecho.</div></div>
+      <div class="tpl-card" onclick="genCom('reactivar')"><div class="tpl-icon">♻️</div><div class="tpl-title">Reactivar cliente</div><div class="tpl-desc">Contacto con cliente inactivo.</div></div>
+      <div class="tpl-card" onclick="genCom('testimonio')"><div class="tpl-icon">⭐</div><div class="tpl-title">Pedir testimonio</div><div class="tpl-desc">Solicitar reseña a cliente satisfecho.</div></div>
+    </div>
+    <div class="fg"><label>Contexto adicional (opcional)</label><textarea id="com-ctx" rows="3" placeholder="Ej: Me dirijo a docentes municipales de Chubut, 40–55 años..."></textarea></div>
+    <div class="loader" id="com-loader"><div class="dots"><span></span><span></span><span></span></div><span>Generando...</span></div>
+    <div class="output-box" id="com-out"><button class="copy-btn" onclick="copiar('com-out')">Copiar</button></div>
+  </div>
+</div>
+
+<!-- ══ CONFIG ════════════════════════════════════════════════════════════ -->
+<div id="config-panel" class="panel">
+  <div class="ph"><div><div class="ph-title">Configuración</div><div class="ph-sub">Tu perfil profesional</div></div></div>
+  <div class="pb">
+    <div class="section-title">Tu perfil</div>
+    <div class="row2">
+      <div class="fg"><label>Nombre completo</label><input type="text" id="cfg-nombre" placeholder="Martín Giménez"></div>
+      <div class="fg"><label>N° Matrícula SSN</label><input type="text" id="cfg-matricula" placeholder="213038"></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>Ciudad / Zona</label><input type="text" id="cfg-ciudad" placeholder="Trelew, Chubut"></div>
+      <div class="fg"><label>Aseguradoras</label><input type="text" id="cfg-aseg" placeholder="Sancor, ..."></div>
+    </div>
+    <div class="fg">
+      <label>API Key de Claude (Anthropic)</label>
+      <input type="text" id="cfg-key" placeholder="sk-ant-..." style="font-family:'DM Mono',monospace;font-size:12px">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Obtenela en console.anthropic.com</div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="guardarCfg()">💾 Guardar</button></div>
+    <hr class="divider">
+    <div class="section-title">Conexiones</div>
+    <div class="conn-item">
+      <span style="font-size:20px">📧</span>
+      <div style="flex:1"><div style="font-weight:600;font-size:14px">Gmail <span class="gmail-badge">Listo</span></div><div style="font-size:12px;color:var(--muted)">Envío de mails directo desde el asistente</div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATOS EMBEBIDOS (reporte Sancor 08/03/2026)
+// ═══════════════════════════════════════════════════════════
+const CARTERA_EMBEBIDA = [{"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 1, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 39, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 50, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 24, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 2, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 35, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 60, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 56, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 13, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 3, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 34, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 54, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 55, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 58, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 37, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 36, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 61, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 57, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 59, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 200, "p": "192326", "cert": 44, "v": "2027-03-31T00:00:00", "pr": 0, "pm": 0}, {"n": "ENCLOSURES S.R.L.", "c": "J30-71509967-1", "r": 200, "p": "189846", "cert": 3, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "ENCLOSURES S.R.L.", "c": "J30-71509967-1", "r": 200, "p": "189846", "cert": 1, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "PAPAIANI SEBASTIAN EMILIO", "c": "D0000029983546", "r": 200, "p": "187008", "cert": 3, "v": "2026-05-05T00:00:00", "pr": 0, "pm": 0}, {"n": "PAPAIANI SEBASTIAN EMILIO", "c": "D0000029983546", "r": 200, "p": "187008", "cert": 2, "v": "2026-05-05T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 200, "p": "191443", "cert": 4, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 200, "p": "191443", "cert": 1, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 200, "p": "191443", "cert": 2, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 200, "p": "191443", "cert": 5, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 200, "p": "191443", "cert": 3, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "LARREBURO PUGH DIEGO CARLOS", "c": "D0000023791463", "r": 200, "p": "188207", "cert": 2, "v": "2026-07-15T00:00:00", "pr": 0, "pm": 0}, {"n": "LARREBURO PUGH DIEGO CARLOS", "c": "D0000023791463", "r": 200, "p": "188207", "cert": 1, "v": "2026-07-15T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 9, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 7, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 1, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 3, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 5, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 6, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 2, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 4, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 8, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "AGROSUR LANAS SRL", "c": "J30-71503830-3", "r": 200, "p": "188729", "cert": 10, "v": "2026-08-20T00:00:00", "pr": 0, "pm": 0}, {"n": "ENFERMERIA INTEGRAL S.R.L.", "c": "J30-71434202-5", "r": 200, "p": "189456", "cert": 3, "v": "2026-09-22T00:00:00", "pr": 0, "pm": 0}, {"n": "ENFERMERIA INTEGRAL S.R.L.", "c": "J30-71434202-5", "r": 200, "p": "189456", "cert": 5, "v": "2026-09-22T00:00:00", "pr": 0, "pm": 0}, {"n": "ENFERMERIA INTEGRAL S.R.L.", "c": "J30-71434202-5", "r": 200, "p": "189456", "cert": 4, "v": "2026-09-22T00:00:00", "pr": 0, "pm": 0}, {"n": "ENFERMERIA INTEGRAL S.R.L.", "c": "J30-71434202-5", "r": 200, "p": "189456", "cert": 2, "v": "2026-09-22T00:00:00", "pr": 0, "pm": 0}, {"n": "FACUNDO NICOLAS CONDE", "c": "29689628", "r": 200, "p": "20012805", "cert": 1, "v": "2026-07-19T12:00:00", "pr": 309409.0, "pm": 245223.0}, {"n": "JUAN MANUEL LOPEZ", "c": "31959026", "r": 200, "p": "20016611", "cert": 1, "v": "2026-10-23T12:00:00", "pr": 297341.0, "pm": 235658.0}, {"n": "MATIAS ALBERTO FALCON", "c": "31914810", "r": 200, "p": "20016364", "cert": 1, "v": "2026-10-20T12:00:00", "pr": 471036.0, "pm": 373320.0}, {"n": "ALEJANDRO DARIO QUIROGA", "c": "26889129", "r": 200, "p": "20016260", "cert": 1, "v": "2026-10-09T12:00:00", "pr": 333561.0, "pm": 264365.0}, {"n": "WALTER RUBEN SEPULVEDA", "c": "31020012", "r": 200, "p": "20016430", "cert": 1, "v": "2026-10-26T12:00:00", "pr": 183881.0, "pm": 144440.0}, {"n": "ANALIA JAMES", "c": "31334145", "r": 200, "p": "20014888", "cert": 1, "v": "2026-09-27T12:00:00", "pr": 959201.0, "pm": 760217.0}, {"n": "HECTOR ADRIAN QUEVEDO", "c": "26889259", "r": 200, "p": "20017646", "cert": 1, "v": "2026-11-10T12:00:00", "pr": 207828.0, "pm": 164714.0}, {"n": "INES SUSANA GONZALEZ", "c": "6665616", "r": 200, "p": "20018006", "cert": 1, "v": "2026-11-27T12:00:00", "pr": 449797.0, "pm": 356488.0}, {"n": "WALTER JAVIER CALFIN", "c": "30008170", "r": 200, "p": "20018222", "cert": 1, "v": "2026-11-01T12:00:00", "pr": 239799.0, "pm": 190053.0}, {"n": "CLAUDIA TAMARA DOMINGUEZ", "c": "30517666", "r": 200, "p": "20018346", "cert": 1, "v": "2026-11-30T12:00:00", "pr": 659967.0, "pm": 523058.0}, {"n": "NORMANDO RENE KREBS", "c": "10157586", "r": 200, "p": "20017706", "cert": 1, "v": "2026-11-06T12:00:00", "pr": 450358.0, "pm": 356933.0}, {"n": "CLUB EMPLEADOS DE COMERCIO", "c": "30716703432", "r": 200, "p": "20017628", "cert": 1, "v": "2026-11-04T12:00:00", "pr": 412871.0, "pm": 327222.0}, {"n": "JOSE ALBERTO MARILEF", "c": "13390837", "r": 200, "p": "20019198", "cert": 1, "v": "2026-12-12T12:00:00", "pr": 128999.0, "pm": 102239.0}, {"n": "LAURA CRISTINA DE DIOS", "c": "16201073", "r": 200, "p": "20019072", "cert": 1, "v": "2026-12-09T12:00:00", "pr": 280346.0, "pm": 222189.0}, {"n": "DIEGO ARIEL PAZ", "c": "35730546", "r": 200, "p": "30998121", "cert": 1, "v": "2026-12-05T12:00:00", "pr": 404921.0, "pm": 320921.0}, {"n": "TOMAS ANTONIO MAZA", "c": "20542837", "r": 200, "p": "20019134", "cert": 1, "v": "2026-12-05T12:00:00", "pr": 237171.0, "pm": 187970.0}, {"n": "LUCA NICOLAS ALEJANDRO DE", "c": "28990966", "r": 200, "p": "20019129", "cert": 1, "v": "2026-12-07T12:00:00", "pr": 330668.0, "pm": 262072.0}, {"n": "CARLOS ALBERTO DIZ", "c": "13748216", "r": 200, "p": "20019447", "cert": 1, "v": "2026-12-27T12:00:00", "pr": 26599.0, "pm": 21081.0}, {"n": "MARIA BELEN SCHWIETERS", "c": "29645960", "r": 200, "p": "20019523", "cert": 1, "v": "2026-12-25T12:00:00", "pr": 170280.0, "pm": 134955.0}, {"n": "EZEQUIEL ALEJANDRO PAZ", "c": "31469548", "r": 200, "p": "31011861", "cert": 1, "v": "2026-12-28T12:00:00", "pr": 935994.0, "pm": 741824.0}, {"n": "EZEQUIEL ALEJANDRO PAZ", "c": "31469548", "r": 200, "p": "31013563", "cert": 1, "v": "2026-12-22T12:00:00", "pr": 675363.0, "pm": 535261.0}, {"n": "MARIANA VICENTE GARCIA", "c": "21959267", "r": 200, "p": "20019544", "cert": 1, "v": "2026-12-16T12:00:00", "pr": 485731.0, "pm": 375816.0}, {"n": "CARLOS ALBERTO DIZ", "c": "13748216", "r": 200, "p": "20019653", "cert": 1, "v": "2026-12-27T12:00:00", "pr": 132683.0, "pm": 105158.0}, {"n": "GABRIELA IDA VERA", "c": "22203028", "r": 200, "p": "20019852", "cert": 1, "v": "2026-12-31T12:00:00", "pr": 288458.0, "pm": 228618.0}, {"n": "FACUNDO NICOLAS CONDE", "c": "29689628", "r": 200, "p": "20020917", "cert": 1, "v": "2027-01-08T12:00:00", "pr": 240757.0, "pm": 190812.0}, {"n": "HUGO ALBERTO FRANCISQUELO", "c": "14757124", "r": 200, "p": "20020425", "cert": 1, "v": "2027-01-12T12:00:00", "pr": 318469.0, "pm": 252403.0}, {"n": "LUCA NICOLAS ALEJANDRO DE", "c": "28990966", "r": 200, "p": "20019406", "cert": 1, "v": "2026-12-26T12:00:00", "pr": 28168.0, "pm": 22325.0}, {"n": "RAUL FERNANDO GIMENEZ", "c": "26607679", "r": 200, "p": "20020315", "cert": 1, "v": "2027-01-16T12:00:00", "pr": 262214.0, "pm": 207818.0}, {"n": "MARIA DE LOS ANGELES ZULBERTI", "c": "34488955", "r": 200, "p": "20020583", "cert": 1, "v": "2027-01-19T12:00:00", "pr": 259432.0, "pm": 205613.0}, {"n": "JORGE MARTIN GIMENEZ", "c": "29269803", "r": 200, "p": "20020703", "cert": 1, "v": "2027-01-20T12:00:00", "pr": 119018.0, "pm": 92086.0}, {"n": "ENZO RAUL PADERNO", "c": "29760745", "r": 200, "p": "20020944", "cert": 1, "v": "2027-01-15T12:00:00", "pr": 17855.0, "pm": 14151.0}, {"n": "SEBASTIAN EMILIO PAPAIANI", "c": "29983546", "r": 200, "p": "20020954", "cert": 1, "v": "2027-01-12T12:00:00", "pr": 17908.0, "pm": 14193.0}, {"n": "CAROLINA CHORPILL", "c": "30088519", "r": 200, "p": "20020968", "cert": 1, "v": "2027-01-06T12:00:00", "pr": 112621.0, "pm": 87136.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 200, "p": "20019796", "cert": 1, "v": "2026-12-31T12:00:00", "pr": 28184.0, "pm": 22337.0}, {"n": "RODRIGO BELIZ", "c": "33345439", "r": 200, "p": "20020667", "cert": 1, "v": "2027-01-20T12:00:00", "pr": 357402.0, "pm": 283260.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 200, "p": "20020173", "cert": 1, "v": "2027-01-07T12:00:00", "pr": 127578.0, "pm": 101112.0}, {"n": "VIA PUBLICA PATAGONICA S.A.", "c": "30708600659", "r": 200, "p": "20020489", "cert": 1, "v": "2027-01-10T12:00:00", "pr": 337717.0, "pm": 261296.0}, {"n": "NELSON EDUARDO WILLIAMS", "c": "16421093", "r": 200, "p": "20020488", "cert": 1, "v": "2027-01-10T12:00:00", "pr": 54335.0, "pm": 43063.0}, {"n": "LUCAS ALEJANDRO TREVISAN", "c": "29050533", "r": 200, "p": "20020401", "cert": 1, "v": "2027-01-15T12:00:00", "pr": 202418.0, "pm": 160427.0}, {"n": "LUIS NORBERTO VILA", "c": "8396049", "r": 200, "p": "20020708", "cert": 1, "v": "2027-01-21T12:00:00", "pr": 207838.0, "pm": 164723.0}, {"n": "GABRIELA ALEJANDRA ROSSI", "c": "16173225", "r": 200, "p": "20022103", "cert": 1, "v": "2027-02-09T12:00:00", "pr": 92616.0, "pm": 73403.0}, {"n": "CAROLINA CHORPILL", "c": "30088519", "r": 200, "p": "20021861", "cert": 1, "v": "2027-02-04T12:00:00", "pr": 109144.0, "pm": 84446.0}, {"n": "ANTONELLA BORDONI", "c": "35989970", "r": 200, "p": "31144652", "cert": 1, "v": "2027-02-11T12:00:00", "pr": 230125.0, "pm": 184575.0}, {"n": "FACUNDO ARMANDO GUTIERREZ", "c": "37860321", "r": 200, "p": "20022327", "cert": 1, "v": "2027-02-10T12:00:00", "pr": 71606.0, "pm": 56751.0}, {"n": "MARIA PAOLA CHIAPPE", "c": "22277805", "r": 200, "p": "20022328", "cert": 1, "v": "2027-02-06T12:00:00", "pr": 67655.0, "pm": 53620.0}, {"n": "GABRIELA IDA VERA", "c": "22203028", "r": 200, "p": "20021955", "cert": 1, "v": "2027-02-05T12:00:00", "pr": 124420.0, "pm": 98610.0}, {"n": "LEMPRIERE S.A.", "c": "30708153520", "r": 200, "p": "31210552", "cert": 1, "v": "2027-03-06T12:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "30708153520", "r": 200, "p": "31207192", "cert": 1, "v": "2027-03-07T12:00:00", "pr": 0, "pm": 0}, {"n": "GUILLERMINA VAZQUEZ", "c": "24644955", "r": 200, "p": "20023364", "cert": 1, "v": "2027-03-06T12:00:00", "pr": 0, "pm": 0}, {"n": "ORNELLA VERONICA FRANCISQUELO", "c": "35381921", "r": 200, "p": "20007098", "cert": 1, "v": "2026-03-10T12:00:00", "pr": 1111563.0, "pm": 880972.0}, {"n": "ANA MARIA CARAZO", "c": "16421452", "r": 200, "p": "20023002", "cert": 1, "v": "2027-03-04T12:00:00", "pr": 0, "pm": 0}, {"n": "VALERIA DANIELA ROBLEDO", "c": "26889096", "r": 200, "p": "20007169", "cert": 1, "v": "2026-03-11T12:00:00", "pr": 491468.0, "pm": 389514.0}, {"n": "JULIA ROSA NUDELMAN", "c": "6189814", "r": 200, "p": "20007184", "cert": 1, "v": "2026-03-11T12:00:00", "pr": 1278215.0, "pm": 1013053.0}, {"n": "AJA S.A.S", "c": "30717012530", "r": 200, "p": "20007431", "cert": 1, "v": "2026-03-16T12:00:00", "pr": 1054254.0, "pm": 815689.0}, {"n": "VIRGINIA MILAGROS BRIGNOLI", "c": "40739360", "r": 200, "p": "20007533", "cert": 1, "v": "2026-03-21T12:00:00", "pr": 666788.0, "pm": 528465.0}, {"n": "CRISTIAN ALEJANDRO LAGOS", "c": "25138673", "r": 200, "p": "20007536", "cert": 1, "v": "2026-03-21T12:00:00", "pr": 686501.0, "pm": 540646.0}, {"n": "CARLOS OMAR SEPULVEDA", "c": "30284197", "r": 200, "p": "20007534", "cert": 1, "v": "2026-03-21T12:00:00", "pr": 500832.0, "pm": 396936.0}, {"n": "LEMPRIERE S.A.", "c": "30708153520", "r": 200, "p": "30408426", "cert": 1, "v": "2026-03-16T12:00:00", "pr": 1351157.0, "pm": 1069531.0}, {"n": "LEMPRIERE S.A.", "c": "30708153520", "r": 200, "p": "30401585", "cert": 1, "v": "2026-03-20T12:00:00", "pr": 1215049.0, "pm": 962595.0}, {"n": "ROCA SOCIEDAD ANONIMA", "c": "30532565975", "r": 200, "p": "30401668", "cert": 1, "v": "2026-03-20T12:00:00", "pr": 1579815.0, "pm": 1219320.0}, {"n": "SOLANGE GISELA GRACIELA CARTECHINI", "c": "23863822", "r": 200, "p": "20007675", "cert": 1, "v": "2026-03-20T12:00:00", "pr": 1103051.0, "pm": 874226.0}, {"n": "CAROLINA GONZALEZ", "c": "25948643", "r": 200, "p": "20023342", "cert": 1, "v": "2027-03-07T12:00:00", "pr": 0, "pm": 0}, {"n": "ALDO MARIO CARAZO", "c": "17857005", "r": 200, "p": "20008018", "cert": 4, "v": "2026-03-17T12:00:00", "pr": 774187.0, "pm": 613589.0}, {"n": "MENSUAVEL BARSI SRL", "c": "30712211217", "r": 200, "p": "20008043", "cert": 4, "v": "2026-03-25T12:00:00", "pr": 1093625.0, "pm": 845707.0}, {"n": "MENSUAVEL BARSI SRL", "c": "30712211217", "r": 200, "p": "20008043", "cert": 5, "v": "2026-03-25T12:00:00", "pr": 366739.0, "pm": 283617.0}, {"n": "MENSUAVEL BARSI SRL", "c": "30712211217", "r": 200, "p": "20008043", "cert": 1, "v": "2026-03-25T12:00:00", "pr": 310302.0, "pm": 239941.0}, {"n": "MENSUAVEL BARSI SRL", "c": "30712211217", "r": 200, "p": "20008043", "cert": 2, "v": "2026-03-25T12:00:00", "pr": 857013.0, "pm": 662726.0}, {"n": "MENSUAVEL BARSI SRL", "c": "30712211217", "r": 200, "p": "20008043", "cert": 3, "v": "2026-03-25T12:00:00", "pr": 823120.0, "pm": 636534.0}, {"n": "MANUEL ANGEL VAZQUEZ", "c": "5388591", "r": 200, "p": "20008183", "cert": 1, "v": "2026-04-15T12:00:00", "pr": 1096395.0, "pm": 868951.0}, {"n": "LOURDES MAGALI CRIADO", "c": "32932228", "r": 200, "p": "20008218", "cert": 1, "v": "2026-04-03T12:00:00", "pr": 731662.0, "pm": 579881.0}, {"n": "GERARDO DAMIAN GAITAN", "c": "27363059", "r": 200, "p": "20008241", "cert": 1, "v": "2026-04-06T12:00:00", "pr": 2772181.0, "pm": 2197100.0}, {"n": "DAMIAN OSCAR MIGUELISSI", "c": "29235658", "r": 200, "p": "20008697", "cert": 1, "v": "2026-04-27T12:00:00", "pr": 1321916.0, "pm": 1047688.0}, {"n": "RAUL FERNANDO GIMENEZ", "c": "26607679", "r": 200, "p": "20008705", "cert": 1, "v": "2026-04-30T12:00:00", "pr": 349584.0, "pm": 277064.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20008730", "cert": 1, "v": "2026-04-23T12:00:00", "pr": 607303.0, "pm": 481320.0}, {"n": "MARCELO CLAUDIO FACCENDINI", "c": "16998238", "r": 200, "p": "20008798", "cert": 1, "v": "2026-04-27T12:00:00", "pr": 677642.0, "pm": 535927.0}, {"n": "NELSON EDUARDO WILLIAMS", "c": "16421093", "r": 200, "p": "20008841", "cert": 1, "v": "2026-04-19T12:00:00", "pr": 633427.0, "pm": 502024.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 200, "p": "20008990", "cert": 1, "v": "2026-03-28T12:00:00", "pr": 611692.0, "pm": 484798.0}, {"n": "HUGO JOSE SUAREZ", "c": "30366317", "r": 200, "p": "30485520", "cert": 1, "v": "2026-04-11T12:00:00", "pr": 884914.0, "pm": 701341.0}, {"n": "LOLIGO S.A.", "c": "33716008539", "r": 200, "p": "20009517", "cert": 1, "v": "2026-05-07T12:00:00", "pr": 1724695.0, "pm": 1334418.0}, {"n": "LOLIGO S.A.", "c": "33716008539", "r": 200, "p": "20009522", "cert": 1, "v": "2026-05-07T12:00:00", "pr": 785543.0, "pm": 607784.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20009521", "cert": 1, "v": "2026-05-09T12:00:00", "pr": 70424.0, "pm": 55814.0}, {"n": "LOLIGO S.A.", "c": "33716008539", "r": 200, "p": "20009523", "cert": 1, "v": "2026-05-07T12:00:00", "pr": 78277.0, "pm": 60564.0}, {"n": "MARIA FLORENCIA ZUCAS", "c": "33772272", "r": 200, "p": "20009654", "cert": 1, "v": "2026-05-07T12:00:00", "pr": 626871.0, "pm": 496829.0}, {"n": "DANIEL HORACIO JONES", "c": "23791268", "r": 200, "p": "20009694", "cert": 1, "v": "2026-05-05T12:00:00", "pr": 1177530.0, "pm": 933255.0}, {"n": "CAROLINA CHORPILL", "c": "30088519", "r": 200, "p": "20009773", "cert": 1, "v": "2026-05-10T12:00:00", "pr": 1117280.0, "pm": 864454.0}, {"n": "CRISTIAN ADRIAN ARDANAZ", "c": "39441224", "r": 200, "p": "20009835", "cert": 1, "v": "2026-05-06T12:00:00", "pr": 546108.0, "pm": 432820.0}, {"n": "FACUNDO NICOLAS CONDE", "c": "29689628", "r": 200, "p": "20010026", "cert": 1, "v": "2026-05-23T12:00:00", "pr": 440893.0, "pm": 349431.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20010061", "cert": 1, "v": "2026-05-23T12:00:00", "pr": 127163.0, "pm": 100783.0}, {"n": "CAROLINA CHORPILL", "c": "30088519", "r": 200, "p": "20010703", "cert": 1, "v": "2026-05-23T12:00:00", "pr": 307891.0, "pm": 238218.0}, {"n": "SINDICATO DE EMPLEADOS DE COMERCIO", "c": "30548970837", "r": 200, "p": "20011083", "cert": 1, "v": "2026-06-06T12:00:00", "pr": 587388.0, "pm": 465536.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20010775", "cert": 1, "v": "2026-06-04T12:00:00", "pr": 860217.0, "pm": 681767.0}, {"n": "MAURICIO LEOPOLDO WOHN", "c": "17130636", "r": 200, "p": "20010804", "cert": 1, "v": "2026-06-09T12:00:00", "pr": 660233.0, "pm": 523270.0}, {"n": "FACUNDO ARMANDO GUTIERREZ", "c": "37860321", "r": 200, "p": "20010829", "cert": 1, "v": "2026-06-01T12:00:00", "pr": 586730.0, "pm": 465014.0}, {"n": "ARIEL MOISES ZAYAT", "c": "24129312", "r": 200, "p": "20010948", "cert": 1, "v": "2026-06-04T12:00:00", "pr": 1214432.0, "pm": 962501.0}, {"n": "ARIEL MOISES ZAYAT", "c": "24129312", "r": 200, "p": "20010961", "cert": 1, "v": "2026-06-06T12:00:00", "pr": 818171.0, "pm": 648444.0}, {"n": "JORGE MARTIN GIMENEZ", "c": "29269803", "r": 200, "p": "20010980", "cert": 1, "v": "2026-06-13T12:00:00", "pr": 1002606.0, "pm": 775728.0}, {"n": "CRISTIAN ARIEL TORALES", "c": "32587015", "r": 200, "p": "20010986", "cert": 1, "v": "2026-06-14T12:00:00", "pr": 449092.0, "pm": 355929.0}, {"n": "MATIAS JAVIER LEBED", "c": "28055209", "r": 200, "p": "20010994", "cert": 1, "v": "2026-06-15T12:00:00", "pr": 399851.0, "pm": 315346.0}, {"n": "MATIAS JESUS ALMEIDA", "c": "40384867", "r": 200, "p": "20011247", "cert": 1, "v": "2026-06-30T12:00:00", "pr": 1522429.0, "pm": 1206605.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20011249", "cert": 1, "v": "2026-06-29T12:00:00", "pr": 743997.0, "pm": 589657.0}, {"n": "MONICA LILIANA SANHUEZA", "c": "28636984", "r": 200, "p": "20011286", "cert": 1, "v": "2026-06-25T12:00:00", "pr": 915655.0, "pm": 725705.0}, {"n": "JORGE ANDRES ZUCAS", "c": "20844183", "r": 200, "p": "20011617", "cert": 1, "v": "2026-06-04T12:00:00", "pr": 647651.0, "pm": 513297.0}, {"n": "INGEME S.A.", "c": "30712177809", "r": 200, "p": "20012866", "cert": 1, "v": "2026-07-07T12:00:00", "pr": 0, "pm": 0}, {"n": "SOLANGE GISELA GRACIELA CARTECHINI", "c": "23863822", "r": 200, "p": "20012488", "cert": 1, "v": "2026-07-03T12:00:00", "pr": 662861.0, "pm": 525353.0}, {"n": "NICOLAS LEANDRO PAPAIANI", "c": "31504859", "r": 200, "p": "20012001", "cert": 1, "v": "2026-07-27T12:00:00", "pr": 509523.0, "pm": 403824.0}, {"n": "LUIS ANTONIO CESPEDES", "c": "23291393", "r": 200, "p": "20012564", "cert": 1, "v": "2026-07-26T12:00:00", "pr": 582951.0, "pm": 462020.0}, {"n": "GLORIA ANGELICA VIVAS", "c": "14757182", "r": 200, "p": "20012618", "cert": 1, "v": "2026-07-21T12:00:00", "pr": 479710.0, "pm": 380196.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 200, "p": "20012696", "cert": 1, "v": "2026-07-28T12:00:00", "pr": 1125993.0, "pm": 892408.0}, {"n": "JORGE MARTIN GIMENEZ", "c": "29269803", "r": 200, "p": "20012032", "cert": 1, "v": "2026-07-16T12:00:00", "pr": 707685.0, "pm": 547544.0}, {"n": "FLAVIA LORENA DUPLESSIS", "c": "24467681", "r": 200, "p": "20012710", "cert": 1, "v": "2026-07-23T12:00:00", "pr": 864708.0, "pm": 685326.0}, {"n": "NELSON EDUARDO WILLIAMS", "c": "16421093", "r": 200, "p": "20012036", "cert": 1, "v": "2026-07-31T12:00:00", "pr": 924526.0, "pm": 732735.0}, {"n": "JUAN SEBASTIAN SAMSO", "c": "22271267", "r": 200, "p": "20012079", "cert": 1, "v": "2026-07-06T12:00:00", "pr": 279145.0, "pm": 221237.0}, {"n": "OMAR RAUL GAMARRA", "c": "7888645", "r": 200, "p": "20012223", "cert": 1, "v": "2026-07-07T12:00:00", "pr": 1167071.0, "pm": 924965.0}, {"n": "MARIA ANTONELA SAMPINI", "c": "31956294", "r": 200, "p": "20012304", "cert": 1, "v": "2026-07-14T12:00:00", "pr": 1130003.0, "pm": 895587.0}, {"n": "MICAELA ESTHER FERNANDEZ", "c": "29282469", "r": 200, "p": "20012373", "cert": 1, "v": "2026-07-26T12:00:00", "pr": 1022953.0, "pm": 810744.0}, {"n": "ARIEL MOLINA", "c": "25138697", "r": 200, "p": "20012390", "cert": 1, "v": "2026-07-19T12:00:00", "pr": 506975.0, "pm": 401804.0}, {"n": "ANDREA LORENA REMOLCOY", "c": "31148660", "r": 200, "p": "20012394", "cert": 1, "v": "2026-07-31T12:00:00", "pr": 628112.0, "pm": 497812.0}, {"n": "GERARDO OMAR MINNAARD", "c": "22260922", "r": 200, "p": "20012410", "cert": 1, "v": "2026-07-21T12:00:00", "pr": 1170736.0, "pm": 905813.0}, {"n": "CARLOS MARINO PAINEQUEO", "c": "26975588", "r": 200, "p": "20012854", "cert": 1, "v": "2026-06-30T12:00:00", "pr": 215559.0, "pm": 170842.0}, {"n": "MARTHA BEATRIZ ECHEGARAY", "c": "14281858", "r": 200, "p": "20012922", "cert": 1, "v": "2026-07-01T12:00:00", "pr": 431963.0, "pm": 342353.0}, {"n": "CARLOS HUMBERTO PAPAIANI", "c": "10147458", "r": 200, "p": "20012946", "cert": 1, "v": "2026-07-02T12:00:00", "pr": 659076.0, "pm": 522353.0}, {"n": "NORBERTO OSCAR LEBED", "c": "11444785", "r": 200, "p": "20013089", "cert": 1, "v": "2026-07-10T12:00:00", "pr": 256359.0, "pm": 203178.0}, {"n": "CAROLINA CHORPILL", "c": "30088519", "r": 200, "p": "20013264", "cert": 1, "v": "2026-07-21T12:00:00", "pr": 217264.0, "pm": 168100.0}, {"n": "MARCOS HERNAN APERTILE", "c": "28870019", "r": 200, "p": "20013574", "cert": 1, "v": "2026-08-14T12:00:00", "pr": 725745.0, "pm": 575191.0}, {"n": "YAMILA SOLEDAD BRIGNOLI", "c": "28276557", "r": 200, "p": "20013650", "cert": 1, "v": "2026-08-01T12:00:00", "pr": 535163.0, "pm": 424145.0}, {"n": "GUILLERMO MARTIN VAN WYK", "c": "25011905", "r": 200, "p": "20013895", "cert": 1, "v": "2026-08-02T12:00:00", "pr": 418517.0, "pm": 331697.0}, {"n": "AGUSTIN ARIEL PAZ", "c": "30088682", "r": 200, "p": "20014370", "cert": 1, "v": "2026-08-05T12:00:00", "pr": 1062900.0, "pm": 822379.0}, {"n": "MIRIAM LORENA GHEZZI", "c": "27092695", "r": 200, "p": "20013896", "cert": 1, "v": "2026-08-06T12:00:00", "pr": 570468.0, "pm": 452126.0}, {"n": "IGNACIO BLAS RAMOS", "c": "31087215", "r": 200, "p": "20014083", "cert": 1, "v": "2026-08-31T12:00:00", "pr": 613560.0, "pm": 486279.0}, {"n": "MARTIN NICOLAS PROBOSTE", "c": "33771148", "r": 200, "p": "20014176", "cert": 1, "v": "2026-08-29T12:00:00", "pr": 271602.0, "pm": 215258.0}, {"n": "GASTON ARIEL PAPAIANI", "c": "33946690", "r": 200, "p": "20014599", "cert": 1, "v": "2026-08-12T12:00:00", "pr": 711816.0, "pm": 564152.0}, {"n": "DIEGO SEBASTIAN ALVAREZ", "c": "31148894", "r": 200, "p": "20014699", "cert": 1, "v": "2026-08-19T12:00:00", "pr": 172642.0, "pm": 136828.0}, {"n": "PABLO MARTIN LEBED", "c": "27331204", "r": 200, "p": "20015019", "cert": 1, "v": "2026-09-07T12:00:00", "pr": 552736.0, "pm": 438072.0}, {"n": "MARIA PILAR MURANO", "c": "29983514", "r": 200, "p": "20015031", "cert": 1, "v": "2026-09-09T12:00:00", "pr": 396429.0, "pm": 314191.0}, {"n": "CAROLINA GONZALEZ", "c": "25948643", "r": 200, "p": "20015121", "cert": 1, "v": "2026-09-09T12:00:00", "pr": 584689.0, "pm": 463397.0}, {"n": "OMAR RAUL GAMARRA", "c": "7888645", "r": 200, "p": "20015143", "cert": 1, "v": "2026-09-05T12:00:00", "pr": 630458.0, "pm": 499671.0}, {"n": "GUSTAVO MARTIN PAZ", "c": "29066556", "r": 200, "p": "20015171", "cert": 1, "v": "2026-09-01T12:00:00", "pr": 879934.0, "pm": 677226.0}, {"n": "MAURICIO ALBERTO PASTI", "c": "17310756", "r": 200, "p": "20015206", "cert": 1, "v": "2026-09-10T12:00:00", "pr": 742035.0, "pm": 588102.0}, {"n": "CRISTIAN GUILLERMO MARECO DEL PUERTO", "c": "29692129", "r": 200, "p": "20015235", "cert": 1, "v": "2026-09-10T12:00:00", "pr": 478712.0, "pm": 379404.0}, {"n": "MARTIN LEONARDO SIRI", "c": "25788280", "r": 200, "p": "20015359", "cert": 1, "v": "2026-09-13T12:00:00", "pr": 429510.0, "pm": 340409.0}, {"n": "MARCOS HERNAN APERTILE", "c": "28870019", "r": 200, "p": "20015512", "cert": 1, "v": "2026-09-23T12:00:00", "pr": 394434.0, "pm": 312609.0}, {"n": "ABRAHAM MANUEL LLENDEROSA", "c": "32801268", "r": 200, "p": "20015538", "cert": 1, "v": "2026-09-29T12:00:00", "pr": 266822.0, "pm": 211470.0}, {"n": "HECTOR DANIEL VELAZQUEZ", "c": "26568871", "r": 200, "p": "20015623", "cert": 1, "v": "2026-09-19T12:00:00", "pr": 575233.0, "pm": 455902.0}, {"n": "PAULO RAFAEL LUCERO FIGUEROA", "c": "28156197", "r": 200, "p": "20015653", "cert": 1, "v": "2026-09-19T12:00:00", "pr": 686626.0, "pm": 544187.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 200, "p": "20015764", "cert": 1, "v": "2026-09-01T12:00:00", "pr": 239594.0, "pm": 189891.0}, {"n": "ZUKAS SRL", "c": "30715581465", "r": 200, "p": "20015773", "cert": 1, "v": "2026-09-02T12:00:00", "pr": 557237.0, "pm": 431141.0}, {"n": "ANDREA MARIA PEREZ RAMOS", "c": "30938661", "r": 200, "p": "20015789", "cert": 1, "v": "2026-09-10T12:00:00", "pr": 307821.0, "pm": 243964.0}, {"n": "JUAN CARLOS ANTIECO", "c": "24926653", "r": 200, "p": "20016044", "cert": 1, "v": "2026-09-16T12:00:00", "pr": 200996.0, "pm": 159300.0}, {"n": "MARIANO JAVIER GONZALEZ", "c": "31280484", "r": 200, "p": "20016100", "cert": 1, "v": "2026-09-19T12:00:00", "pr": 569299.0, "pm": 451199.0}, {"n": "ONORIO BENJAMIN DANIEL ALDERETE", "c": "46465259", "r": 200, "p": "20018769", "cert": 1, "v": "2026-11-14T12:00:00", "pr": 146099.0, "pm": 115791.0}, {"n": "GINA MARGARITA GONZALEZ DIAZ", "c": "34275891", "r": 200, "p": "20018784", "cert": 1, "v": "2026-11-15T12:00:00", "pr": 211385.0, "pm": 167534.0}, {"n": "ORLANDO DANIEL AVILA", "c": "30134895", "r": 200, "p": "20019926", "cert": 1, "v": "2026-12-03T12:00:00", "pr": 204755.0, "pm": 162279.0}, {"n": "PABLO MARTIN LEBED", "c": "27331204", "r": 200, "p": "20021349", "cert": 1, "v": "2026-12-31T12:00:00", "pr": 28184.0, "pm": 22337.0}, {"n": "LOLIGO S.A.", "c": "33716008539", "r": 200, "p": "20021406", "cert": 1, "v": "2027-01-03T12:00:00", "pr": 149589.0, "pm": 115739.0}, {"n": "DANIEL HORACIO JONES", "c": "23791268", "r": 200, "p": "20021555", "cert": 1, "v": "2027-01-12T12:00:00", "pr": 19312.0, "pm": 15305.0}, {"n": "OSCAR PABLO MORAGA", "c": "13814769", "r": 200, "p": "20021730", "cert": 1, "v": "2027-01-21T12:00:00", "pr": 100264.0, "pm": 79464.0}, {"n": "NESTOR HORACIO CENTENO", "c": "14396743", "r": 200, "p": "20022666", "cert": 1, "v": "2027-01-31T12:00:00", "pr": 145630.0, "pm": 115419.0}, {"n": "TOMAS MISAEL NUÑEZ", "c": "33478402", "r": 200, "p": "20022678", "cert": 1, "v": "2027-01-30T12:00:00", "pr": 70039.0, "pm": 55509.0}, {"n": "PABLO MARTIN LEBED", "c": "27331204", "r": 200, "p": "20022693", "cert": 1, "v": "2027-01-30T12:00:00", "pr": 136365.0, "pm": 106768.0}, {"n": "AGROSUR LANAS SRL", "c": "30715038303", "r": 200, "p": "20022829", "cert": 1, "v": "2027-02-06T12:00:00", "pr": 80654.0, "pm": 62403.0}, {"n": "MELISA SUSANA RESTUCCIA", "c": "32801599", "r": 200, "p": "20022876", "cert": 1, "v": "2027-02-10T12:00:00", "pr": -5354.0, "pm": -5497.0}, {"n": "ENZO RAUL PADERNO", "c": "29760745", "r": 200, "p": "31228750", "cert": 1, "v": "2027-02-25T12:00:00", "pr": 134974.0, "pm": 107820.0}, {"n": "DESIDERIO RITO SALINAS", "c": "7808972", "r": 200, "p": "20023876", "cert": 1, "v": "2027-02-27T12:00:00", "pr": 51338.0, "pm": 40688.0}, {"n": "CARLOS HUMBERTO PAPAIANI", "c": "10147458", "r": 200, "p": "20024036", "cert": 1, "v": "2027-03-04T12:00:00", "pr": 100300.0, "pm": 79493.0}, {"n": "OMAR RAUL GAMARRA", "c": "7888645", "r": 200, "p": "20024044", "cert": 1, "v": "2027-03-06T12:00:00", "pr": 0, "pm": 0}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6848", "cert": 0, "v": "2027-01-02T00:00:00", "pr": 3279.0, "pm": 2432.6121}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6849", "cert": 0, "v": "2027-01-02T00:00:00", "pr": 4809.0, "pm": 3568.7781}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6850", "cert": 0, "v": "2027-01-02T00:00:00", "pr": 3138.0, "pm": 2328.0945}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6851", "cert": 0, "v": "2027-01-02T00:00:00", "pr": 2559.0, "pm": 1899.9387}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6779", "cert": 0, "v": "2026-10-27T00:00:00", "pr": 12720.0, "pm": 9436.9149}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6780", "cert": 0, "v": "2026-10-27T00:00:00", "pr": 12720.0, "pm": 9436.9149}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6781", "cert": 0, "v": "2026-10-27T00:00:00", "pr": 20403.0, "pm": 15136.9953}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6725", "cert": 0, "v": "2026-08-10T00:00:00", "pr": 206738.0, "pm": 153356.0318}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6708", "cert": 0, "v": "2026-08-15T00:00:00", "pr": 164401.0, "pm": 121952.975}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6857", "cert": 0, "v": "2027-01-15T00:00:00", "pr": 4206.0, "pm": 3121.5303}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 300, "p": "6858", "cert": 0, "v": "2027-01-17T00:00:00", "pr": 25158.0, "pm": 18662.8005}, {"n": "ARANDA CARLOS HECTOR", "c": "D0000018306003", "r": 300, "p": "6648", "cert": 0, "v": "2026-05-12T00:00:00", "pr": 48205.0, "pm": 33112.4414}, {"n": "ZAYAT ANTONIA JAZMIN", "c": "D0000044595957", "r": 300, "p": "1212242", "cert": 0, "v": "2026-06-03T00:00:00", "pr": 34606.0, "pm": 23771.0118}, {"n": "PAPAIANI SEBASTIAN EMILIO", "c": "D0000029983546", "r": 300, "p": "1234058", "cert": 0, "v": "2027-02-05T00:00:00", "pr": 28636.0, "pm": 20039.6443}, {"n": "SENDON SERGIO FABIAN", "c": "D0000018042355", "r": 600, "p": "171938", "cert": 1, "v": "2026-09-21T00:00:00", "pr": 0, "pm": 0}, {"n": "GONZALEZ DIAZ GINA MARGARITA", "c": "D0000034275891", "r": 600, "p": "171906", "cert": 1, "v": "2026-09-14T00:00:00", "pr": 0, "pm": 0}, {"n": "MORRAS ARACELI LUCIA", "c": "D0000035385436", "r": 600, "p": "173715", "cert": 0, "v": "2027-02-24T00:00:00", "pr": 59926.0, "pm": 44883.6468}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 600, "p": "172508", "cert": 0, "v": "2026-11-06T00:00:00", "pr": 185684.0, "pm": 135982.4901}, {"n": "KREBS EMILIO", "c": "D0000029115583", "r": 600, "p": "174330", "cert": 1, "v": "2027-02-23T00:00:00", "pr": 0, "pm": 0}, {"n": "KREBS EMILIO", "c": "D0000029115583", "r": 600, "p": "174330", "cert": 2, "v": "2027-02-23T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMES ALFREDO JAVIER", "c": "D0000027092423", "r": 600, "p": "0", "cert": 1, "v": "2026-04-02T00:00:00", "pr": 0, "pm": 0}, {"n": "LENDZIAN LEANDRO SANTIAGO", "c": "D0000027363299", "r": 600, "p": "174042", "cert": 1, "v": "2027-02-17T00:00:00", "pr": 0, "pm": 0}, {"n": "HANDLEY DENIS OMAR", "c": "D0000029908815", "r": 600, "p": "174349", "cert": 1, "v": "2027-02-24T00:00:00", "pr": 0, "pm": 0}, {"n": "LARREBURO PUGH DIEGO CARLOS", "c": "D0000023791463", "r": 600, "p": "171003", "cert": 1, "v": "2026-07-15T00:00:00", "pr": 0, "pm": 0}, {"n": "PAPAIANI SEBASTIAN EMILIO", "c": "D0000029983546", "r": 600, "p": "170234", "cert": 2, "v": "2026-05-05T00:00:00", "pr": 0, "pm": 0}, {"n": "PAPAIANI SEBASTIAN EMILIO", "c": "D0000029983546", "r": 600, "p": "170234", "cert": 3, "v": "2026-05-05T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 600, "p": "173351", "cert": 2, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 600, "p": "173351", "cert": 4, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 600, "p": "173351", "cert": 3, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 600, "p": "173351", "cert": 1, "v": "2027-01-23T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 600, "p": "171297", "cert": 1, "v": "2026-08-31T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 600, "p": "13022373", "cert": 13, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 600, "p": "13022373", "cert": 1, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 600, "p": "13022373", "cert": 12, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 600, "p": "170488", "cert": 1, "v": "2026-06-05T00:00:00", "pr": 0, "pm": 0}, {"n": "EDIFICIO BRICK DOS", "c": "J30-71617804-4", "r": 600, "p": "170912", "cert": 1, "v": "2026-07-12T00:00:00", "pr": 0, "pm": 0}, {"n": "CORONEL ANAHI JIMENA", "c": "D0000029645829", "r": 600, "p": "171821", "cert": 1, "v": "2026-09-11T00:00:00", "pr": 0, "pm": 0}, {"n": "VICENCIO NICOLE DE LOS ANGELES", "c": "D0000043079118", "r": 600, "p": "172997", "cert": 1, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "VILLAR NOEMI MARIA ESTHER", "c": "D0000038805403", "r": 600, "p": "173482", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "CEA CARRASCO PAMELA LILIANA", "c": "D0000032724252", "r": 600, "p": "173483", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "173248", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "173248", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 600, "p": "173248", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1000, "p": "1062", "cert": 0, "v": "2026-05-07T00:00:00", "pr": 327477.0, "pm": 242828.7353}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2685", "cert": 0, "v": "2026-07-07T00:00:00", "pr": 125199.0, "pm": 90743.8914}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2818", "cert": 0, "v": "2026-12-16T00:00:00", "pr": 63240.0, "pm": 45853.7644}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2817", "cert": 4, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2817", "cert": 2, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2817", "cert": 3, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1400, "p": "2842", "cert": 0, "v": "2027-02-02T00:00:00", "pr": 324950.0, "pm": 207004.0017}, {"n": "MENSUAVEL BARSI SRL", "c": "J30-71221121-7", "r": 1500, "p": "6723", "cert": 0, "v": "2027-02-13T00:00:00", "pr": 15692.0, "pm": 9993.7096}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1500, "p": "6858", "cert": 0, "v": "2027-04-13T00:00:00", "pr": 2820.0, "pm": 2044.4555}, {"n": "NUDELMAN PAMELA JULIANA", "c": "D0000033771229", "r": 1500, "p": "6449", "cert": 0, "v": "2026-09-04T00:00:00", "pr": 57440.0, "pm": 36380.3213}, {"n": "CORONEL ANAHI JIMENA", "c": "D0000029645829", "r": 1500, "p": "6831", "cert": 0, "v": "2027-02-26T00:00:00", "pr": 30393.0, "pm": 19794.3475}, {"n": "VERA GABRIELA IDA", "c": "D0000022203028", "r": 1500, "p": "6503", "cert": 0, "v": "2026-10-07T00:00:00", "pr": 41400.0, "pm": 26220.8882}, {"n": "ENFERMERIA INTEGRAL S.R.L.", "c": "J30-71434202-5", "r": 1500, "p": "6650", "cert": 0, "v": "2026-11-13T00:00:00", "pr": 1697662.0, "pm": 1145110.8677}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "295490", "cert": 0, "v": "2029-08-27T00:00:00", "pr": 3113338.0, "pm": 2289802.5}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "6943", "cert": 0, "v": "2029-10-03T00:00:00", "pr": 3359370.0, "pm": 2504584.8778}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "7085", "cert": 0, "v": "2030-03-10T00:00:00", "pr": 1887710.0, "pm": 1382953.027}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "7225", "cert": 0, "v": "2030-08-25T00:00:00", "pr": 114531.0, "pm": 86074.6839}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "7283", "cert": 0, "v": "2030-10-22T00:00:00", "pr": 113091.0, "pm": 84996.7908}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "7385", "cert": 0, "v": "2031-03-05T00:00:00", "pr": 69797.0, "pm": 53360.0068}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 1600, "p": "204569", "cert": 0, "v": "2030-02-18T00:00:00", "pr": 377630.0, "pm": 279440.945}, {"n": "PATAGONIA LON S.R.L.", "c": "J30-71414918-7", "r": 1600, "p": "7187", "cert": 0, "v": "2030-07-16T00:00:00", "pr": 1164531.0, "pm": 854318.3457}, {"n": "PATAGONIA LON S.R.L.", "c": "J30-71414918-7", "r": 1600, "p": "7188", "cert": 0, "v": "2030-07-16T00:00:00", "pr": 5634531.0, "pm": 4373658.2607}, {"n": "GARCIA NURIA VICENTE", "c": "D0000026889507", "r": 1720, "p": "40434", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "SANHUEZA MONICA LILIANA", "c": "D0000028636984", "r": 1720, "p": "40435", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "PEREYRA GLADYS", "c": "D0000014388209", "r": 1720, "p": "40437", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 9493.15, "pm": 9493.15}, {"n": "MORAÑA KARINA ELIZABETH", "c": "D0000023134277", "r": 1720, "p": "40508", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "NUDELMAN VERONICA CECILIA", "c": "D0000029645861", "r": 1720, "p": "40509", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "CARRETTONI SILVANA ANDREA", "c": "D0000018051654", "r": 1720, "p": "41903", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 5107.4, "pm": 5107.4}, {"n": "PAZ GUSTAVO MARTIN", "c": "D0000029066556", "r": 1720, "p": "39252", "cert": 0, "v": "2026-07-01T00:00:00", "pr": 4388.88, "pm": 4388.88}, {"n": "BARRERA DALDER HIPOLITO", "c": "D0000030883519", "r": 1720, "p": "39875", "cert": 0, "v": "2026-09-01T00:00:00", "pr": 9132.41, "pm": 9132.41}, {"n": "CRIADO GASTON NICOLAS", "c": "D0000031247916", "r": 1720, "p": "41449", "cert": 0, "v": "2027-02-01T00:00:00", "pr": 5024.61, "pm": 5024.61}, {"n": "ROSSI VERONICA NOEMI", "c": "D0000014296073", "r": 1720, "p": "41914", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 5107.4, "pm": 5107.4}, {"n": "ARNONI CELIA LILIA TERESA", "c": "C0000006056401", "r": 1720, "p": "41922", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 5107.4, "pm": 5107.4}, {"n": "GAMARRA ROMINA ELIZABETH", "c": "D0000030088960", "r": 1720, "p": "41924", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 5107.4, "pm": 5107.4}, {"n": "GOMEZ CASANOVA CARLA MARCELA", "c": "D0000018813837", "r": 1720, "p": "39884", "cert": 0, "v": "2026-09-01T00:00:00", "pr": 4572.21, "pm": 4572.21}, {"n": "OLLER PEDRO GERMAN", "c": "D0000022934723", "r": 1720, "p": "38676", "cert": 0, "v": "2026-05-01T00:00:00", "pr": 4208.51, "pm": 4208.51}, {"n": "ZUAZO JOAQUIN CIOLFI", "c": "D0000093283734", "r": 1720, "p": "38965", "cert": 0, "v": "2026-06-01T00:00:00", "pr": 4300.17, "pm": 4300.17}, {"n": "HUGHES HUGO CARLOS", "c": "L0000007815183", "r": 1720, "p": "38442", "cert": 0, "v": "2026-04-01T00:00:00", "pr": 346.6781, "pm": 346.6781}, {"n": "ENJU SERVICIOS S. R. L.", "c": "J30-71752765-4", "r": 1720, "p": "38554", "cert": 0, "v": "2026-04-01T00:00:00", "pr": 17749.9423, "pm": 17749.9371}, {"n": "BOTTGER GABRIELA ELISA", "c": "D0000033345348", "r": 1720, "p": "38568", "cert": 0, "v": "2026-04-01T00:00:00", "pr": 1016.0381, "pm": 1016.0347}, {"n": "MONDINELLI EUGENIO", "c": "D0000028447631", "r": 1720, "p": "38857", "cert": 0, "v": "2026-05-01T00:00:00", "pr": 14403.1504, "pm": 14403.1574}, {"n": "MISTER BEEF S A", "c": "J30-71798003-0", "r": 1720, "p": "38868", "cert": 0, "v": "2026-05-01T00:00:00", "pr": 8044.2623, "pm": 8044.2748}, {"n": "DUCAL CONSTRUCCIONES S. R. L.", "c": "J30-71752287-3", "r": 1720, "p": "38887", "cert": 0, "v": "2026-05-01T00:00:00", "pr": 2354.7581, "pm": 2354.7479}, {"n": "NAVYTEX S.A.", "c": "J33-71418280-9", "r": 1720, "p": "38910", "cert": 0, "v": "2026-04-01T00:00:00", "pr": 10052.3, "pm": 10052.3336}, {"n": "EL HOGAR SRL", "c": "J30-71538150-4", "r": 1720, "p": "39053", "cert": 0, "v": "2026-06-01T00:00:00", "pr": 44524.2, "pm": 44524.1892}, {"n": "ADDA SALUD S. A. S.", "c": "J30-71752901-0", "r": 1720, "p": "39182", "cert": 0, "v": "2026-06-01T00:00:00", "pr": 1016.04, "pm": 1016.0349}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1720, "p": "39400", "cert": 0, "v": "2026-07-01T00:00:00", "pr": 25782.22, "pm": 25782.2144}, {"n": "BILBAO ANA LIZA", "c": "D0000024924369", "r": 1720, "p": "39413", "cert": 0, "v": "2026-07-01T00:00:00", "pr": 2354.76, "pm": 2354.7469}, {"n": "BASCUR SUSANA MABEL", "c": "D0000014834368", "r": 1720, "p": "39767", "cert": 0, "v": "2026-08-01T00:00:00", "pr": 346.68, "pm": 346.6781}, {"n": "ZUKAS SRL", "c": "J30-71558146-5", "r": 1720, "p": "39811", "cert": 0, "v": "2026-08-01T00:00:00", "pr": 14737.84, "pm": 14737.8365}, {"n": "SILVA MATOSO RICARDO HORACIO", "c": "D0000030883808", "r": 1720, "p": "39890", "cert": 0, "v": "2026-08-01T00:00:00", "pr": 4480.54, "pm": 4480.54}, {"n": "TECNOREDES S.R.L.", "c": "J30-71531857-8", "r": 1720, "p": "39965", "cert": 0, "v": "2026-09-01T00:00:00", "pr": 2020.07, "pm": 2020.0685}, {"n": "OCAÑA ELSA AMANDA", "c": "C0000001788119", "r": 1720, "p": "40118", "cert": 0, "v": "2026-08-01T00:00:00", "pr": 4480.54, "pm": 4480.54}, {"n": "FRATELLO PROPIEDADES SRL", "c": "J30-71199141-3", "r": 1720, "p": "40275", "cert": 0, "v": "2026-10-01T00:00:00", "pr": 5366.85, "pm": 5366.8483}, {"n": "CUNHA MARIA CECILIA", "c": "D0000025442471", "r": 1720, "p": "40362", "cert": 0, "v": "2026-10-01T00:00:00", "pr": 1350.72, "pm": 1350.7132}, {"n": "BERMUDEZ DARIO ALBERTO", "c": "D0000014534852", "r": 1720, "p": "40736", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 2020.08, "pm": 2020.0674}, {"n": "OVEON S.A.", "c": "J30-55603179-3", "r": 1720, "p": "40741", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 13399.12, "pm": 13399.1192}, {"n": "CLUB EMPLEADOS DE COMERCIO", "c": "J30-71670343-2", "r": 1720, "p": "40742", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 1350.72, "pm": 1350.7099}, {"n": "SUGAR SRL", "c": "J30-71738874-3", "r": 1720, "p": "40865", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 14737.84, "pm": 14737.8433}, {"n": "KREBS EMILIO", "c": "D0000029115583", "r": 1720, "p": "40905", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "GROW UP COMERCIALIZACION S.A.", "c": "J30-70988637-8", "r": 1720, "p": "41056", "cert": 0, "v": "2026-12-01T00:00:00", "pr": 346.68, "pm": 346.6781}, {"n": "METALURGICA CHAPARRO SAS", "c": "J30-71706099-3", "r": 1720, "p": "41102", "cert": 0, "v": "2026-12-01T00:00:00", "pr": 7040.24, "pm": 7040.2359}, {"n": "TASCO S.A.S.", "c": "J30-71668096-3", "r": 1720, "p": "41113", "cert": 0, "v": "2026-12-01T00:00:00", "pr": 346.68, "pm": 346.6781}, {"n": "REYES DENIS SERGIO", "c": "D0000033345035", "r": 1720, "p": "41151", "cert": 0, "v": "2026-11-01T00:00:00", "pr": 4752.57, "pm": 4752.57}, {"n": "ECHAVE NATALIA BELEN", "c": "D0000030823729", "r": 1720, "p": "41265", "cert": 0, "v": "2027-01-01T00:00:00", "pr": 681.36, "pm": 681.3562}, {"n": "INVERFIN S.A.", "c": "J30-67047754-8", "r": 1720, "p": "41267", "cert": 0, "v": "2027-01-01T00:00:00", "pr": 346.68, "pm": 346.6781}, {"n": "MAZA, MARIA EUGENIA - PAPAIANI, SEBASTIAN EMILIO SOCIEDAD DE", "c": "J30-71713131-9", "r": 1720, "p": "41379", "cert": 0, "v": "2027-01-01T00:00:00", "pr": 346.68, "pm": 346.6783}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 1720, "p": "41563", "cert": 0, "v": "2027-02-01T00:00:00", "pr": 681.36, "pm": 681.3558}, {"n": "SOLERA MARIA BELEN", "c": "D0000037150548", "r": 1720, "p": "41582", "cert": 0, "v": "2027-02-01T00:00:00", "pr": 346.68, "pm": 346.6783}, {"n": "TRIDOS SA", "c": "J30-71430244-9", "r": 1720, "p": "41717", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 7230.48, "pm": 7230.4805}, {"n": "CLUB SOCIAL DEPORTIVO HURACAN", "c": "J30-64512143-7", "r": 1720, "p": "41777", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 436.62, "pm": 436.6165}, {"n": "PAEZ & PAEZ SERVICIOS GASTRONOMICOS S.R.L.", "c": "J30-71116098-8", "r": 1720, "p": "41836", "cert": 0, "v": "2027-03-01T00:00:00", "pr": 3833.55, "pm": 3833.5485}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 12, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 10, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 8, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 4, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 13, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 9, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 5, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11862", "cert": 11, "v": "2026-10-01T00:00:00", "pr": 0, "pm": 0}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 1730, "p": "11156", "cert": 8, "v": "2026-06-01T00:00:00", "pr": 0, "pm": 0}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 1730, "p": "11156", "cert": 2, "v": "2026-06-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 6, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 17, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 10, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 23, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 21, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 19, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 13, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 22, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 18, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 20, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11725", "cert": 1, "v": "2026-09-12T00:00:00", "pr": 0, "pm": 0}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 1730, "p": "11359", "cert": 2, "v": "2026-07-01T00:00:00", "pr": 0, "pm": 0}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 1730, "p": "11359", "cert": 8, "v": "2026-07-01T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 1730, "p": "1141768", "cert": 1, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 1730, "p": "1141768", "cert": 13, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 1730, "p": "1141768", "cert": 12, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11519", "cert": 1, "v": "2026-08-31T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1730, "p": "11134", "cert": 1, "v": "2026-06-05T00:00:00", "pr": 0, "pm": 0}, {"n": "EDIFICIO BRICK DOS", "c": "J30-71617804-4", "r": 1730, "p": "11341", "cert": 1, "v": "2026-07-12T00:00:00", "pr": 0, "pm": 0}, {"n": "VICENCIO NICOLE DE LOS ANGELES", "c": "D0000043079118", "r": 1730, "p": "12220", "cert": 1, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "VILLAR NOEMI MARIA ESTHER", "c": "D0000038805403", "r": 1730, "p": "12357", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "CEA CARRASCO PAMELA LILIANA", "c": "D0000032724252", "r": 1730, "p": "12358", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 1730, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "GAMARRA SEBASTIAN DARIO", "c": "D0000028054523", "r": 1730, "p": "11073", "cert": 1, "v": "2026-05-07T00:00:00", "pr": 0, "pm": 0}, {"n": "GAITAN GERARDO DAMIAN", "c": "D0000027363059", "r": 1730, "p": "11317", "cert": 0, "v": "2026-07-01T00:00:00", "pr": 182956.0, "pm": 165632.1273}, {"n": "GAITAN GERARDO DAMIAN", "c": "D0000027363059", "r": 1800, "p": "29787", "cert": 0, "v": "2026-06-29T00:00:00", "pr": 182276.0, "pm": 133040.9664}, {"n": "SCHWIETERS MARIA BELEN", "c": "D0000029645960", "r": 1800, "p": "30468", "cert": 0, "v": "2026-09-25T00:00:00", "pr": 98610.0, "pm": 73468.5605}, {"n": "PADERNO ENZO RAUL", "c": "D0000029760745", "r": 1800, "p": "3990243", "cert": 0, "v": "2027-03-20T00:00:00", "pr": 25721.0, "pm": 19226.6959}, {"n": "FREYER MONICA", "c": "D0000013160011", "r": 1800, "p": "29700", "cert": 0, "v": "2026-06-14T00:00:00", "pr": 389448.0, "pm": 287924.6674}, {"n": "DUPLESSIS FLAVIA LORENA", "c": "D0000024467681", "r": 1800, "p": "31271", "cert": 0, "v": "2027-01-21T00:00:00", "pr": 26634.0, "pm": 19690.7634}, {"n": "ZUCAS MARIA FLORENCIA", "c": "D0000033772272", "r": 1800, "p": "29899", "cert": 0, "v": "2026-07-30T00:00:00", "pr": 39123.0, "pm": 28923.4026}, {"n": "ZUAZO JOAQUIN CIOLFI", "c": "D0000093283734", "r": 1800, "p": "31281", "cert": 0, "v": "2027-01-18T00:00:00", "pr": 24972.0, "pm": 18462.2202}, {"n": "KREBS NORMANDO RENE", "c": "D0000010157586", "r": 1800, "p": "31144", "cert": 0, "v": "2026-12-13T00:00:00", "pr": 222388.0, "pm": 164413.8372}, {"n": "NUDELMAN VERONICA CECILIA", "c": "D0000029645861", "r": 1800, "p": "30483", "cert": 0, "v": "2026-09-23T00:00:00", "pr": 135541.0, "pm": 100207.0911}, {"n": "MORAÑA KARINA ELIZABETH", "c": "D0000023134277", "r": 1800, "p": "31003", "cert": 0, "v": "2026-11-04T00:00:00", "pr": 131769.0, "pm": 97417.298}, {"n": "MENSUAVEL BARSI SRL", "c": "J30-71221121-7", "r": 1800, "p": "31399", "cert": 0, "v": "2027-01-06T00:00:00", "pr": 142935.0, "pm": 105672.7158}, {"n": "DE DIOS LAURA CRISTINA", "c": "D0000016201073", "r": 1800, "p": "31402", "cert": 0, "v": "2027-01-08T00:00:00", "pr": 115296.0, "pm": 85238.7849}, {"n": "GIMENEZ LILIANA SOLEDAD", "c": "D0000025724817", "r": 1800, "p": "31848", "cert": 0, "v": "2027-03-10T00:00:00", "pr": 37753.0, "pm": 27911.3473}, {"n": "LEBED PABLO MARTIN", "c": "D0000027331204", "r": 1800, "p": "29620", "cert": 0, "v": "2026-05-26T00:00:00", "pr": 579102.0, "pm": 428137.8476}, {"n": "APERTILE MARCOS HERNAN", "c": "D0000028870019", "r": 1800, "p": "29807", "cert": 0, "v": "2026-06-28T00:00:00", "pr": 316124.0, "pm": 233713.7028}, {"n": "ARANDA CARLOS HECTOR", "c": "D0000018306003", "r": 1800, "p": "29808", "cert": 0, "v": "2026-06-30T00:00:00", "pr": 387100.0, "pm": 286187.6439}, {"n": "FERNANDEZ MICAELA ESTHER", "c": "D0000029282469", "r": 1800, "p": "30256", "cert": 0, "v": "2026-08-04T00:00:00", "pr": 325281.0, "pm": 240483.031}, {"n": "GABE DEBORA CLARA", "c": "D0000029983515", "r": 1800, "p": "30707", "cert": 0, "v": "2026-10-21T00:00:00", "pr": 113558.0, "pm": 83955.8728}, {"n": "DIZ CARLOS ALBERTO", "c": "D0000013748216", "r": 1800, "p": "31861", "cert": 0, "v": "2027-03-14T00:00:00", "pr": 25011.0, "pm": 18490.8065}, {"n": "TREVISAN GUIDO VALENTIN", "c": "D0000029050534", "r": 1800, "p": "29633", "cert": 0, "v": "2026-05-06T00:00:00", "pr": 304594.0, "pm": 226432.6083}, {"n": "ZUAZO JOAQUIN CIOLFI", "c": "D0000093283734", "r": 1800, "p": "29639", "cert": 0, "v": "2026-05-10T00:00:00", "pr": 823543.68, "pm": 608856.3116}, {"n": "CHORPILL CAROLINA", "c": "D0000030088519", "r": 1800, "p": "31441", "cert": 0, "v": "2027-01-06T00:00:00", "pr": 75003.0, "pm": 55450.2516}, {"n": "PAZOS BARBARA JULIA", "c": "D0000032538144", "r": 1800, "p": "31691", "cert": 0, "v": "2027-02-13T00:00:00", "pr": 77906.0, "pm": 57596.5554}, {"n": "SALINAS DESIDERIO RITO", "c": "L0000007808972", "r": 1800, "p": "31880", "cert": 0, "v": "2027-03-16T00:00:00", "pr": 43020.0, "pm": 31805.4786}, {"n": "MORAÑA KARINA ELIZABETH", "c": "D0000023134277", "r": 1800, "p": "31884", "cert": 0, "v": "2027-03-28T00:00:00", "pr": 28531.0, "pm": 21093.1634}, {"n": "SANHUEZA MONICA LILIANA", "c": "D0000028636984", "r": 1800, "p": "29835", "cert": 0, "v": "2026-06-07T00:00:00", "pr": 538112.0, "pm": 397832.42}, {"n": "DOLAN MARIANO EDUARDO", "c": "D0000026257786", "r": 1800, "p": "30093", "cert": 0, "v": "2026-07-19T00:00:00", "pr": 343800.0, "pm": 254174.0667}, {"n": "ZULBERTI MARIA DE LOS ANGELES", "c": "D0000034488955", "r": 1800, "p": "30746", "cert": 0, "v": "2026-10-24T00:00:00", "pr": 378344.0, "pm": 279713.5402}, {"n": "VIDAL JESSICA VALERIA", "c": "D0000030088754", "r": 1800, "p": "31212", "cert": 0, "v": "2026-12-19T00:00:00", "pr": 153092.0, "pm": 113182.043}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 1800, "p": "31717", "cert": 0, "v": "2027-02-28T00:00:00", "pr": 413792.0, "pm": 305922.105}, {"n": "CARAZO ALDO MARIO", "c": "D0000017857005", "r": 1800, "p": "31894", "cert": 0, "v": "2027-03-08T00:00:00", "pr": 31981.0, "pm": 23643.9848}, {"n": "ZUBARAN MARLENE ELIZABETH", "c": "D0000029983505", "r": 1800, "p": "3780168", "cert": 0, "v": "2026-04-16T00:00:00", "pr": 150977.0, "pm": 111618.868}, {"n": "ZAYAT ARIEL MOISES", "c": "D0000024129312", "r": 1800, "p": "29847", "cert": 0, "v": "2026-06-05T00:00:00", "pr": 130612.0, "pm": 96563.2736}, {"n": "SIRI MARTIN LEONARDO", "c": "D0000025788280", "r": 1800, "p": "30103", "cert": 0, "v": "2026-07-02T00:00:00", "pr": 161898.0, "pm": 119693.3185}, {"n": "PAZ AGUSTIN ARIEL", "c": "D0000030088682", "r": 1800, "p": "30325", "cert": 0, "v": "2026-08-02T00:00:00", "pr": 401513.0, "pm": 296842.3666}, {"n": "GALDAME SEBASTIAN ARIEL", "c": "D0000027582505", "r": 1800, "p": "30568", "cert": 0, "v": "2026-09-16T00:00:00", "pr": 175708.0, "pm": 129901.7429}, {"n": "GAMARRA OMAR RAUL", "c": "L0000007888645", "r": 1800, "p": "30767", "cert": 0, "v": "2026-10-17T00:00:00", "pr": 166738.0, "pm": 123269.813}, {"n": "GIMENEZ RAUL FERNANDO", "c": "D0000026607679", "r": 1800, "p": "30770", "cert": 0, "v": "2026-10-24T00:00:00", "pr": 122814.0, "pm": 90799.7454}, {"n": "RESTUCCIA MELISA SUSANA", "c": "D0000032801599", "r": 1800, "p": "31061", "cert": 0, "v": "2026-11-05T00:00:00", "pr": 177160.0, "pm": 130977.7955}, {"n": "RAMOS IGNACIO BLAS", "c": "D0000031087215", "r": 1800, "p": "31070", "cert": 0, "v": "2026-11-22T00:00:00", "pr": 149005.0, "pm": 110160.6997}, {"n": "GIMENEZ JORGE MARTIN", "c": "D0000029269803", "r": 1800, "p": "31235", "cert": 0, "v": "2026-12-19T00:00:00", "pr": 272676.0, "pm": 201592.5284}, {"n": "GIMENEZ JORGE MARTIN", "c": "D0000029269803", "r": 1800, "p": "31238", "cert": 0, "v": "2026-12-23T00:00:00", "pr": 52196.0, "pm": 38588.3932}, {"n": "BESTENE MARIA MAGDALENA", "c": "C0000005996096", "r": 1800, "p": "31488", "cert": 0, "v": "2027-01-23T00:00:00", "pr": 63654.0, "pm": 47059.2339}, {"n": "BESTENE MARIA MAGDALENA", "c": "C0000005996096", "r": 1800, "p": "31489", "cert": 0, "v": "2027-01-23T00:00:00", "pr": 52248.0, "pm": 38627.1894}, {"n": "BRIGNOLI YAMILA SOLEDAD", "c": "D0000028276557", "r": 1800, "p": "29917", "cert": 0, "v": "2026-05-20T00:00:00", "pr": 337365.12, "pm": 249419.5217}, {"n": "ALEMAN MARIA PAULA", "c": "D0000022916560", "r": 1800, "p": "30348", "cert": 0, "v": "2026-07-11T00:00:00", "pr": 604737.0, "pm": 447090.6532}, {"n": "GAMARRA OMAR RAUL", "c": "L0000007888645", "r": 1800, "p": "30446", "cert": 0, "v": "2026-08-11T00:00:00", "pr": 113623.0, "pm": 84002.3622}, {"n": "GONZALEZ DIAZ GINA MARGARITA", "c": "D0000034275891", "r": 1800, "p": "31111", "cert": 0, "v": "2026-11-12T00:00:00", "pr": 174714.0, "pm": 129168.5525}, {"n": "WILLIAMS IARA SAMANTA", "c": "D0000038806842", "r": 1800, "p": "31112", "cert": 0, "v": "2026-11-12T00:00:00", "pr": 149944.0, "pm": 110856.8907}, {"n": "DENICE WILLIAMS IOANA", "c": "D0000029244822", "r": 1800, "p": "31320", "cert": 0, "v": "2026-11-28T00:00:00", "pr": 120512.0, "pm": 89097.3429}, {"n": "MUÑOZ GONZALO ARIEL", "c": "D0000029493796", "r": 1800, "p": "31758", "cert": 0, "v": "2027-01-26T00:00:00", "pr": 15591.0, "pm": 11526.0429}, {"n": "MUÑOZ GONZALO ARIEL", "c": "D0000029493796", "r": 1800, "p": "31813", "cert": 0, "v": "2027-02-05T00:00:00", "pr": 10394.0, "pm": 7684.0286}, {"n": "MUÑOZ GONZALO ARIEL", "c": "D0000029493796", "r": 1800, "p": "31937", "cert": 0, "v": "2027-02-13T00:00:00", "pr": 10776.0, "pm": 7967.1736}, {"n": "PEREZ CAVENAGO DIEGO SEBASTIAN", "c": "D0000028870422", "r": 1800, "p": "31974", "cert": 0, "v": "2027-02-24T00:00:00", "pr": 122658.0, "pm": 90682.4896}, {"n": "RAMPELLO SANTIAGO DARIO", "c": "D0000040932151", "r": 1800, "p": "4011918", "cert": 0, "v": "2027-02-27T00:00:00", "pr": 53321.0, "pm": 39421.1419}, {"n": "MUÑOZ GONZALO ARIEL", "c": "D0000029493796", "r": 1800, "p": "31981", "cert": 0, "v": "2027-02-27T00:00:00", "pr": 5388.0, "pm": 3983.5868}, {"n": "SIRI MARTIN LEONARDO", "c": "D0000025788280", "r": 1800, "p": "4012182", "cert": 0, "v": "2027-03-07T00:00:00", "pr": 17150.0, "pm": 12820.2048}, {"n": "INSTITUTO MARIA AUXILIADORA", "c": "J30-67047808-0", "r": 2100, "p": "13186", "cert": 0, "v": "2027-03-25T00:00:00", "pr": 72201.0, "pm": 48848.4203}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 2100, "p": "12365", "cert": 0, "v": "2026-07-02T00:00:00", "pr": 114174.0, "pm": 82801.7562}, {"n": "GALDAME SEBASTIAN ARIEL", "c": "D0000027582505", "r": 2100, "p": "12864", "cert": 0, "v": "2026-12-09T00:00:00", "pr": 107555.0, "pm": 76621.934}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 2100, "p": "12821", "cert": 0, "v": "2026-09-05T00:00:00", "pr": 812679.0, "pm": 589351.2776}, {"n": "EDIFICIO BRICK DOS", "c": "J30-71617804-4", "r": 2100, "p": "12668", "cert": 0, "v": "2026-10-01T00:00:00", "pr": 102318.0, "pm": 74732.2594}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 2100, "p": "12774", "cert": 0, "v": "2026-11-28T00:00:00", "pr": 57838.0, "pm": 41944.7394}, {"n": "LUCERO FIGUEROA PAULO RAFAEL", "c": "D0000028156197", "r": 2100, "p": "12342", "cert": 0, "v": "2026-07-31T00:00:00", "pr": 66264.0, "pm": 49146.1764}, {"n": "MENSUAVEL BARSI SRL", "c": "J30-71221121-7", "r": 2100, "p": "13000", "cert": 0, "v": "2027-01-04T00:00:00", "pr": 103878.0, "pm": 75331.5264}, {"n": "GALDAME SEBASTIAN ARIEL", "c": "D0000027582505", "r": 2100, "p": "13308", "cert": 0, "v": "2027-04-27T00:00:00", "pr": 31150.0, "pm": 22590.3204}, {"n": "CHORPILL CAROLINA", "c": "D0000030088519", "r": 2100, "p": "13017", "cert": 0, "v": "2027-01-06T00:00:00", "pr": 54598.0, "pm": 39595.1626}, {"n": "BOX DEL SUR SRL", "c": "J30-71640717-5", "r": 2100, "p": "12793", "cert": 0, "v": "2026-11-16T00:00:00", "pr": 133880.0, "pm": 97090.1994}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 2100, "p": "12973", "cert": 0, "v": "2026-11-18T00:00:00", "pr": 1291622.0, "pm": 936675.209}, {"n": "ZUKAS SRL", "c": "J30-71558146-5", "r": 2100, "p": "12895", "cert": 0, "v": "2026-12-14T00:00:00", "pr": 426720.0, "pm": 309453.9372}, {"n": "AJA S.A.S", "c": "J30-71701253-0", "r": 2100, "p": "13080", "cert": 0, "v": "2026-12-14T00:00:00", "pr": 391949.0, "pm": 284239.231}, {"n": "CLUB EMPLEADOS DE COMERCIO", "c": "J30-71670343-2", "r": 2100, "p": "13330", "cert": 0, "v": "2027-04-16T00:00:00", "pr": 492795.0, "pm": 370191.7687}, {"n": "ZAYAT ARIEL MOISES", "c": "D0000024129312", "r": 2100, "p": "12278", "cert": 0, "v": "2026-06-05T00:00:00", "pr": 69851.0, "pm": 51809.6735}, {"n": "ZAYAT ARIEL MOISES", "c": "D0000024129312", "r": 2100, "p": "12279", "cert": 0, "v": "2026-06-05T00:00:00", "pr": 69851.0, "pm": 51809.6735}, {"n": "FRATELLO PROPIEDADES SRL", "c": "J30-71199141-3", "r": 2100, "p": "12404", "cert": 0, "v": "2026-06-01T00:00:00", "pr": 205930.0, "pm": 143475.7507}, {"n": "ODONTO VISION S. R. L.", "c": "J30-71903844-8", "r": 2100, "p": "12931", "cert": 0, "v": "2026-09-19T00:00:00", "pr": 417505.0, "pm": 302773.6396}, {"n": "CONSORCIO EDIFICIO BRICK UNO", "c": "J30-71443967-3", "r": 2100, "p": "12952", "cert": 0, "v": "2026-10-31T00:00:00", "pr": 178978.0, "pm": 132743.3406}, {"n": "CARAZO RAMIRO AGUSTIN", "c": "D0000038801573", "r": 2100, "p": "13142", "cert": 0, "v": "2026-12-30T00:00:00", "pr": 143772.0, "pm": 106630.9712}, {"n": "ALMEYRA MONICA DIANA MIRIAM", "c": "D0000011237806", "r": 2100, "p": "13171", "cert": 0, "v": "2027-01-14T00:00:00", "pr": 16938.0, "pm": 11460.7131}, {"n": "VERA GABRIELA IDA", "c": "D0000022203028", "r": 2500, "p": "27936", "cert": 0, "v": "2027-02-05T00:00:00", "pr": 1103.0, "pm": 782.0324}, {"n": "MARECO DEL PUERTO CRISTIAN GUILLERMO", "c": "D0000029692129", "r": 2500, "p": "27338", "cert": 0, "v": "2026-09-10T00:00:00", "pr": 4805.0, "pm": 3568.7209}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 2500, "p": "2145876", "cert": 13, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 2500, "p": "2145876", "cert": 12, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LEMPRIERE S.A.", "c": "J30-70815352-0", "r": 2500, "p": "2145876", "cert": 1, "v": "2026-08-06T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 2500, "p": "27154", "cert": 1, "v": "2026-08-31T00:00:00", "pr": 0, "pm": 0}, {"n": "MORRAS ARACELI LUCIA", "c": "D0000035385436", "r": 2500, "p": "27897", "cert": 1, "v": "2027-02-24T00:00:00", "pr": 0, "pm": 0}, {"n": "LOLIGO S.A.", "c": "J33-71600853-9", "r": 2500, "p": "26948", "cert": 1, "v": "2026-06-05T00:00:00", "pr": 0, "pm": 0}, {"n": "EDIFICIO BRICK DOS", "c": "J30-71617804-4", "r": 2500, "p": "27077", "cert": 1, "v": "2026-07-12T00:00:00", "pr": 0, "pm": 0}, {"n": "INGEME S.A.", "c": "J30-71217780-9", "r": 2500, "p": "27543", "cert": 1, "v": "2026-11-06T00:00:00", "pr": 0, "pm": 0}, {"n": "VICENCIO NICOLE DE LOS ANGELES", "c": "D0000043079118", "r": 2500, "p": "27688", "cert": 1, "v": "2026-12-13T00:00:00", "pr": 0, "pm": 0}, {"n": "VILLAR NOEMI MARIA ESTHER", "c": "D0000038805403", "r": 2500, "p": "27804", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "CEA CARRASCO PAMELA LILIANA", "c": "D0000032724252", "r": 2500, "p": "27805", "cert": 1, "v": "2027-01-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 2, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 3, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "ALARCON SILVANA PAOLA", "c": "D0000029317976", "r": 2500, "p": "0", "cert": 1, "v": "2026-12-16T00:00:00", "pr": 0, "pm": 0}, {"n": "JIMENA AGOSTINA GUANACTOLAY", "c": "42771619", "r": 3100, "p": "20001335", "cert": 1, "v": "2027-02-06T12:00:00", "pr": 10403.0, "pm": 8245.0}, {"n": "CARLOS ALBERTO DIZ", "c": "13748216", "r": 3100, "p": "20001443", "cert": 1, "v": "2026-09-02T12:00:00", "pr": 0, "pm": 0}, {"n": "MATIAS JESUS ALMEIDA", "c": "40384867", "r": 3100, "p": "20000490", "cert": 1, "v": "2026-04-23T12:00:00", "pr": 99543.0, "pm": 78893.0}, {"n": "CARLOS HECTOR ARANDA", "c": "18306003", "r": 3100, "p": "20000508", "cert": 1, "v": "2026-04-01T12:00:00", "pr": 401580.0, "pm": 318273.0}, {"n": "LOLIGO S.A.", "c": "33716008539", "r": 3100, "p": "20000547", "cert": 1, "v": "2026-05-07T12:00:00", "pr": 242706.0, "pm": 187784.0}, {"n": "MAXIMILIANO ANDRES CARRILLO", "c": "35887551", "r": 3100, "p": "20000713", "cert": 1, "v": "2026-08-25T12:00:00", "pr": 85693.0, "pm": 67916.0}, {"n": "GINA MARGARITA GONZALEZ DIAZ", "c": "34275891", "r": 3100, "p": "20000795", "cert": 1, "v": "2026-09-14T12:00:00", "pr": 159557.0, "pm": 126457.0}, {"n": "JULIAN GABRIEL MILAN", "c": "41525888", "r": 3100, "p": "30093077", "cert": 1, "v": "2026-04-23T12:00:00", "pr": 0, "pm": 0}, {"n": "MARIA INES ALBORNOZ", "c": "35599830", "r": 3100, "p": "20001448", "cert": 1, "v": "2027-02-20T12:00:00", "pr": 11754.0, "pm": 9316.0}];
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const SISTEMA = `Sos un asistente especializado en producción de seguros en Argentina.
+Tu usuario es Martín Giménez, Productor de Seguros matriculado (N°213038) ante la SSN.
+Opera principalmente con Sancor Seguros en Chubut (Trelew y zona).
+Su cartera incluye ramos: 200 (autos), 300, 600 (accidentes personales), 1000, 1400, 1500, 1600, 1720 (caución), 1730, 1800 (vida), 2500, 3100.
+También tiene carteras separadas de ART y Retiro.
+Respondé siempre en español rioplatense, de manera profesional pero cercana.
+Conocés el mercado asegurador argentino, la normativa SSN, el contexto económico local (inflación, peso/dólar).
+Cuando redactés mails o documentos, usá estilo profesional y cordial. Sé directo y útil.`;
+
+function getKey() { return localStorage.getItem('apikey') || ''; }
+function getSistema() {
+  const n = localStorage.getItem('cfg_nombre') || 'Martín Giménez';
+  const c = localStorage.getItem('cfg_ciudad') || 'Trelew, Chubut';
+  return SISTEMA + `\nNombre: ${n}. Ciudad: ${c}.`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    const id = el.dataset.panel + '-panel';
+    document.getElementById(id).classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// CARTERA — datos y render
+// ═══════════════════════════════════════════════════════════
+let carteraActiva = [];
+let tplSel = '';
+
+function diasA(isoStr) {
+  if (!isoStr) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const d = new Date(isoStr); d.setHours(0,0,0,0);
+  return isNaN(d) ? null : Math.round((d - hoy) / 86400000);
+}
+function fmtF(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return isNaN(d) ? '—' : d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtM(n) {
+  if (!n) return '—';
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return '$' + Math.round(n/1000) + 'K';
+  return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
+function initCartera(data) {
+  // Normalizar datos embebidos al mismo formato
+  carteraActiva = data.map(r => ({
+    nombre: r.n || '',
+    cuit:   r.c || '',
+    ramo:   r.r || 0,
+    poliza: r.p || '',
+    cert:   r.cert || 1,
+    venc:   r.v || null,
+    premio: r.pr || 0,
+    prima:  r.pm || 0,
+  })).filter(r => r.nombre);
+
+  // Sort por días asc
+  carteraActiva.sort((a,b) => (diasA(a.venc) ?? 9999) - (diasA(b.venc) ?? 9999));
+
+  // Populate ramo filter
+  const ramos = [...new Set(carteraActiva.map(r => r.ramo).filter(Boolean))].sort((a,b)=>a-b);
+  const sel = document.getElementById('f-ramo');
+  sel.innerHTML = '<option value="">Todos los ramos</option>' +
+    ramos.map(r => `<option value="${r}">Ramo ${r}</option>`).join('');
+
+  renderStats(carteraActiva);
+  renderTabla(carteraActiva);
+}
+
+function renderStats(data) {
+  const urgente = data.filter(r => { const d=diasA(r.venc); return d!==null && d>=0 && d<=7; });
+  const pronto  = data.filter(r => { const d=diasA(r.venc); return d!==null && d>7 && d<=30; });
+  const totalPremio = data.reduce((s,r) => s + (r.premio || r.prima || 0), 0);
+  const clientes = new Set(data.map(r => r.cuit || r.nombre)).size;
+
+  document.getElementById('st-total').textContent = data.length;
+  document.getElementById('st-sub').textContent = clientes + ' clientes';
+  document.getElementById('st-urgente').textContent = urgente.length;
+  document.getElementById('st-pronto').textContent = pronto.length;
+  document.getElementById('st-premio').textContent = fmtM(totalPremio);
+  document.getElementById('f-count').textContent = data.length + ' registros';
+  document.getElementById('ph-sub-cartera').textContent =
+    `Sancor · ${data.length} certificados · Reporte 08/03/2026`;
+
+  // Alert
+  const alertEl = document.getElementById('alert-box');
+  if (urgente.length > 0) {
+    alertEl.style.display = 'flex';
+    document.getElementById('alert-txt').innerHTML =
+      `<strong>${urgente.length} póliza${urgente.length>1?'s':''}</strong> vence${urgente.length>1?'n':''} en los próximos 7 días. Contactar HOY.` +
+      (pronto.length > 0 ? ` Otras <strong>${pronto.length}</strong> vencen entre 8 y 30 días.` : '');
+  } else if (pronto.length > 0) {
+    alertEl.style.display = 'flex';
+    document.getElementById('alert-txt').innerHTML =
+      `<strong>${pronto.length} póliza${pronto.length>1?'s':''}</strong> vence${pronto.length>1?'n':''} en los próximos 30 días.`;
+  } else {
+    alertEl.style.display = 'none';
+  }
+
+  // Badge nav
+  const badge = document.getElementById('badge-urgente');
+  badge.textContent = urgente.length > 0 ? urgente.length : '';
+}
+
+function renderTabla(data) {
+  const tbody = document.getElementById('tbl-body');
+  document.getElementById('f-count').textContent = data.length + ' registros';
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">Sin resultados</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((r, i) => {
+    const dias = diasA(r.venc);
+    let rowCls, badge;
+    if (dias !== null && dias <= 7)       { rowCls='urgent'; badge=`<span class="badge b-red">¡${dias}d!</span>`; }
+    else if (dias !== null && dias <= 30)  { rowCls='soon';   badge=`<span class="badge b-yellow">${dias}d</span>`; }
+    else                                   { rowCls=i%2?'odd':'even'; badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`; }
+
+    const diasNum = dias !== null
+      ? `<span style="font-weight:700;color:${dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)'}">${dias}</span>`
+      : '—';
+
+    const monto = r.premio > 0 ? fmtM(r.premio) : r.prima > 0 ? fmtM(r.prima) : '—';
+    const ne = r.nombre.replace(/'/g,"\\'");
+    const ra = String(r.ramo);
+
+    let accion;
+    if (dias !== null && dias >= 0 && dias <= 30)
+      accion = `<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Renovar</button>`;
+    else
+      accion = `<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ra}')">📈 Cross-sell</button>`;
+
+    return `<tr class="${rowCls}">
+      <td style="white-space:nowrap">${fmtF(r.venc)}</td>
+      <td style="text-align:center">${diasNum}</td>
+      <td><strong>${r.nombre}</strong>${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${r.cuit}</span>`:''}</td>
+      <td><span class="badge b-ramo">${r.ramo}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.poliza}</td>
+      <td style="text-align:center;font-size:12px">${r.cert}</td>
+      <td style="text-align:right;font-weight:500">${monto}</td>
+      <td>${badge}</td>
+      <td>${accion}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrar() {
+  const q = document.getElementById('f-buscar').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const r = document.getElementById('f-ramo').value;
+  const e = document.getElementById('f-estado').value;
+
+  const filtered = carteraActiva.filter(row => {
+    const hay = (row.nombre+row.poliza+String(row.ramo)+row.cuit).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const mQ = !q || hay.includes(q);
+    const mR = !r || String(row.ramo) === r;
+    const mE = !e || (() => {
+      const d = diasA(row.venc);
+      if (e==='urgente') return d!==null && d>=0 && d<=7;
+      if (e==='pronto')  return d!==null && d>7 && d<=30;
+      if (e==='ok')      return d===null || d>30;
+      return true;
+    })();
+    return mQ && mR && mE;
+  });
+
+  renderTabla(filtered);
+}
+
+// ── Carga de Excel actualizado ───────────────────────────────────────────────
+function cargarExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array', cellDates:false, raw:true });
+      const shName = wb.SheetNames.find(n => /detalle|cartera/i.test(n)) || wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[shName], { header:1, defval:null, raw:true });
+
+      // Find header row
+      let hi = -1;
+      for (let i=0; i<Math.min(15,rows.length); i++) {
+        const j = (rows[i]||[]).join('|').toLowerCase();
+        if (j.includes('denominaci') || j.includes('poliza') || j.includes('póliza')) { hi=i; break; }
+      }
+      if (hi<0) { alert('No se encontró el encabezado del reporte de Sancor.'); return; }
+
+      const headers = (rows[hi]||[]).map(h => (h||'').toString());
+      const fn = (...kw) => {
+        for (const k of kw) {
+          const idx = headers.findIndex(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
+          if (idx>=0) return idx;
+        }
+        return -1;
+      };
+      const iR=fn('Ramo'), iP=fn('Póliza','Poliza'), iC=fn('Certificado'),
+            iFin=fn('Fin Vig','Vencimiento'), iCli=fn('Cliente'), iDen=fn('Denominaci'),
+            iPr=fn('Premio'), iPm=fn('Prima');
+
+      function exDate(v) {
+        if (!v && v!==0) return null;
+        if (typeof v==='number' && v>1000) return new Date(Date.UTC(1899,11,30)+v*86400000).toISOString();
+        if (typeof v==='string') {
+          const p=v.split('/'); if(p.length===3) return new Date(+p[2],+p[1]-1,+p[0]).toISOString();
+          return new Date(v).toISOString();
+        }
+        return null;
+      }
+
+      const nuevos = rows.slice(hi+1).filter(r=>r&&r.some(c=>c!=null&&c!=='')).map(r=>{
+        const denom = iDen>=0 ? String(r[iDen]||'').trim() : '';
+        const cli   = iCli>=0 ? String(r[iCli]||'').trim() : '';
+        const nom   = (denom && denom!=='nan') ? denom : cli;
+        return {
+          nombre: nom, cuit: (denom&&cli!==denom)?cli:'',
+          ramo:   iR>=0 ? (parseInt(r[iR])||0) : 0,
+          poliza: iP>=0 ? String(r[iP]||'') : '',
+          cert:   iC>=0 ? (parseInt(r[iC])||1) : 1,
+          venc:   exDate(iFin>=0 ? r[iFin] : null),
+          premio: iPr>=0 ? (parseFloat(r[iPr])||0) : 0,
+          prima:  iPm>=0 ? (parseFloat(r[iPm])||0) : 0,
+        };
+      }).filter(r=>r.nombre&&r.nombre!=='nan');
+
+      if (!nuevos.length) { alert('No se encontraron registros válidos en el archivo.'); return; }
+      carteraActiva = nuevos.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
+      renderStats(carteraActiva); renderTabla(carteraActiva);
+      alert(`✅ ${nuevos.length} registros cargados correctamente.`);
+    } catch(err) {
+      alert('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Análisis IA ──────────────────────────────────────────────────────────────
+async function analizarCartera() {
+  const key = getKey();
+  if (!key) { alert('Configurá tu API Key en ⚙️ Configurar.'); return; }
+  const out = document.getElementById('cartera-out');
+  out.classList.add('show');
+  out.innerHTML = '<div class="loader show" style="display:flex"><div class="dots"><span></span><span></span><span></span></div><span>Analizando cartera real...</span></div>';
+  out.scrollIntoView({behavior:'smooth'});
+
+  const urgente = carteraActiva.filter(r=>{const d=diasA(r.venc);return d!==null&&d>=0&&d<=7;});
+  const pronto  = carteraActiva.filter(r=>{const d=diasA(r.venc);return d!==null&&d>7&&d<=30;});
+  const ramoC   = {};
+  carteraActiva.forEach(r=>{ramoC[r.ramo]=(ramoC[r.ramo]||0)+1;});
+  const ramoStr = Object.entries(ramoC).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`Ramo ${k}: ${v}`).join(', ');
+  const totalPremio = carteraActiva.reduce((s,r)=>s+(r.premio||r.prima||0),0);
+
+  const prompt = `Analizá esta cartera real de Sancor y dame:
+1. Resumen ejecutivo del estado actual
+2. Las 5 gestiones más urgentes de esta semana (con nombre del cliente)
+3. Oportunidades de cross-sell entre ramos
+4. Estrategia para los próximos 30 días
+
+DATOS:
+- Total certificados: ${carteraActiva.length}
+- Premio mensual total: ${fmtM(totalPremio)}
+- Distribución: ${ramoStr}
+- Vencen ≤7 días (${urgente.length}): ${urgente.slice(0,6).map(r=>`${r.nombre} (Ramo ${r.ramo}, vence ${fmtF(r.venc)}, ${fmtM(r.premio||r.prima)})`).join(' | ')}
+- Vencen 8-30 días (${pronto.length}): ${pronto.slice(0,5).map(r=>`${r.nombre} (Ramo ${r.ramo}, ${fmtF(r.venc)})`).join(' | ')}`;
+
+  await callIA(prompt, 'cartera-out');
+}
+
+async function accionIA(tipo, nombre, ramo) {
+  const key = getKey();
+  if (!key) { alert('Configurá tu API Key.'); return; }
+  const r = carteraActiva.find(x => x.nombre === nombre);
+  const ctx = r ? `Cliente: ${nombre} | Ramo: ${ramo} | Póliza: ${r.poliza} | Cert: ${r.cert} | Premio/mes: ${fmtM(r.premio||r.prima)} | Vencimiento: ${fmtF(r.venc)} | Días: ${diasA(r.venc)}` : `Cliente: ${nombre} | Ramo: ${ramo}`;
+  const prompts = {
+    renovacion: `Redactame un mail de renovación de póliza. Cordial, breve, que proponga coordinar antes del vencimiento.\n${ctx}`,
+    upsell:     `Este cliente tiene Ramo ${ramo} en Sancor. Sugerí por mail una cobertura complementaria que le podría interesar. Sin presión, plantando la idea.\n${ctx}`,
+  };
+  const out = document.getElementById('cartera-out');
+  out.classList.add('show');
+  out.innerHTML = '<div class="loader show" style="display:flex"><div class="dots"><span></span><span></span><span></span></div><span>Generando...</span></div>';
+  out.scrollIntoView({behavior:'smooth'});
+  await callIA(prompts[tipo], 'cartera-out');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════
+let hist = [];
+function aresize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';}
+function hkey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function qs(t){document.getElementById('chat-inp').value=t;sendMsg();}
+function addBubble(role,txt){
+  const body=document.getElementById('chat-body');
+  const h=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const d=document.createElement('div');
+  d.className=`msg ${role}`;
+  d.innerHTML=`<div class="av">${role==='ai'?'IA':'M'}</div><div><div class="bubble">${txt.replace(/\n/g,'<br>')}</div><div class="msg-meta">${role==='ai'?'Productor IA':'Vos'} · ${h}</div></div>`;
+  body.appendChild(d);body.scrollTop=body.scrollHeight;
+}
+async function sendMsg(){
+  const inp=document.getElementById('chat-inp');
+  const txt=inp.value.trim(); if(!txt) return;
+  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
+  inp.value='';inp.style.height='auto';
+  document.getElementById('send-btn').disabled=true;
+  document.getElementById('qa-wrap').style.display='none';
+  addBubble('user',txt); hist.push({role:'user',content:txt});
+  document.getElementById('chat-loader').classList.add('show');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:hist})});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Sin respuesta.';
+    hist.push({role:'assistant',content:reply});
+    document.getElementById('chat-loader').classList.remove('show');
+    addBubble('ai',reply);
+  }catch(e){
+    document.getElementById('chat-loader').classList.remove('show');
+    addBubble('ai','Error al conectar. Verificá tu API Key y la conexión.');
+  }
+  document.getElementById('send-btn').disabled=false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIL
+// ═══════════════════════════════════════════════════════════
+let mailTxt='';
+async function genMail(){
+  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
+  const dest=document.getElementById('m-dest').value.trim()||'el cliente';
+  const tipo=document.getElementById('m-tipo').value;
+  const ctx=document.getElementById('m-ctx').value.trim();
+  const tono=document.getElementById('m-tono').value;
+  const firma=document.getElementById('m-firma').value.trim()||localStorage.getItem('cfg_nombre')||'el Productor';
+  const tipos={renovacion:'renovación de póliza',vencimiento:'aviso de vencimiento',bienvenida:'bienvenida a nuevo cliente',siniestro:'seguimiento de siniestro',propuesta:'propuesta comercial',cobranza:'cobranza amigable',endoso:'notificación de endoso'};
+  const prompt=`Redactá un mail de ${tipos[tipo]||tipo} para ${dest}. Tono: ${tono}. Firma: ${firma}.\n${ctx?'Contexto: '+ctx:''}\n\nRespondé SOLO con el mail en este formato:\nASUNTO: [asunto]\n---\n[cuerpo]`;
+  document.getElementById('mail-loader').classList.add('show');
+  document.getElementById('mail-prev').classList.remove('show');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'';
+    document.getElementById('mail-loader').classList.remove('show');
+    const lines=reply.split('\n'); let asunto='',body='',inB=false;
+    for(const l of lines){
+      if(l.startsWith('ASUNTO:')) asunto=l.replace('ASUNTO:','').trim();
+      else if(l==='---') inB=true;
+      else if(inB) body+=l+'\n';
+    }
+    if(!body) body=reply;
+    mailTxt=body.trim();
+    document.getElementById('m-asunto-prev').textContent=asunto||'Comunicación de seguros';
+    document.getElementById('m-para-prev').textContent=dest;
+    document.getElementById('m-body-prev').textContent=mailTxt;
+    document.getElementById('mail-prev').classList.add('show');
+    document.getElementById('mail-prev').scrollIntoView({behavior:'smooth'});
+  }catch(e){document.getElementById('mail-loader').classList.remove('show');alert('Error al generar.');}
+}
+function limpiarMail(){document.getElementById('m-dest').value='';document.getElementById('m-ctx').value='';document.getElementById('mail-prev').classList.remove('show');}
+function abrirGmail(){
+  const s=encodeURIComponent(document.getElementById('m-asunto-prev').textContent);
+  const b=encodeURIComponent(mailTxt);
+  const t=encodeURIComponent(document.getElementById('m-para-prev').textContent);
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${t}&su=${s}&body=${b}`,'_blank');
+}
+function copiarMail(){navigator.clipboard.writeText(document.getElementById('m-asunto-prev').textContent+'\n\n'+mailTxt);alert('Copiado.');}
+
+// ═══════════════════════════════════════════════════════════
+// INFORME
+// ═══════════════════════════════════════════════════════════
+function selTpl(el,tipo){document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');tplSel=tipo;}
+async function genInforme(){
+  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
+  if(!tplSel){alert('Seleccioná un tipo de informe.');return;}
+  const ctx=document.getElementById('inf-ctx').value.trim();
+  const prompts={
+    resumen:`Generá un resumen ejecutivo de cartera para un productor de seguros de Sancor en Chubut. Incluí: estado general, alertas, oportunidades de upsell y recomendaciones para esta semana. ${ctx||'Usá datos de ejemplo realistas.'}`,
+    propuesta:`Generá una propuesta comercial profesional para presentar a un cliente. Incluí: análisis de necesidades, coberturas recomendadas, beneficios clave, argumentos de valor. ${ctx||'Perfil: profesional independiente, 48 años, sin cobertura de vida.'}`,
+    comparativo:`Generá un comparativo de coberturas entre las principales compañías del mercado argentino. Sancor vs competencia. ${ctx||''}`,
+    guion:`Generá un guión de venta completo para una reunión comercial. Incluí: apertura, detección de necesidades, presentación, manejo de objeciones comunes en Argentina, y cierre. ${ctx||'Cliente tipo: empleado público, 50 años, preocupado por su jubilación.'}`,
+    newsletter:`Generá un newsletter mensual para una cartera de seguros. Tono cercano, contenido educativo sobre seguros y finanzas personales en Argentina. ${ctx||''}`,
+    jubilacion:`Generá un análisis comparativo entre jubilación ANSES y seguro de retiro privado. Proyecciones, ventajas, desventajas y recomendación. ${ctx||'Perfil: autónomo, 50 años, $600K/mes.'}`
+  };
+  document.getElementById('inf-loader').classList.add('show');
+  await callIA(prompts[tplSel],'inf-out');
+  document.getElementById('inf-loader').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMERCIAL
+// ═══════════════════════════════════════════════════════════
+async function genCom(tipo){
+  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
+  const ctx=document.getElementById('com-ctx').value.trim();
+  const prompts={
+    wa_frio:`Mensaje WhatsApp de primer contacto para un prospecto. Breve (máx 4 líneas), no agresivo, que genere curiosidad. ${ctx||'Interior de Chubut.'}`,
+    post:`Post educativo para Facebook/Instagram sobre seguros. Sin parecer publicidad directa. Con llamada a acción suave al final. ${ctx||''}`,
+    objecion:`3 respuestas efectivas y empáticas para cuando el cliente dice "está muy caro" o "no me alcanza". ${ctx||''}`,
+    referido:`Mensaje para pedirle referidos a un cliente activo satisfecho. Natural, no transaccional. ${ctx||''}`,
+    reactivar:`Mensaje para retomar contacto con cliente inactivo. Cálido, sin presión, que abra la puerta. ${ctx||''}`,
+    testimonio:`Mensaje para pedirle una reseña o testimonio a un cliente satisfecho. Breve, simple. ${ctx||''}`
+  };
+  document.getElementById('com-loader').classList.add('show');
+  await callIA(prompts[tipo],'com-out');
+  document.getElementById('com-loader').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS IA + UTILS
+// ═══════════════════════════════════════════════════════════
+async function callIA(prompt, outId) {
+  const key=getKey();
+  const out=document.getElementById(outId);
+  out.classList.add('show');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Sin respuesta.';
+    out.innerHTML=`<button class="copy-btn" onclick="copiar('${outId}')">Copiar</button>${reply.replace(/\n/g,'<br>')}`;
+  }catch(e){out.innerHTML='Error al conectar con la IA.';}
+}
+
+function copiar(id){
+  const el=document.getElementById(id);
+  const txt=el.innerText.replace('Copiar','').trim();
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=el.querySelector('.copy-btn');
+    if(b){b.textContent='✓ Copiado';setTimeout(()=>b.textContent='Copiar',2000);}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+function guardarCfg(){
+  localStorage.setItem('cfg_nombre',document.getElementById('cfg-nombre').value);
+  localStorage.setItem('cfg_ciudad',document.getElementById('cfg-ciudad').value);
+  const k=document.getElementById('cfg-key').value.trim();
+  if(k) localStorage.setItem('apikey',k);
+  alert('✅ Configuración guardada.');
+}
+function cargarCfg(){
+  document.getElementById('cfg-nombre').value=localStorage.getItem('cfg_nombre')||'';
+  document.getElementById('cfg-ciudad').value=localStorage.getItem('cfg_ciudad')||'';
+  document.getElementById('cfg-matricula').value=localStorage.getItem('cfg_matricula')||'213038';
+  document.getElementById('cfg-key').value=localStorage.getItem('apikey')||'';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.getElementById('hdr-fecha').textContent = new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+cargarCfg();
+initCartera(CARTERA_EMBEBIDA);
+</script>
+</body>
+</html>
