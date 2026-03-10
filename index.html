@@ -188,6 +188,46 @@ textarea{resize:vertical;line-height:1.6}
 
 /* CONN BADGE */
 .conn-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+
+/* ── AGENDA ─────────────────────────────────────────────── */
+.agenda-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: box-shadow .15s;
+}
+.agenda-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.agenda-rank {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: 'DM Serif Display', serif;
+  min-width: 32px;
+  text-align: center;
+}
+.agenda-rank.top3 { color: var(--rust); }
+.agenda-info { flex: 1; min-width: 0; }
+.agenda-nombre { font-weight: 600; font-size: 14px; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-motivo { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.agenda-premio { font-size: 13px; font-weight: 600; color: var(--green); font-family: 'DM Mono', monospace; white-space: nowrap; }
+.agenda-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+.score-bar-wrap { width: 48px; height: 6px; background: #e8e0d0; border-radius: 3px; overflow: hidden; }
+.score-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--rust)); }
+.score-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.agenda-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.agenda-stat { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 18px; text-align:center; }
+.agenda-stat .val { font-size:22px; font-weight:700; color:var(--green); font-family:'DM Serif Display',serif; }
+.agenda-stat .lbl { font-size:11px; color:var(--muted); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -210,6 +250,10 @@ textarea{resize:vertical;line-height:1.6}
 
 <nav>
   <div class="nav-sec">Principal</div>
+  <div class="nav-item" data-panel="agenda">
+    <span class="ic">🎯</span>Agenda del Día
+    <span class="nav-badge" id="badge-agenda" style="background:#c8953a"></span>
+  </div>
   <div class="nav-item active" data-panel="cartera">
     <span class="ic">📋</span>Mi Cartera
     <span class="nav-badge" id="badge-urgente"></span>
@@ -234,6 +278,27 @@ textarea{resize:vertical;line-height:1.6}
 </nav>
 
 <main>
+
+<!-- ══ AGENDA ══════════════════════════════════════════════════════════ -->
+<div id="agenda-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">🎯 Agenda del Día</div>
+      <div class="ph-sub" id="agenda-fecha"></div>
+    </div>
+    <button class="btn btn-primary" onclick="renderAgenda()">↻ Actualizar</button>
+  </div>
+  <div class="pb">
+
+    <!-- Resumen de oportunidad -->
+    <div id="agenda-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px"></div>
+
+    <!-- Lista de acciones -->
+    <div class="section-title" style="margin-bottom:12px">Top 10 — Oportunidades Prioritarias</div>
+    <div id="agenda-lista"></div>
+
+  </div>
+</div>
 
 <!-- ══ CARTERA ══════════════════════════════════════════════════════════ -->
 <div id="cartera-panel" class="panel active">
@@ -509,6 +574,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.add('active');
     const id = el.dataset.panel + '-panel';
     document.getElementById(id).classList.add('active');
+    if (el.dataset.panel === 'agenda') renderAgenda();
   });
 });
 
@@ -517,6 +583,111 @@ document.querySelectorAll('.nav-item').forEach(el => {
 // ═══════════════════════════════════════════════════════════
 let carteraActiva = [];
 let tplSel = '';
+
+// ═══════════════════════════════════════════════════════════
+// AGENDA DEL DÍA
+// ═══════════════════════════════════════════════════════════
+function calcularScore(r, premioMax) {
+  // Score 0-100 basado en: premio mensual (60%) + tiene auto sin combinado (40%)
+  const premioScore = premioMax > 0 ? (r.pmTotal / premioMax) * 60 : 0;
+  const crossScore  = r.sinCombinado ? 40 : 0;
+  return Math.round(premioScore + crossScore);
+}
+
+function renderAgenda() {
+  const hoy = new Date();
+  document.getElementById('agenda-fecha').textContent =
+    'Actualizado: ' + hoy.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  // Agrupar cartera por cliente (id), solo personas físicas
+  const clientes = {};
+  carteraActiva.forEach(r => {
+    if (!r.pf) return; // solo personas físicas para Combinado Familiar
+    const key = r.id;
+    if (!clientes[key]) {
+      clientes[key] = {
+        id: key, nombre: r.nombre, pf: r.pf,
+        pmTotal: 0, ramos: new Set(), sinCombinado: false,
+        certs: 0
+      };
+    }
+    clientes[key].pmTotal += (r.pm || r.premio || r.prima || 0);
+    clientes[key].ramos.add(r.ramo);
+    clientes[key].certs++;
+  });
+
+  // Marcar los que tienen auto sin combinado
+  const autoSinComb = typeof AUTO_SIN_COMBINADO !== 'undefined' ? AUTO_SIN_COMBINADO : new Set();
+  Object.values(clientes).forEach(c => {
+    c.sinCombinado = c.ramos.has(200) && autoSinComb.has(c.id);
+  });
+
+  // Filtrar solo los que tienen oportunidad de cross-sell Combinado
+  const conOportunidad = Object.values(clientes).filter(c => c.sinCombinado);
+
+  if (!conOportunidad.length) {
+    document.getElementById('agenda-lista').innerHTML =
+      '<div style="color:var(--muted);font-size:13px;padding:20px 0">No hay oportunidades de cross-sell identificadas.</div>';
+    return;
+  }
+
+  // Calcular score y ordenar
+  const premioMax = Math.max(...conOportunidad.map(c => c.pmTotal));
+  conOportunidad.forEach(c => { c.score = calcularScore(c, premioMax); });
+  conOportunidad.sort((a, b) => b.score - a.score);
+  const top10 = conOportunidad.slice(0, 10);
+
+  // Resumen stats
+  const totalOp = conOportunidad.length;
+  const premioEnJuego = conOportunidad.reduce((s,c) => s + c.pmTotal, 0);
+  const potencialCombi = Math.round(premioEnJuego * 0.15); // estimado ~15% del premio auto
+  document.getElementById('agenda-resumen').innerHTML = `
+    <div class="agenda-stat"><div class="val">${totalOp}</div><div class="lbl">Oportunidades totales</div></div>
+    <div class="agenda-stat"><div class="val">$${Math.round(premioEnJuego/1000).toLocaleString('es-AR')}K</div><div class="lbl">Premio mensual en juego</div></div>
+    <div class="agenda-stat"><div class="val">$${Math.round(potencialCombi/1000).toLocaleString('es-AR')}K</div><div class="lbl">Potencial Combinado est.</div></div>
+  `;
+
+  // Render top 10
+  const fmtM = v => v > 0 ? '$' + Math.round(v).toLocaleString('es-AR') : '—';
+  const lista = top10.map((c, i) => {
+    const rankCls = i < 3 ? 'agenda-rank top3' : 'agenda-rank';
+    const motivos = [];
+    if (c.sinCombinado) motivos.push('🏠 Sin Combinado Familiar');
+    if (c.ramos.size === 1) motivos.push('1 solo ramo — baja retención');
+    if (c.pmTotal > 500000) motivos.push('⭐ Cliente premium');
+    const motivoStr = motivos.join(' · ');
+    const scoreW = Math.round(c.score);
+    const ne = c.nombre.replace(/'/g, "\'");
+    return `
+    <div class="agenda-card">
+      <div class="${rankCls}">${i+1}</div>
+      <div class="agenda-info">
+        <div class="agenda-nombre">${c.nombre}</div>
+        <div class="agenda-motivo">${motivoStr}</div>
+      </div>
+      <div class="agenda-premio">${fmtM(c.pmTotal)}<span style="font-size:10px;font-weight:400;color:var(--muted)">/mes</span></div>
+      <div class="agenda-score">
+        <div class="score-bar-wrap"><div class="score-bar" style="width:${scoreW}%"></div></div>
+        <div class="score-label">Score ${scoreW}</div>
+      </div>
+      <div class="agenda-btns">
+        <button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIA('combinado','${ne}','Automotores')">🏠 Combinado</button>
+        <button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirexAgenda('${ne}')">🔵 Retirex</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('agenda-lista').innerHTML = lista;
+  document.getElementById('badge-agenda').textContent = top10.length;
+}
+
+function accionRetirexAgenda(nombre) {
+  const msg = encodeURIComponent(
+    `Hola ${nombre.split(' ')[0]}, ¿cómo andás? Te escribo porque estoy revisando tu situación y me quedé pensando en algo que quizás nunca charlamos sobre tu futuro financiero. ¿Tenés 2 minutos para ver algo que te armé? https://martingim-10.github.io/retirex/`
+  );
+  window.open('https://api.whatsapp.com/send?text=' + msg, '_blank');
+}
+
 
 function diasA(isoStr) {
   if (!isoStr) return null;
@@ -734,6 +905,7 @@ function cargarExcel(input) {
       if (!nuevos.length) { alert('No se encontraron registros válidos en el archivo.'); return; }
       carteraActiva = nuevos.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
       renderStats(carteraActiva); renderTabla(carteraActiva);
+      renderAgenda();
       // Guardar snapshot en Drive si está conectado
       driveSnapshotActual();
       alert(`✅ ${nuevos.length} registros cargados correctamente.`);
