@@ -770,7 +770,7 @@ async function sendMsg(){
   addBubble('user',txt); hist.push({role:'user',content:txt});
   document.getElementById('chat-loader').classList.add('show');
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:hist})});
     const data=await res.json();
@@ -801,7 +801,7 @@ async function genMail(){
   document.getElementById('mail-loader').classList.add('show');
   document.getElementById('mail-prev').classList.remove('show');
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
@@ -879,7 +879,7 @@ async function callIA(prompt, outId) {
   const out=document.getElementById(outId);
   out.classList.add('show');
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
