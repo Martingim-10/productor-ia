@@ -1043,17 +1043,30 @@ async function cargarComisiones(input) {
       const m = txt.match(/Periodo:\s*([^\n\\]+)/);
       if (m) periodo = m[1].trim();
     }
+    // Mapear columnas por nombre — robusto ante variaciones del archivo
+    const hdr = rows[headerIdx];
+    const col = {};
+    hdr.forEach((h, i) => { if (h) col[h.toString().trim()] = i; });
+    const iRamo    = col['Ramo']                 ?? 10;
+    const iComis   = col['Comision']             ?? 23;
+    const iPrima   = col['Prima Unif']           ?? 30;
+    const iPorcCom = col['Porc Comision']        ?? 33;
+    const iCliente = col['Denominacion Cliente'] ?? 16;
+    const iCodCli  = col['Cod Cliente']          ?? 15;
+    const iPoliza  = col['Nro Oficial Poliza']   ?? 13;
+    const iFoper   = col['Foper']                ?? 9;
+
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const r = rows[i];
       if (!r || !r[0] || r[0] === 'Periodo') continue;
-      const comision = parseFloat(r[23]) || 0;
-      const prima    = parseFloat(r[30]) || 0; // Prima Unif — base de cálculo de comisión
-      const porcCom  = parseFloat(r[33]) || 0;
-      const ramo     = String(r[10] || '').trim();
-      const cliente  = String(r[16] || '').trim();
-      const codCli   = String(r[15] || '').trim();
-      const poliza   = String(r[13] || '').trim();
-      const foper    = r[9] ? (r[9] instanceof Date ? r[9] : new Date(r[9])) : null;
+      const comision = parseFloat(r[iComis])   || 0;
+      const prima    = parseFloat(r[iPrima])   || 0;
+      const porcCom  = parseFloat(r[iPorcCom]) || 0;
+      const ramo     = String(r[iRamo]    || '').trim();
+      const cliente  = String(r[iCliente] || '').trim();
+      const codCli   = String(r[iCodCli]  || '').trim();
+      const poliza   = String(r[iPoliza]  || '').trim();
+      const foper    = r[iFoper] ? (r[iFoper] instanceof Date ? r[iFoper] : new Date(r[iFoper])) : null;
       if (!ramo) continue;
       registros.push({ periodo, ramo, cliente, codCli, poliza, comision, prima, porcCom, foper });
     }
@@ -1111,9 +1124,9 @@ function renderComisiones() {
     const comAnt   = periodoAnterior.registros.reduce((s,r) => s + r.comision, 0);
     const primaAnt = periodoAnterior.registros.reduce((s,r) => s + r.prima, 0);
     const pctAnt   = primaAnt > 0 ? comAnt/primaAnt*100 : 0;
-    const dCom  = totalCom - comAnt;
-    const dPrem = totalPrem - premAnt;
-    const dPct  = pctEfect - pctAnt;
+    const dCom  = totalCom  - comAnt;
+    const dPrim = totalPrima - primaAnt;
+    const dPct  = pctEfect  - pctAnt;
     const arrow = v => v >= 0 ? '▲' : '▼';
     const color = v => v >= 0 ? 'color:#2a5c45' : 'color:#c0392b';
     return {
@@ -1131,38 +1144,53 @@ function renderComisiones() {
   `;
   document.getElementById('badge-comisiones').textContent = '';
 
-  // Agrupar por ramo
-  const porRamo = {};
-  registros.forEach(r => {
-    if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0, n:0 };
-    porRamo[r.ramo].comision += r.comision;
-    porRamo[r.ramo].premio   += r.premio;
-    porRamo[r.ramo].n++;
-  });
-
+  // Agrupar por ramo — período actual
+  const agrupar = regs => {
+    const map = {};
+    regs.forEach(r => {
+      if (!map[r.ramo]) map[r.ramo] = { comision:0, prima:0, n:0 };
+      map[r.ramo].comision += r.comision;
+      map[r.ramo].prima    += r.prima;
+      map[r.ramo].n++;
+    });
+    return map;
+  };
+  const porRamo    = agrupar(periodoActual.registros);
+  const porRamoAnt = periodoAnterior ? agrupar(periodoAnterior.registros) : null;
   const ramosSorted = Object.entries(porRamo).sort((a,b) => b[1].comision - a[1].comision);
 
-  // Tabla por ramo
+  const hayComp = !!porRamoAnt;
   const filas = ramosSorted.map(([ramo, v]) => {
-    const nombre = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo ' + ramo;
-    const pct = v.premio > 0 ? (v.comision/v.premio*100).toFixed(1) : '—';
-    const barW = totalCom > 0 ? Math.round(v.comision/totalCom*100) : 0;
-    return `<tr>
-      <td><span class="badge b-ramo">${nombre}</span></td>
-      <td style="text-align:right;font-weight:600">${fmtM(v.comision)}</td>
-      <td style="text-align:right;color:var(--muted)">${fmtM(v.prima)}</td>
-      <td style="text-align:center;font-weight:600;color:var(--green)">${pct}%</td>
-      <td style="width:120px"><div style="background:#eee;border-radius:4px;height:8px"><div style="background:var(--green);border-radius:4px;height:8px;width:${barW}%"></div></div></td>
+    const nombre  = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo ' + ramo;
+    const pct     = v.prima > 0 ? (v.comision/v.prima*100).toFixed(1) : '—';
+    const barW    = totalCom > 0 ? Math.round(v.comision/totalCom*100) : 0;
+    const vAnt    = porRamoAnt?.[ramo];
+    const dCom    = vAnt ? v.comision - vAnt.comision : null;
+    const dPct    = (vAnt && vAnt.prima > 0 && v.prima > 0)
+                    ? (v.comision/v.prima*100) - (vAnt.comision/vAnt.prima*100) : null;
+    const arrow   = x => x >= 0 ? '▲' : '▼';
+    const clr     = x => x >= 0 ? '#2a5c45' : '#c0392b';
+    const deltaComStr = dCom !== null
+      ? `<div style="font-size:10px;color:${clr(dCom)}">${arrow(dCom)} ${fmtM(Math.abs(dCom))}</div>` : '';
+    const deltaPctStr = dPct !== null
+      ? `<div style="font-size:10px;color:${clr(dPct)}">${arrow(dPct)} ${Math.abs(dPct).toFixed(1)}pp</div>` : '';
+    return `<tr style="border-bottom:1px solid #f0f0f0">
+      <td style="padding:6px 0"><span class="badge b-ramo">${nombre}</span></td>
+      <td style="text-align:right;font-weight:600;padding:6px 8px">${fmtM(v.comision)}${deltaComStr}</td>
+      <td style="text-align:right;color:var(--muted);padding:6px 8px">${fmtM(v.prima)}</td>
+      <td style="text-align:center;font-weight:600;color:var(--green);padding:6px 8px">${pct}%${deltaPctStr}</td>
+      <td style="width:120px;padding:6px 8px"><div style="background:#eee;border-radius:4px;height:8px"><div style="background:var(--green);border-radius:4px;height:8px;width:${barW}%"></div></div></td>
     </tr>`;
   }).join('');
 
+  const compLabel = hayComp ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">vs ${periodoAnterior.periodo}</span>` : '';
   document.getElementById('com-tabla-ramos').innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+      <thead><tr style="color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:2px solid var(--border)">
         <th style="text-align:left;padding:6px 0">Ramo</th>
-        <th style="text-align:right;padding:6px 8px">Comisión</th>
+        <th style="text-align:right;padding:6px 8px">Comisión${compLabel}</th>
         <th style="text-align:right;padding:6px 8px">Prima</th>
-        <th style="text-align:center;padding:6px 8px">%</th>
+        <th style="text-align:center;padding:6px 8px">%${compLabel}</th>
         <th style="padding:6px 8px">Participación</th>
       </tr></thead>
       <tbody>${filas}</tbody>
