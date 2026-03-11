@@ -803,7 +803,7 @@ function renderTabla(data) {
 
     const ramoRenovaAuto = [200, 3100, 1720].includes(r.ramo);
     let accion = '';
-    if (!estaRenovada && dias !== null && dias >= 0 && dias <= 7)
+    if (!estaRenovada && dias !== null && dias >= -7 && dias <= 7)
       accion += `<button class="btn btn-secondary btn-sm" style="background:#e8f0fe;font-size:11px" onclick="marcarRenovada('${r.id}','${ne}')">\u2705 Renovada</button> `;
     if (!ramoRenovaAuto && !estaRenovada && dias !== null && dias >= 0 && dias <= 30)
       accion += `<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
