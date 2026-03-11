@@ -94,6 +94,7 @@ tr.even td{background:#fff}
 tr.odd td{background:var(--paper)}
 tr.urgent td{background:var(--red-bg)}
 tr.soon td{background:var(--yellow-bg)}
+tr.renovada td{background:rgba(42,92,69,0.05);opacity:0.55;text-decoration:line-through;text-decoration-color:rgba(42,92,69,0.35)}
 tr:hover td{filter:brightness(.97)}
 
 /* BADGES */
@@ -521,7 +522,7 @@ textarea{resize:vertical;line-height:1.6}
     <div class="section-title">Conexiones</div>
     <div class="conn-item">
       <span style="font-size:20px">📧</span>
-      <div style="flex:1"><div style="font-weight:600;font-size:14px">Gmail <span class="gmail-badge">Listo</span></div><div style="font-size:12px;color:var(--muted)">Envío de mails directo desde el asistente</div></div>
+      <div style="flex:1"><div style="font-weight:600;font-size:14px">Gmail</div><div style="font-size:12px;color:var(--muted)">Los mails se abren en tu Gmail — no requiere conexión adicional</div></div>
     </div>
   </div>
 </div>
@@ -622,8 +623,9 @@ function renderAgenda() {
     c.sinCombinado = c.ramos.has(200) && autoSinComb.has(c.id);
   });
 
-  // Filtrar solo los que tienen oportunidad de cross-sell Combinado
-  const conOportunidad = Object.values(clientes).filter(c => c.sinCombinado);
+  // Filtrar solo los que tienen oportunidad de cross-sell Combinado (excluir renovadas)
+  const renovadasSet = typeof polizasRenovadas !== 'undefined' ? polizasRenovadas : new Set();
+  const conOportunidad = Object.values(clientes).filter(c => c.sinCombinado && !renovadasSet.has(c.id));
 
   if (!conOportunidad.length) {
     document.getElementById('agenda-lista').innerHTML =
@@ -671,7 +673,7 @@ function renderAgenda() {
         <div class="score-label">Score ${scoreW}</div>
       </div>
       <div class="agenda-btns">
-        <button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIA('combinado','${ne}','Automotores')">🏠 Combinado</button>
+        <button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIAById('combinado','${c.id}','Automotores')">🏠 Combinado</button>
         <button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirexAgenda('${ne}')">🔵 Retirex</button>
       </div>
     </div>`;
@@ -782,7 +784,9 @@ function renderTabla(data) {
   tbody.innerHTML = data.map((r, i) => {
     const dias = diasA(r.venc);
     let rowCls, badge;
-    if (dias !== null && dias <= 7)       { rowCls='urgent'; badge=`<span class="badge b-red">¡${dias}d!</span>`; }
+    const estaRenovada = typeof polizasRenovadas !== 'undefined' && polizasRenovadas.has(String(r.id));
+    if (estaRenovada)                      { rowCls='renovada'; badge=`<span class="badge" style="background:#2a5c45;color:#fff">✅ Renovada</span>`; }
+    else if (dias !== null && dias <= 7)   { rowCls='urgent'; badge=`<span class="badge b-red">¡${dias}d!</span>`; }
     else if (dias !== null && dias <= 30)  { rowCls='soon';   badge=`<span class="badge b-yellow">${dias}d</span>`; }
     else                                   { rowCls=i%2?'odd':'even'; badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`; }
 
@@ -799,7 +803,9 @@ function renderTabla(data) {
 
     const ramoRenovaAuto = [200, 3100, 1720].includes(r.ramo);
     let accion = '';
-    if (!ramoRenovaAuto && dias !== null && dias >= 0 && dias <= 30)
+    if (!estaRenovada && dias !== null && dias >= 0 && dias <= 7)
+      accion += `<button class="btn btn-secondary btn-sm" style="background:#e8f0fe;font-size:11px" onclick="marcarRenovada('${r.id}','${ne}')">\u2705 Renovada</button> `;
+    if (!ramoRenovaAuto && !estaRenovada && dias !== null && dias >= 0 && dias <= 30)
       accion += `<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
     if (r.pf)
       accion += `<button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
@@ -946,6 +952,29 @@ DATOS:
 - Vencen 8-30 días (${pronto.length}): ${pronto.slice(0,5).map(r=>`${r.nombre} (Ramo ${r.ramo}, ${fmtF(r.venc)})`).join(' | ')}`;
 
   await callIA(prompt, 'cartera-out');
+}
+
+// Set de pólizas marcadas como renovadas (persiste en sessionStorage durante la sesión)
+const polizasRenovadas = new Set(JSON.parse(sessionStorage.getItem('renovadas') || '[]'));
+
+function marcarRenovada(id, nombre) {
+  polizasRenovadas.add(id);
+  sessionStorage.setItem('renovadas', JSON.stringify([...polizasRenovadas]));
+  renderAgenda();
+  renderTabla(carteraActiva);
+  // Feedback visual
+  const toast = document.createElement('div');
+  toast.textContent = `✅ ${nombre.split(' ')[0]} marcado como renovado`;
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2a5c45;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2)';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Busca por id en lugar de nombre — evita problemas con comillas y caracteres especiales
+async function accionIAById(tipo, id, ramo) {
+  const r = carteraActiva.find(x => x.id === id);
+  if (!r) { alert('Cliente no encontrado.'); return; }
+  await accionIA(tipo, r.nombre, ramo);
 }
 
 async function accionIA(tipo, nombre, ramo) {
