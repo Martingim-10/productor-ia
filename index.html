@@ -272,6 +272,10 @@ textarea{resize:vertical;line-height:1.6}
   <div class="nav-item" data-panel="comercial">
     <span class="ic">📣</span>Comercial
   </div>
+  <div class="nav-item" data-panel="comisiones">
+    <span class="ic">💰</span>Comisiones
+    <span class="nav-badge" id="badge-comisiones" style="background:#2a5c45"></span>
+  </div>
   <div class="nav-sec">Config</div>
   <div class="nav-item" data-panel="config">
     <span class="ic">⚙️</span>Configurar
@@ -499,6 +503,58 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 </div>
 
+
+<!-- ══ COMISIONES ══════════════════════════════════════════════════════════ -->
+<div id="comisiones-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">💰 Comisiones</div>
+      <div class="ph-sub" id="com-periodo">Cargá un reporte de comisiones para comenzar</div>
+    </div>
+    <label class="btn btn-primary" style="cursor:pointer">
+      📂 Cargar Comisiones
+      <input type="file" accept=".xls,.xlsx" style="display:none" onchange="cargarComisiones(this)">
+    </label>
+  </div>
+  <div class="pb">
+
+    <!-- KPIs -->
+    <div id="com-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
+
+    <!-- Gráfico evolución + tabla ramos side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--dark)">Evolución de comisiones</div>
+        <canvas id="com-chart" height="200"></canvas>
+        <div id="com-chart-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:40px 0">
+          Cargá al menos 2 períodos para ver la evolución
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--dark)">Comisión por ramo</div>
+        <canvas id="com-ramo-chart" height="200"></canvas>
+        <div id="com-ramo-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:40px 0">
+          Sin datos cargados
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla detalle por ramo -->
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--dark)">Detalle por ramo</div>
+      <div id="com-tabla-ramos"></div>
+    </div>
+
+    <!-- Análisis IA -->
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--dark)">Análisis IA</div>
+      <button class="btn btn-primary" onclick="analizarComisionesIA()" id="btn-analizar-com">🤖 Analizar con IA</button>
+      <div id="com-ia-out" style="margin-top:14px;font-size:13px;line-height:1.6;color:var(--dark)"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ══ CONFIG ════════════════════════════════════════════════════════════ -->
 <div id="config-panel" class="panel">
   <div class="ph"><div><div class="ph-title">Configuración</div><div class="ph-sub">Tu perfil profesional</div></div></div>
@@ -576,6 +632,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     const id = el.dataset.panel + '-panel';
     document.getElementById(id).classList.add('active');
     if (el.dataset.panel === 'agenda') renderAgenda();
+    if (el.dataset.panel === 'comisiones') renderComEvolucion();
   });
 });
 
@@ -952,6 +1009,290 @@ DATOS:
 - Vencen 8-30 días (${pronto.length}): ${pronto.slice(0,5).map(r=>`${r.nombre} (Ramo ${r.ramo}, ${fmtF(r.venc)})`).join(' | ')}`;
 
   await callIA(prompt, 'cartera-out');
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO COMISIONES
+// ═══════════════════════════════════════════════════════════
+let comisionesActuales = null; // datos del período cargado
+let comChart = null;
+let comRamoChart = null;
+
+async function cargarComisiones(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, { type: 'array', cellDates: true });
+
+  const registros = [];
+  wb.SheetNames.forEach(shName => {
+    const ws = wb.Sheets[shName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    // Buscar fila de headers (contiene 'Periodo')
+    let headerIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i] && rows[i][0] === 'Periodo') { headerIdx = i; break; }
+    }
+    if (headerIdx < 0) return;
+    // Extraer período del encabezado (fila 1)
+    let periodo = '';
+    if (rows[1]) {
+      const txt = (rows[1][3] || '').toString();
+      const m = txt.match(/Periodo:\s*([^\n\\]+)/);
+      if (m) periodo = m[1].trim();
+    }
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r[0] || r[0] === 'Periodo') continue;
+      const comision = parseFloat(r[23]) || 0;
+      const premio   = parseFloat(r[31]) || 0;
+      const porcCom  = parseFloat(r[33]) || 0;
+      const ramo     = String(r[10] || '').trim();
+      const cliente  = String(r[16] || '').trim();
+      const codCli   = String(r[15] || '').trim();
+      const poliza   = String(r[13] || '').trim();
+      const foper    = r[9] ? (r[9] instanceof Date ? r[9] : new Date(r[9])) : null;
+      if (!ramo) continue;
+      registros.push({ periodo, ramo, cliente, codCli, poliza, comision, premio, porcCom, foper });
+    }
+  });
+
+  if (!registros.length) { alert('No se encontraron datos en el archivo.'); return; }
+
+  // Determinar período del archivo (ej: "ENE - 2026")
+  const periodoStr = registros[0].periodo || file.name.match(/\d{4}-\d{2}/)?.[0] || 'Desconocido';
+
+  comisionesActuales = { periodo: periodoStr, registros };
+  document.getElementById('com-periodo').textContent = 'Período: ' + periodoStr;
+
+  // Guardar snapshot en Drive si está conectado
+  if (driveToken) await driveSnapshotComisiones(periodoStr, registros);
+
+  renderComisiones();
+}
+
+function renderComisiones() {
+  if (!comisionesActuales) return;
+  const { registros } = comisionesActuales;
+
+  // Totales globales
+  const totalCom  = registros.reduce((s,r) => s + r.comision, 0);
+  const totalPrem = registros.reduce((s,r) => s + r.premio, 0);
+  const pctEfect  = totalPrem > 0 ? (totalCom / totalPrem * 100) : 0;
+  const nPolizas  = new Set(registros.map(r => r.poliza)).size;
+
+  // KPIs
+  document.getElementById('com-kpis').innerHTML = `
+    <div class="agenda-stat"><div class="val">${fmtM(totalCom)}</div><div class="lbl">Comisión total</div></div>
+    <div class="agenda-stat"><div class="val">${fmtM(totalPrem)}</div><div class="lbl">Premio cobrado</div></div>
+    <div class="agenda-stat"><div class="val">${pctEfect.toFixed(1)}%</div><div class="lbl">% comisión efectiva</div></div>
+    <div class="agenda-stat"><div class="val">${nPolizas}</div><div class="lbl">Pólizas liquidadas</div></div>
+  `;
+  document.getElementById('badge-comisiones').textContent = '';
+
+  // Agrupar por ramo
+  const porRamo = {};
+  registros.forEach(r => {
+    if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0, n:0 };
+    porRamo[r.ramo].comision += r.comision;
+    porRamo[r.ramo].premio   += r.premio;
+    porRamo[r.ramo].n++;
+  });
+
+  const ramosSorted = Object.entries(porRamo).sort((a,b) => b[1].comision - a[1].comision);
+
+  // Tabla por ramo
+  const filas = ramosSorted.map(([ramo, v]) => {
+    const nombre = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo ' + ramo;
+    const pct = v.premio > 0 ? (v.comision/v.premio*100).toFixed(1) : '—';
+    const barW = totalCom > 0 ? Math.round(v.comision/totalCom*100) : 0;
+    return `<tr>
+      <td><span class="badge b-ramo">${nombre}</span></td>
+      <td style="text-align:right;font-weight:600">${fmtM(v.comision)}</td>
+      <td style="text-align:right;color:var(--muted)">${fmtM(v.premio)}</td>
+      <td style="text-align:center;font-weight:600;color:var(--green)">${pct}%</td>
+      <td style="width:120px"><div style="background:#eee;border-radius:4px;height:8px"><div style="background:var(--green);border-radius:4px;height:8px;width:${barW}%"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('com-tabla-ramos').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:6px 0">Ramo</th>
+        <th style="text-align:right;padding:6px 8px">Comisión</th>
+        <th style="text-align:right;padding:6px 8px">Premio</th>
+        <th style="text-align:center;padding:6px 8px">%</th>
+        <th style="padding:6px 8px">Participación</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  // Gráfico donut por ramo
+  document.getElementById('com-ramo-empty').style.display = 'none';
+  if (comRamoChart) comRamoChart.destroy();
+  const ctx2 = document.getElementById('com-ramo-chart').getContext('2d');
+  const labels = ramosSorted.map(([r]) => RAMO_MAP[parseInt(r)] || RAMO_MAP[r] || 'R'+r);
+  const vals   = ramosSorted.map(([,v]) => Math.round(v.comision));
+  const colors = ['#2a5c45','#c8953a','#4a7fb5','#8b4a6e','#5a8a5a','#c87a3a','#3a7ab5','#a0522d','#6a9a6a','#b0603a','#3a5a95','#8a7a2d','#6a4a8e'];
+  comRamoChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderWidth: 2, borderColor:'#fff' }] },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  // Gráfico evolución histórica desde snapshots Drive
+  renderComEvolucion();
+}
+
+async function renderComEvolucion() {
+  // Cargar snapshots de comisiones desde Drive
+  const snapshots = await driveCargarSnapshotsComisiones();
+  const canvas = document.getElementById('com-chart');
+  const empty  = document.getElementById('com-chart-empty');
+
+  if (!snapshots || snapshots.length < 2) {
+    empty.style.display = 'block';
+    canvas.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  canvas.style.display = 'block';
+
+  if (comChart) comChart.destroy();
+  const ctx = canvas.getContext('2d');
+  const labels = snapshots.map(s => s.periodo);
+  const coms   = snapshots.map(s => Math.round(s.totalComision/1000));
+  comChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Comisión ($K)',
+        data: coms,
+        backgroundColor: '#2a5c45cc',
+        borderColor: '#2a5c45',
+        borderWidth: 1,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { callback: v => '$'+v+'K' } } }
+    }
+  });
+}
+
+async function analizarComisionesIA() {
+  if (!comisionesActuales) { alert('Cargá un reporte de comisiones primero.'); return; }
+  const key = getKey();
+  if (!key) { alert('Configurá tu API Key.'); return; }
+
+  const { periodo, registros } = comisionesActuales;
+  const totalCom  = registros.reduce((s,r) => s + r.comision, 0);
+  const totalPrem = registros.reduce((s,r) => s + r.premio, 0);
+
+  const porRamo = {};
+  registros.forEach(r => {
+    if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0, n:0 };
+    porRamo[r.ramo].comision += r.comision;
+    porRamo[r.ramo].premio   += r.premio;
+    porRamo[r.ramo].n++;
+  });
+
+  const resumenRamos = Object.entries(porRamo)
+    .sort((a,b) => b[1].comision - a[1].comision)
+    .map(([ramo, v]) => {
+      const nombre = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo '+ramo;
+      const pct = v.premio > 0 ? (v.comision/v.premio*100).toFixed(1) : 0;
+      return `- ${nombre}: comisión $${Math.round(v.comision).toLocaleString('es-AR')} | % efectivo: ${pct}% | ${v.n} registros`;
+    }).join('\n');
+
+  const prompt = `Sos un analista financiero especializado en productores de seguros argentinos. Analizá estos datos de comisiones del período ${periodo} y dá recomendaciones concretas y accionables.
+
+DATOS:
+- Comisión total: $${Math.round(totalCom).toLocaleString('es-AR')}
+- Premio total cobrado: $${Math.round(totalPrem).toLocaleString('es-AR')}
+- % comisión efectiva global: ${(totalCom/totalPrem*100).toFixed(1)}%
+- Pólizas liquidadas: ${new Set(registros.map(r=>r.poliza)).size}
+
+Por ramo:
+${resumenRamos}
+
+Analizá:
+1. ¿Qué ramos tienen mejor rentabilidad por comisión? ¿Cuáles hay que priorizar?
+2. ¿Qué ramos tienen bajo % de comisión — vale la pena crecer ahí?
+3. ¿Qué concentración de riesgo tiene la cartera?
+4. 3 recomendaciones concretas para mejorar ingresos por comisiones en los próximos 3 meses.
+
+Sé directo, sin preambles. Usá números reales del reporte.`;
+
+  const btn = document.getElementById('btn-analizar-com');
+  btn.disabled = true; btn.textContent = '⏳ Analizando...';
+  const out = document.getElementById('com-ia-out');
+  out.innerHTML = '<span style="color:var(--muted)">Procesando...</span>';
+
+  try {
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-API-Key':key},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
+        messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    const txt = data.content?.[0]?.text || 'Sin respuesta';
+    out.innerHTML = txt.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  } catch(e) {
+    out.innerHTML = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = '🤖 Analizar con IA';
+  }
+}
+
+// ── Drive: guardar snapshot comisiones ──────────────────────────────────────
+async function driveSnapshotComisiones(periodo, registros) {
+  if (!driveToken) return;
+  try {
+    const folderId = await driveGetOrCreateFolder();
+    const totalComision = registros.reduce((s,r) => s + r.comision, 0);
+    const totalPremio   = registros.reduce((s,r) => s + r.premio, 0);
+    const porRamo = {};
+    registros.forEach(r => {
+      if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0 };
+      porRamo[r.ramo].comision += r.comision;
+      porRamo[r.ramo].premio   += r.premio;
+    });
+    const snap = { periodo, totalComision, totalPremio, porRamo, ts: new Date().toISOString() };
+    const nombre = 'comisiones_' + periodo.replace(/[^a-z0-9]/gi,'_') + '.json';
+    const boundary = 'boundary';
+    const meta = JSON.stringify({ name: nombre, parents:[folderId] });
+    const body = '--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify(snap)+'\r\n--'+boundary+'--';
+    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method:'POST',
+      headers:{ Authorization:'Bearer '+driveToken, 'Content-Type':'multipart/related; boundary='+boundary },
+      body
+    });
+  } catch(e) { console.warn('Drive snapshot comisiones error:', e); }
+}
+
+async function driveCargarSnapshotsComisiones() {
+  if (!driveToken) return [];
+  try {
+    const folderId = await driveGetOrCreateFolder();
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and name contains 'comisiones_' and trashed=false&fields=files(id,name)&orderBy=name`,
+      { headers:{ Authorization:'Bearer '+driveToken } }
+    );
+    const data = await res.json();
+    const snaps = [];
+    for (const f of (data.files||[])) {
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,
+        { headers:{ Authorization:'Bearer '+driveToken } });
+      snaps.push(await r.json());
+    }
+    return snaps.sort((a,b) => a.periodo.localeCompare(b.periodo));
+  } catch(e) { return []; }
 }
 
 // Set de pólizas marcadas como renovadas (persiste en sessionStorage durante la sesión)
