@@ -1015,7 +1015,8 @@ DATOS:
 // ═══════════════════════════════════════════════════════════
 // MÓDULO COMISIONES
 // ═══════════════════════════════════════════════════════════
-let comisionesActuales = null; // datos del período cargado
+let comisionesActuales = null; // período actualmente visible
+let comisionesHistorial = []; // todos los períodos cargados en esta sesión
 let comChart = null;
 let comRamoChart = null;
 
@@ -1046,7 +1047,7 @@ async function cargarComisiones(input) {
       const r = rows[i];
       if (!r || !r[0] || r[0] === 'Periodo') continue;
       const comision = parseFloat(r[23]) || 0;
-      const premio   = parseFloat(r[31]) || 0;
+      const prima    = parseFloat(r[30]) || 0; // Prima Unif — base de cálculo de comisión
       const porcCom  = parseFloat(r[33]) || 0;
       const ramo     = String(r[10] || '').trim();
       const cliente  = String(r[16] || '').trim();
@@ -1054,7 +1055,7 @@ async function cargarComisiones(input) {
       const poliza   = String(r[13] || '').trim();
       const foper    = r[9] ? (r[9] instanceof Date ? r[9] : new Date(r[9])) : null;
       if (!ramo) continue;
-      registros.push({ periodo, ramo, cliente, codCli, poliza, comision, premio, porcCom, foper });
+      registros.push({ periodo, ramo, cliente, codCli, poliza, comision, prima, porcCom, foper });
     }
   });
 
@@ -1063,8 +1064,19 @@ async function cargarComisiones(input) {
   // Determinar período del archivo (ej: "ENE - 2026")
   const periodoStr = registros[0].periodo || file.name.match(/\d{4}-\d{2}/)?.[0] || 'Desconocido';
 
-  comisionesActuales = { periodo: periodoStr, registros };
-  document.getElementById('com-periodo').textContent = 'Período: ' + periodoStr;
+  const nuevoData = { periodo: periodoStr, registros };
+  comisionesActuales = nuevoData;
+
+  // Agregar al historial si no existe este período
+  if (!comisionesHistorial.find(h => h.periodo === periodoStr)) {
+    comisionesHistorial.push(nuevoData);
+    comisionesHistorial.sort((a,b) => a.periodo.localeCompare(b.periodo));
+  }
+
+  document.getElementById('com-periodo').textContent =
+    comisionesHistorial.length > 1
+      ? comisionesHistorial.map(h => h.periodo).join(' · ')
+      : 'Período: ' + periodoStr;
 
   // Guardar snapshot en Drive si está conectado
   if (driveToken) await driveSnapshotComisiones(periodoStr, registros);
@@ -1076,17 +1088,45 @@ function renderComisiones() {
   if (!comisionesActuales) return;
   const { registros } = comisionesActuales;
 
-  // Totales globales
-  const totalCom  = registros.reduce((s,r) => s + r.comision, 0);
-  const totalPrem = registros.reduce((s,r) => s + r.premio, 0);
-  const pctEfect  = totalPrem > 0 ? (totalCom / totalPrem * 100) : 0;
-  const nPolizas  = new Set(registros.map(r => r.poliza)).size;
+  // Totales globales — usar todos los períodos del historial
+  const todosReg = comisionesHistorial.length > 0
+    ? comisionesHistorial.flatMap(h => h.registros)
+    : registros;
 
-  // KPIs
+  // Si hay más de un período, mostrar el más reciente como "actual" y el anterior como comparación
+  const periodoActual = comisionesHistorial.length > 0
+    ? comisionesHistorial[comisionesHistorial.length - 1]
+    : { registros };
+  const periodoAnterior = comisionesHistorial.length > 1
+    ? comisionesHistorial[comisionesHistorial.length - 2]
+    : null;
+
+  const totalCom  = periodoActual.registros.reduce((s,r) => s + r.comision, 0);
+  const totalPrima = periodoActual.registros.reduce((s,r) => s + r.prima, 0);
+  const pctEfect  = totalPrima > 0 ? (totalCom / totalPrima * 100) : 0;
+  const nPolizas  = new Set(periodoActual.registros.map(r => r.poliza)).size;
+
+  // Deltas vs período anterior
+  const delta = periodoAnterior ? (() => {
+    const comAnt   = periodoAnterior.registros.reduce((s,r) => s + r.comision, 0);
+    const primaAnt = periodoAnterior.registros.reduce((s,r) => s + r.prima, 0);
+    const pctAnt   = primaAnt > 0 ? comAnt/primaAnt*100 : 0;
+    const dCom  = totalCom - comAnt;
+    const dPrem = totalPrem - premAnt;
+    const dPct  = pctEfect - pctAnt;
+    const arrow = v => v >= 0 ? '▲' : '▼';
+    const color = v => v >= 0 ? 'color:#2a5c45' : 'color:#c0392b';
+    return {
+      com:  `<div style="font-size:11px;${color(dCom)}">${arrow(dCom)} ${fmtM(Math.abs(dCom))} vs ${periodoAnterior.periodo}</div>`,
+      prem: `<div style="font-size:11px;${color(dPrim)}">${arrow(dPrim)} ${fmtM(Math.abs(dPrim))} vs ${periodoAnterior.periodo}</div>`,
+      pct:  `<div style="font-size:11px;${color(dPct)}">${arrow(dPct)} ${Math.abs(dPct).toFixed(1)}pp vs ${periodoAnterior.periodo}</div>`,
+    };
+  })() : { com:'', prem:'', pct:'' };
+
   document.getElementById('com-kpis').innerHTML = `
-    <div class="agenda-stat"><div class="val">${fmtM(totalCom)}</div><div class="lbl">Comisión total</div></div>
-    <div class="agenda-stat"><div class="val">${fmtM(totalPrem)}</div><div class="lbl">Premio cobrado</div></div>
-    <div class="agenda-stat"><div class="val">${pctEfect.toFixed(1)}%</div><div class="lbl">% comisión efectiva</div></div>
+    <div class="agenda-stat"><div class="val">${fmtM(totalCom)}</div><div class="lbl">Comisión ${periodoActual.periodo}</div>${delta.com}</div>
+    <div class="agenda-stat"><div class="val">${fmtM(totalPrima)}</div><div class="lbl">Prima liquidada</div>${delta.prem}</div>
+    <div class="agenda-stat"><div class="val">${pctEfect.toFixed(1)}%</div><div class="lbl">% comisión efectiva</div>${delta.pct}</div>
     <div class="agenda-stat"><div class="val">${nPolizas}</div><div class="lbl">Pólizas liquidadas</div></div>
   `;
   document.getElementById('badge-comisiones').textContent = '';
@@ -1110,7 +1150,7 @@ function renderComisiones() {
     return `<tr>
       <td><span class="badge b-ramo">${nombre}</span></td>
       <td style="text-align:right;font-weight:600">${fmtM(v.comision)}</td>
-      <td style="text-align:right;color:var(--muted)">${fmtM(v.premio)}</td>
+      <td style="text-align:right;color:var(--muted)">${fmtM(v.prima)}</td>
       <td style="text-align:center;font-weight:600;color:var(--green)">${pct}%</td>
       <td style="width:120px"><div style="background:#eee;border-radius:4px;height:8px"><div style="background:var(--green);border-radius:4px;height:8px;width:${barW}%"></div></div></td>
     </tr>`;
@@ -1121,7 +1161,7 @@ function renderComisiones() {
       <thead><tr style="color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">
         <th style="text-align:left;padding:6px 0">Ramo</th>
         <th style="text-align:right;padding:6px 8px">Comisión</th>
-        <th style="text-align:right;padding:6px 8px">Premio</th>
+        <th style="text-align:right;padding:6px 8px">Prima</th>
         <th style="text-align:center;padding:6px 8px">%</th>
         <th style="padding:6px 8px">Participación</th>
       </tr></thead>
@@ -1146,12 +1186,27 @@ function renderComisiones() {
 }
 
 async function renderComEvolucion() {
-  // Cargar snapshots de comisiones desde Drive
-  const snapshots = await driveCargarSnapshotsComisiones();
   const canvas = document.getElementById('com-chart');
   const empty  = document.getElementById('com-chart-empty');
 
-  if (!snapshots || snapshots.length < 2) {
+  // Primero usar historial local (inmediato), complementar con Drive
+  let snapshots = comisionesHistorial.map(h => ({
+    periodo: h.periodo,
+    totalComision: h.registros.reduce((s,r) => s + r.comision, 0),
+    totalPremio:   h.registros.reduce((s,r) => s + r.premio, 0)
+  }));
+
+  // Si hay Drive conectado y menos de 2 en local, buscar en Drive
+  if (snapshots.length < 2 && driveToken) {
+    const driveSnaps = await driveCargarSnapshotsComisiones();
+    // Merge: Drive snaps que no estén ya en local
+    driveSnaps.forEach(ds => {
+      if (!snapshots.find(s => s.periodo === ds.periodo)) snapshots.push(ds);
+    });
+    snapshots.sort((a,b) => a.periodo.localeCompare(b.periodo));
+  }
+
+  if (snapshots.length < 2) {
     empty.style.display = 'block';
     canvas.style.display = 'none';
     return;
@@ -1163,23 +1218,41 @@ async function renderComEvolucion() {
   const ctx = canvas.getContext('2d');
   const labels = snapshots.map(s => s.periodo);
   const coms   = snapshots.map(s => Math.round(s.totalComision/1000));
+  const prims  = snapshots.map(s => Math.round(s.totalPremio/1000)); // totalPremio guarda prima en el snapshot
+
   comChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Comisión ($K)',
-        data: coms,
-        backgroundColor: '#2a5c45cc',
-        borderColor: '#2a5c45',
-        borderWidth: 1,
-        borderRadius: 6
-      }]
+      datasets: [
+        {
+          label: 'Comisión ($K)',
+          data: coms,
+          backgroundColor: '#2a5c45cc',
+          borderColor: '#2a5c45',
+          borderWidth: 1,
+          borderRadius: 6,
+          yAxisID: 'y'
+        },
+        {
+          label: '% Comisión',
+          data: snapshots.map((s,i) => prims[i] > 0 ? +(coms[i]/prims[i]*100).toFixed(1) : 0),
+          type: 'line',
+          borderColor: '#c8953a',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 4,
+          yAxisID: 'y2'
+        }
+      ]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { ticks: { callback: v => '$'+v+'K' } } }
+      plugins: { legend: { position: 'bottom', labels: { font:{size:11} } } },
+      scales: {
+        y:  { ticks: { callback: v => '$'+v+'K' } },
+        y2: { position:'right', ticks: { callback: v => v+'%' }, grid: { drawOnChartArea:false } }
+      }
     }
   });
 }
@@ -1191,7 +1264,7 @@ async function analizarComisionesIA() {
 
   const { periodo, registros } = comisionesActuales;
   const totalCom  = registros.reduce((s,r) => s + r.comision, 0);
-  const totalPrem = registros.reduce((s,r) => s + r.premio, 0);
+  const totalPrima = registros.reduce((s,r) => s + r.prima, 0);
 
   const porRamo = {};
   registros.forEach(r => {
@@ -1205,7 +1278,7 @@ async function analizarComisionesIA() {
     .sort((a,b) => b[1].comision - a[1].comision)
     .map(([ramo, v]) => {
       const nombre = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo '+ramo;
-      const pct = v.premio > 0 ? (v.comision/v.premio*100).toFixed(1) : 0;
+      const pct = v.prima > 0 ? (v.comision/v.prima*100).toFixed(1) : 0;
       return `- ${nombre}: comisión $${Math.round(v.comision).toLocaleString('es-AR')} | % efectivo: ${pct}% | ${v.n} registros`;
     }).join('\n');
 
@@ -1214,7 +1287,7 @@ async function analizarComisionesIA() {
 DATOS:
 - Comisión total: $${Math.round(totalCom).toLocaleString('es-AR')}
 - Premio total cobrado: $${Math.round(totalPrem).toLocaleString('es-AR')}
-- % comisión efectiva global: ${(totalCom/totalPrem*100).toFixed(1)}%
+- % comisión efectiva global: ${(totalCom/totalPrima*100).toFixed(1)}%
 - Pólizas liquidadas: ${new Set(registros.map(r=>r.poliza)).size}
 
 Por ramo:
@@ -1256,12 +1329,12 @@ async function driveSnapshotComisiones(periodo, registros) {
   try {
     const folderId = await driveGetOrCreateFolder();
     const totalComision = registros.reduce((s,r) => s + r.comision, 0);
-    const totalPremio   = registros.reduce((s,r) => s + r.premio, 0);
+    const totalPremio   = registros.reduce((s,r) => s + r.prima, 0);
     const porRamo = {};
     registros.forEach(r => {
       if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0 };
       porRamo[r.ramo].comision += r.comision;
-      porRamo[r.ramo].premio   += r.premio;
+      porRamo[r.ramo].prima    += r.prima;
     });
     const snap = { periodo, totalComision, totalPremio, porRamo, ts: new Date().toISOString() };
     const nombre = 'comisiones_' + periodo.replace(/[^a-z0-9]/gi,'_') + '.json';
