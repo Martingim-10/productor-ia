@@ -1221,7 +1221,7 @@ async function renderComEvolucion() {
   let snapshots = comisionesHistorial.map(h => ({
     periodo: h.periodo,
     totalComision: h.registros.reduce((s,r) => s + r.comision, 0),
-    totalPremio:   h.registros.reduce((s,r) => s + r.premio, 0)
+    totalPremio:   h.registros.reduce((s,r) => s + r.prima, 0)
   }));
 
   // Si hay Drive conectado y menos de 2 en local, buscar en Drive
@@ -1296,26 +1296,50 @@ async function analizarComisionesIA() {
 
   const porRamo = {};
   registros.forEach(r => {
-    if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0, n:0 };
+    if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, prima:0, n:0 };
     porRamo[r.ramo].comision += r.comision;
-    porRamo[r.ramo].premio   += r.premio;
+    porRamo[r.ramo].prima    += r.prima;
     porRamo[r.ramo].n++;
   });
+
+  // Si hay período anterior, calcular delta por ramo
+  const regAnt = comisionesHistorial.length > 1
+    ? comisionesHistorial[comisionesHistorial.length - 2].registros : null;
+  const porRamoAnt = {};
+  if (regAnt) regAnt.forEach(r => {
+    if (!porRamoAnt[r.ramo]) porRamoAnt[r.ramo] = { comision:0, prima:0 };
+    porRamoAnt[r.ramo].comision += r.comision;
+    porRamoAnt[r.ramo].prima    += r.prima;
+  });
+
+  const periodoAnt = comisionesHistorial.length > 1
+    ? comisionesHistorial[comisionesHistorial.length - 2].periodo : null;
 
   const resumenRamos = Object.entries(porRamo)
     .sort((a,b) => b[1].comision - a[1].comision)
     .map(([ramo, v]) => {
       const nombre = RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo '+ramo;
       const pct = v.prima > 0 ? (v.comision/v.prima*100).toFixed(1) : 0;
-      return `- ${nombre}: comisión $${Math.round(v.comision).toLocaleString('es-AR')} | % efectivo: ${pct}% | ${v.n} registros`;
+      const ant = porRamoAnt[ramo];
+      const dCom = ant ? Math.round(v.comision - ant.comision) : null;
+      const deltaStr = dCom !== null
+        ? ` | vs ${periodoAnt}: ${dCom >= 0 ? '+' : ''}$${dCom.toLocaleString('es-AR')}` : '';
+      return `- ${nombre}: comisión $${Math.round(v.comision).toLocaleString('es-AR')} | % efectivo: ${pct}%${deltaStr}`;
     }).join('\n');
+
+  const compStr = periodoAnt ? (() => {
+    const comAnt = regAnt.reduce((s,r) => s + r.comision, 0);
+    const primaAnt = regAnt.reduce((s,r) => s + r.prima, 0);
+    const d = Math.round(totalCom - comAnt);
+    return `\n- Período anterior (${periodoAnt}): comisión $${Math.round(comAnt).toLocaleString('es-AR')} | % ${(comAnt/primaAnt*100).toFixed(1)}% | Delta: ${d>=0?'+':''}$${d.toLocaleString('es-AR')}`;
+  })() : '';
 
   const prompt = `Sos un analista financiero especializado en productores de seguros argentinos. Analizá estos datos de comisiones del período ${periodo} y dá recomendaciones concretas y accionables.
 
 DATOS:
 - Comisión total: $${Math.round(totalCom).toLocaleString('es-AR')}
-- Premio total cobrado: $${Math.round(totalPrem).toLocaleString('es-AR')}
-- % comisión efectiva global: ${(totalCom/totalPrima*100).toFixed(1)}%
+- Prima liquidada: $${Math.round(totalPrima).toLocaleString('es-AR')}
+- % comisión efectiva global: ${(totalCom/totalPrima*100).toFixed(1)}%${compStr}
 - Pólizas liquidadas: ${new Set(registros.map(r=>r.poliza)).size}
 
 Por ramo:
