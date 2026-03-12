@@ -1096,18 +1096,36 @@ async function cargarComisiones(input) {
       const m = txt.match(/Periodo:\s*([^\n\\]+)/);
       if (m) periodo = m[1].trim();
     }
-    // Mapear columnas por nombre — robusto ante variaciones del archivo
+    // Mapear columnas por nombre — robusto ante columnas extra que Sancor agrega entre períodos
     const hdr = rows[headerIdx];
-    const col = {};
-    hdr.forEach((h, i) => { if (h) col[h.toString().trim()] = i; });
-    const iRamo    = col['Ramo']                 ?? 10;
-    const iComis   = col['Comision']             ?? 23;
-    const iPrima   = col['Prima Unif']           ?? 30;
-    const iPorcCom = col['Porc Comision']        ?? 33;
-    const iCliente = col['Denominacion Cliente'] ?? 16;
-    const iCodCli  = col['Cod Cliente']          ?? 15;
-    const iPoliza  = col['Nro Oficial Poliza']   ?? 13;
-    const iFoper   = col['Foper']                ?? 9;
+    // Búsqueda exacta primero, luego parcial (case-insensitive, sin espacios extra)
+    const findCol = (names) => {
+      const arr = Array.isArray(names) ? names : [names];
+      // Exacto
+      for (const name of arr) {
+        const idx = hdr.findIndex(h => h && h.toString().trim() === name);
+        if (idx >= 0) return idx;
+      }
+      // Parcial
+      for (const name of arr) {
+        const idx = hdr.findIndex(h => h && h.toString().trim().toLowerCase().includes(name.toLowerCase()));
+        if (idx >= 0) return idx;
+      }
+      return -1;
+    };
+    const iRamo    = findCol('Ramo');
+    const iComis   = findCol('Comision');
+    const iPrima   = findCol('Prima Unif');
+    const iPorcCom = findCol('Porc Comision');
+    const iCliente = findCol('Denominacion Cliente');
+    const iCodCli  = findCol('Cod Cliente');
+    const iPoliza  = findCol('Nro Oficial Poliza');
+    const iFoper   = findCol('Foper');
+    const iNroLiq  = findCol(['Nro. Liq.', 'Nro Liq', 'NroLiq']);
+    if (iRamo < 0 || iComis < 0 || iPrima < 0) {
+      alert(`No se encontraron columnas clave en la hoja ${shName}. Verificar formato del archivo.`);
+      return;
+    }
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const r = rows[i];
@@ -1145,39 +1163,8 @@ async function cargarComisiones(input) {
   guardarComisionesLocal();
 
   // ── Enriquecer cartera con prima mensual real ──────────────────────────
-  // La prima del reporte Sancor es acumulada; la prima real mensual viene
-  // del Excel de comisiones (PrimaUnif, NroLiq=1 únicamente)
-  if (carteraActiva && carteraActiva.length) {
-    // Construir mapa poliza → primaUnif (solo NroLiq=1, columna 'Nro. Liq.' = col 21 en los datos parseados)
-    // En registros ya tenemos: { ramo, poliza, prima, ... }
-    // Pero necesitamos NroLiq; re-parsear desde wb no es posible aquí, así que
-    // usamos una estrategia diferente: agrupar por poliza y tomar el mínimo de prima
-    // (NroLiq=2 tiene la misma prima que NroLiq=1 — ambos repiten PrimaUnif)
-    // Por lo tanto cualquier registro con prima > 0 sirve para el mapa
-    const primaPorPoliza = {};
-    registros.forEach(r => {
-      if (r.prima > 0) {
-        const polLimpia = r.poliza.replace(/^0+/, '');
-        // Tomar el mayor (ambas liquidaciones tienen el mismo PrimaUnif)
-        primaPorPoliza[polLimpia] = r.prima;
-      }
-    });
-    // Aplicar a carteraActiva
-    let enriquecidas = 0;
-    carteraActiva.forEach(pol => {
-      const polLimpia = String(pol.poliza).replace(/^0+/, '');
-      if (primaPorPoliza[polLimpia]) {
-        pol.premio = primaPorPoliza[polLimpia];
-        pol.prima  = primaPorPoliza[polLimpia];
-        enriquecidas++;
-      }
-    });
-    if (enriquecidas > 0) {
-      renderStats(carteraActiva);
-      renderTabla(carteraActiva);
-    }
-  }
-  // ──────────────────────────────────────────────────────────────────────
+  // Reconstruir mapa poliza→prima desde TODO el historial acumulado
+  enriquecerCarteraConComisiones();
 
   document.getElementById('com-periodo').textContent =
     comisionesHistorial.length > 1
@@ -1188,6 +1175,39 @@ async function cargarComisiones(input) {
   if (driveToken) await driveSnapshotComisiones(periodoStr, registros);
 
   renderComisiones();
+}
+
+function enriquecerCarteraConComisiones() {
+  if (!carteraActiva || !carteraActiva.length) return;
+  if (!comisionesHistorial || !comisionesHistorial.length) return;
+
+  // Construir mapa poliza→prima desde TODOS los períodos históricos
+  // Usar el más reciente para cada póliza (historial ordenado asc por período)
+  const primaPorPoliza = {};
+  comisionesHistorial.forEach(periodo => {
+    periodo.registros.forEach(r => {
+      if (r.prima > 0) {
+        const polLimpia = r.poliza.replace(/^0+/, '');
+        // El más reciente sobreescribe — historial está ordenado asc
+        primaPorPoliza[polLimpia] = r.prima;
+      }
+    });
+  });
+
+  let enriquecidas = 0;
+  carteraActiva.forEach(pol => {
+    const polLimpia = String(pol.poliza).replace(/^0+/, '');
+    if (primaPorPoliza[polLimpia]) {
+      pol.premio = primaPorPoliza[polLimpia];
+      pol.prima  = primaPorPoliza[polLimpia];
+      enriquecidas++;
+    }
+  });
+
+  if (enriquecidas > 0) {
+    renderStats(carteraActiva);
+    renderTabla(carteraActiva);
+  }
 }
 
 function renderComisiones() {
@@ -2046,6 +2066,8 @@ initCartera(CARTERA_EMBEBIDA);
 // Restaurar comisiones guardadas de sesión anterior
 cargarComisionesLocal();
 if (comisionesActuales) renderComisiones();
+// Enriquecer cartera con prima real desde comisiones históricas
+enriquecerCarteraConComisiones();
 </script>
 </body>
 </html>
