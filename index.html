@@ -775,7 +775,7 @@ function initCartera(data) {
     poliza: r.p || '',
     cert:   r.cert || 1,
     venc:   r.v || null,
-    premio: r.pr || 0,
+    premio: r.pm || 0,
     prima:  r.pm || 0,
     pf:     r.pf !== undefined ? r.pf : true,
     crossell: typeof AUTO_SIN_COMBINADO !== 'undefined' ? AUTO_SIN_COMBINADO.has(r.id || r.c || '') : false,
@@ -1016,7 +1016,43 @@ DATOS:
 // MÓDULO COMISIONES
 // ═══════════════════════════════════════════════════════════
 let comisionesActuales = null; // período actualmente visible
-let comisionesHistorial = []; // todos los períodos cargados en esta sesión
+let comisionesHistorial = []; // todos los períodos cargados
+
+// Persistencia de comisiones en localStorage (solo resumen, no los 600+ registros)
+function guardarComisionesLocal() {
+  const resumen = comisionesHistorial.map(h => ({
+    periodo: h.periodo,
+    totalComision: h.registros.reduce((s,r) => s + r.comision, 0),
+    totalPrima:    h.registros.reduce((s,r) => s + r.prima, 0),
+    porRamo: (() => {
+      const m = {};
+      h.registros.forEach(r => {
+        if (!m[r.ramo]) m[r.ramo] = { comision:0, prima:0 };
+        m[r.ramo].comision += r.comision;
+        m[r.ramo].prima    += r.prima;
+      });
+      return m;
+    })()
+  }));
+  localStorage.setItem('comisiones_resumen', JSON.stringify(resumen));
+}
+
+function cargarComisionesLocal() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('comisiones_resumen') || '[]');
+    // Reconstruir historial con registros sintéticos para que los cálculos funcionen
+    comisionesHistorial = raw.map(s => ({
+      periodo: s.periodo,
+      registros: Object.entries(s.porRamo).flatMap(([ramo, v]) => [{
+        periodo: s.periodo, ramo, comision: v.comision, prima: v.prima,
+        cliente:'', codCli:'', poliza:'resumen', porcCom:0, foper:null
+      }])
+    }));
+    if (comisionesHistorial.length > 0) {
+      comisionesActuales = comisionesHistorial[comisionesHistorial.length - 1];
+    }
+  } catch(e) { console.warn('Error cargando comisiones locales:', e); }
+}
 let comChart = null;
 let comRamoChart = null;
 
@@ -1026,8 +1062,25 @@ async function cargarComisiones(input) {
   const data = await file.arrayBuffer();
   const wb = XLSX.read(data, { type: 'array', cellDates: true });
 
+  // Solo procesar la hoja del productor principal (la que tiene más datos o la primera con 'Periodo')
+  // Las otras hojas (ej: 216537, 233430) son de otros intermediarios — NO sumar
   const registros = [];
+  // Elegir la hoja con más filas de datos (la del productor principal)
+  let sheetPrincipal = null;
+  let maxFilas = 0;
   wb.SheetNames.forEach(shName => {
+    const ws = wb.Sheets[shName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    const headerIdx = rows.findIndex(r => r && r[0] === 'Periodo');
+    if (headerIdx < 0) return;
+    const filas = rows.slice(headerIdx + 1).filter(r => r && r[0] && r[0] !== 'Periodo').length;
+    if (filas > maxFilas) { maxFilas = filas; sheetPrincipal = shName; }
+  });
+  if (!sheetPrincipal) { alert('No se encontraron datos en el archivo.'); return; }
+
+  // Procesar únicamente la hoja principal
+  {
+    const shName = sheetPrincipal;
     const ws = wb.Sheets[shName];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
     // Buscar fila de headers (contiene 'Periodo')
@@ -1070,7 +1123,7 @@ async function cargarComisiones(input) {
       if (!ramo) continue;
       registros.push({ periodo, ramo, cliente, codCli, poliza, comision, prima, porcCom, foper });
     }
-  });
+  }
 
   if (!registros.length) { alert('No se encontraron datos en el archivo.'); return; }
 
@@ -1084,7 +1137,12 @@ async function cargarComisiones(input) {
   if (!comisionesHistorial.find(h => h.periodo === periodoStr)) {
     comisionesHistorial.push(nuevoData);
     comisionesHistorial.sort((a,b) => a.periodo.localeCompare(b.periodo));
+  } else {
+    // Actualizar el existente con datos frescos del archivo
+    const idx = comisionesHistorial.findIndex(h => h.periodo === periodoStr);
+    comisionesHistorial[idx] = nuevoData;
   }
+  guardarComisionesLocal();
 
   document.getElementById('com-periodo').textContent =
     comisionesHistorial.length > 1
@@ -1362,7 +1420,7 @@ Sé directo, sin preambles. Usá números reales del reporte.`;
     const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-API-Key':key},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000,
         messages:[{role:'user',content:prompt}] })
     });
     const data = await res.json();
@@ -1384,7 +1442,7 @@ async function driveSnapshotComisiones(periodo, registros) {
     const totalPremio   = registros.reduce((s,r) => s + r.prima, 0);
     const porRamo = {};
     registros.forEach(r => {
-      if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, premio:0 };
+      if (!porRamo[r.ramo]) porRamo[r.ramo] = { comision:0, prima:0 };
       porRamo[r.ramo].comision += r.comision;
       porRamo[r.ramo].prima    += r.prima;
     });
@@ -1420,12 +1478,24 @@ async function driveCargarSnapshotsComisiones() {
   } catch(e) { return []; }
 }
 
-// Set de pólizas marcadas como renovadas (persiste en sessionStorage durante la sesión)
-const polizasRenovadas = new Set(JSON.parse(sessionStorage.getItem('renovadas') || '[]'));
+// Pólizas renovadas — persiste en localStorage con fecha, expira a los 30 días
+function cargarRenovadas() {
+  const raw = JSON.parse(localStorage.getItem('renovadas_v2') || '{}');
+  const hoy = Date.now();
+  const vigentes = {};
+  Object.entries(raw).forEach(([id, ts]) => {
+    if (hoy - ts < 30 * 86400000) vigentes[id] = ts; // 30 días
+  });
+  localStorage.setItem('renovadas_v2', JSON.stringify(vigentes));
+  return new Set(Object.keys(vigentes));
+}
+const polizasRenovadas = cargarRenovadas();
 
 function marcarRenovada(id, nombre) {
   polizasRenovadas.add(id);
-  sessionStorage.setItem('renovadas', JSON.stringify([...polizasRenovadas]));
+  const raw = JSON.parse(localStorage.getItem('renovadas_v2') || '{}');
+  raw[id] = Date.now();
+  localStorage.setItem('renovadas_v2', JSON.stringify(raw));
   renderAgenda();
   renderTabla(carteraActiva);
   // Feedback visual
@@ -1488,7 +1558,7 @@ async function sendMsg(){
   try{
     const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:hist})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:hist})});
     const data=await res.json();
     const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
@@ -1519,7 +1589,7 @@ async function genMail(){
   try{
     const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
     const reply=data.content?.[0]?.text||'';
     document.getElementById('mail-loader').classList.remove('show');
@@ -1899,7 +1969,7 @@ async function callIA(prompt, outId) {
   try{
     const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
     const reply=data.content?.[0]?.text||'Sin respuesta.';
     out.innerHTML=`<button class="copy-btn" onclick="copiar('${outId}')">Copiar</button>${reply.replace(/\n/g,'<br>')}`;
@@ -1938,6 +2008,9 @@ function cargarCfg(){
 document.getElementById('hdr-fecha').textContent = new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
 cargarCfg();
 initCartera(CARTERA_EMBEBIDA);
+// Restaurar comisiones guardadas de sesión anterior
+cargarComisionesLocal();
+if (comisionesActuales) renderComisiones();
 </script>
 </body>
 </html>
