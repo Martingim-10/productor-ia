@@ -1144,6 +1144,41 @@ async function cargarComisiones(input) {
   }
   guardarComisionesLocal();
 
+  // ── Enriquecer cartera con prima mensual real ──────────────────────────
+  // La prima del reporte Sancor es acumulada; la prima real mensual viene
+  // del Excel de comisiones (PrimaUnif, NroLiq=1 únicamente)
+  if (carteraActiva && carteraActiva.length) {
+    // Construir mapa poliza → primaUnif (solo NroLiq=1, columna 'Nro. Liq.' = col 21 en los datos parseados)
+    // En registros ya tenemos: { ramo, poliza, prima, ... }
+    // Pero necesitamos NroLiq; re-parsear desde wb no es posible aquí, así que
+    // usamos una estrategia diferente: agrupar por poliza y tomar el mínimo de prima
+    // (NroLiq=2 tiene la misma prima que NroLiq=1 — ambos repiten PrimaUnif)
+    // Por lo tanto cualquier registro con prima > 0 sirve para el mapa
+    const primaPorPoliza = {};
+    registros.forEach(r => {
+      if (r.prima > 0) {
+        const polLimpia = r.poliza.replace(/^0+/, '');
+        // Tomar el mayor (ambas liquidaciones tienen el mismo PrimaUnif)
+        primaPorPoliza[polLimpia] = r.prima;
+      }
+    });
+    // Aplicar a carteraActiva
+    let enriquecidas = 0;
+    carteraActiva.forEach(pol => {
+      const polLimpia = String(pol.poliza).replace(/^0+/, '');
+      if (primaPorPoliza[polLimpia]) {
+        pol.premio = primaPorPoliza[polLimpia];
+        pol.prima  = primaPorPoliza[polLimpia];
+        enriquecidas++;
+      }
+    });
+    if (enriquecidas > 0) {
+      renderStats(carteraActiva);
+      renderTabla(carteraActiva);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────
+
   document.getElementById('com-periodo').textContent =
     comisionesHistorial.length > 1
       ? comisionesHistorial.map(h => h.periodo).join(' · ')
