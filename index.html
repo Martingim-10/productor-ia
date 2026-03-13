@@ -797,7 +797,14 @@ function initCartera(data) {
 function renderStats(data) {
   const urgente = data.filter(r => { const d=diasA(r.venc); return d!==null && d>=0 && d<=7; });
   const pronto  = data.filter(r => { const d=diasA(r.venc); return d!==null && d>7 && d<=30; });
-  const totalPremio = data.reduce((s,r) => s + (r.premio || r.prima || 0), 0);
+  // Sumar prima por póliza única (evita contar N veces la misma prima en pólizas con múltiples certificados)
+  const primaPorPoliza = {};
+  data.forEach(r => {
+    const pol = String(r.poliza || '');
+    const val = r.premio || r.prima || 0;
+    if (val > 0) primaPorPoliza[pol] = val; // misma poliza → mismo valor, no importa sobreescribir
+  });
+  const totalPremio = Object.values(primaPorPoliza).reduce((s,v) => s+v, 0);
   const clientes = new Set(data.map(r => r.cuit || r.nombre)).size;
 
   document.getElementById('st-total').textContent = data.length;
@@ -1839,8 +1846,14 @@ async function driveSnapshotActual() {
     empCount: stats.empCount,
     porRamo: {}
   };
+  const polizasSnapContadas = new Set();
   carteraActiva.forEach(r => {
-    snap.porRamo[r.ramo] = (snap.porRamo[r.ramo]||0) + (r.premio||r.prima||0);
+    const polKey = String(r.poliza || '');
+    const pm = r.premio || r.prima || 0;
+    if (pm > 0 && !polizasSnapContadas.has(polKey)) {
+      polizasSnapContadas.add(polKey);
+      snap.porRamo[r.ramo] = (snap.porRamo[r.ramo]||0) + pm;
+    }
   });
   await driveGuardarSnapshot(snap);
   driveSnapshots.push(snap);
@@ -1864,12 +1877,18 @@ function calcularEstadisticasCartera() {
   const certPorRamo = {};
   let premioTotal = 0;
   let vencen7 = [], vencen30 = [];
+  const polizasContadas = new Set(); // evitar contar la misma póliza N veces (múltiples certs)
 
   c.forEach(r => {
     const pm = r.premio || r.prima || 0;
-    premioPorRamo[r.ramo] = (premioPorRamo[r.ramo]||0) + pm;
+    const polKey = String(r.poliza || '');
     certPorRamo[r.ramo] = (certPorRamo[r.ramo]||0) + 1;
-    premioTotal += pm;
+    // Premio: sumar solo una vez por póliza
+    if (pm > 0 && !polizasContadas.has(polKey)) {
+      polizasContadas.add(polKey);
+      premioPorRamo[r.ramo] = (premioPorRamo[r.ramo]||0) + pm;
+      premioTotal += pm;
+    }
     if (r.venc) {
       const dias = Math.ceil((new Date(r.venc) - hoy) / 86400000);
       if (dias >= 0 && dias <= 7)  vencen7.push(r);
