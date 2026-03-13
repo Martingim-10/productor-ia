@@ -329,7 +329,7 @@ textarea{resize:vertical;line-height:1.6}
       <div class="ph-title">🎯 Agenda del Día</div>
       <div class="ph-sub" id="agenda-fecha"></div>
     </div>
-    <button class="btn btn-primary" onclick="renderAgenda()">↻ Actualizar</button>
+    <button class="btn btn-primary" onclick="renderAgenda(true)">↻ Actualizar</button>
   </div>
   <div class="pb">
 
@@ -732,23 +732,30 @@ function calcularScore(r, premioMax) {
   return Math.round(premioScore + crossScore);
 }
 
-function renderAgenda() {
+let agendaPagina = 0; // paginación para rotar oportunidades
+
+function renderAgenda(rotar) {
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0,10);
   document.getElementById('agenda-fecha').textContent =
     'Actualizado: ' + hoy.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
-  // ── 1. Seguimientos pendientes (vencidos + próximos 7 días) ──────────────
+  // ── 1. Clientes cerrados/vendidos (excluir de oportunidades) ─────────────
+  const clientesCerrados = new Set(
+    gestiones.filter(g => g.resultado === 'cerrado').map(g => g.clienteId)
+  );
+
+  // ── 2. Seguimientos pendientes (vencidos + próximos 7 días) ──────────────
   const seg7 = new Date(); seg7.setDate(seg7.getDate() + 7);
   const seg7Str = seg7.toISOString().slice(0,10);
   const seguimientosPendientes = gestiones
-    .filter(g => g.fechaSeg && g.fechaSeg <= seg7Str)
+    .filter(g => g.fechaSeg && g.fechaSeg <= seg7Str && g.resultado !== 'cerrado')
     .map(g => {
       const diasHasta = Math.ceil((new Date(g.fechaSeg) - hoy) / 86400000);
       return { ...g, _tipo: 'seguimiento', _dias: diasHasta };
     });
 
-  // ── 2. Oportunidades cross-sell ───────────────────────────────────────────
+  // ── 3. Oportunidades cross-sell ───────────────────────────────────────────
   const clientes = {};
   carteraActiva.forEach(r => {
     if (!r.pf) return;
@@ -761,28 +768,37 @@ function renderAgenda() {
   const autoSinComb = typeof AUTO_SIN_COMBINADO !== 'undefined' ? AUTO_SIN_COMBINADO : new Set();
   Object.values(clientes).forEach(c => { c.sinCombinado = c.ramos.has(200) && autoSinComb.has(c.id); });
   const renovadasSet = typeof polizasRenovadas !== 'undefined' ? polizasRenovadas : new Set();
-  const conOportunidad = Object.values(clientes).filter(c => c.sinCombinado && !renovadasSet.has(c.id));
+  // Excluir cerrados/vendidos y renovados
+  const conOportunidad = Object.values(clientes).filter(c =>
+    c.sinCombinado && !renovadasSet.has(c.id) && !clientesCerrados.has(c.id)
+  );
   const premioMax = conOportunidad.length ? Math.max(...conOportunidad.map(c => c.pmTotal)) : 1;
   conOportunidad.forEach(c => { c.score = calcularScore(c, premioMax); c._tipo = 'oportunidad'; });
+  conOportunidad.sort((a,b) => b.score - a.score);
 
-  // ── 3. Mezclar y ordenar ──────────────────────────────────────────────────
-  // Seguimientos vencidos o de hoy primero (urgencia máxima), luego por score/días
+  // Paginación: rotar de a 10 oportunidades al presionar Actualizar
+  const POR_PAG = 10;
+  if (rotar) agendaPagina = (agendaPagina + 1) % Math.max(1, Math.ceil(conOportunidad.length / POR_PAG));
+  const oportunidadesPag = conOportunidad.slice(agendaPagina * POR_PAG, (agendaPagina + 1) * POR_PAG);
+
+  // ── 4. Mezclar y ordenar ──────────────────────────────────────────────────
   const items = [
     ...seguimientosPendientes.map(s => ({
       ...s,
-      _urgencia: s._dias <= 0 ? 1000 + Math.abs(s._dias) * 10  // vencidos primero, más vencido = más urgente
-                               : 900 - s._dias * 5              // próximos: más cercano = más urgente
+      _urgencia: s._dias <= 0 ? 1000 + Math.abs(s._dias) * 10
+                               : 900 - s._dias * 5
     })),
-    ...conOportunidad.map(c => ({ ...c, _urgencia: c.score }))
-  ].sort((a,b) => b._urgencia - a._urgencia).slice(0, 12);
+    ...oportunidadesPag.map(c => ({ ...c, _urgencia: c.score }))
+  ].sort((a,b) => b._urgencia - a._urgencia);
 
-  // ── 4. Stats ──────────────────────────────────────────────────────────────
+  // ── 5. Stats ──────────────────────────────────────────────────────────────
   const totalOp   = conOportunidad.length;
   const premioEnJuego   = conOportunidad.reduce((s,c) => s + c.pmTotal, 0);
   const potencialCombi  = Math.round(premioEnJuego * 0.15);
   const segVencidos     = seguimientosPendientes.filter(s => s._dias <= 0).length;
+  const totalPags = Math.max(1, Math.ceil(conOportunidad.length / POR_PAG));
   document.getElementById('agenda-resumen').innerHTML = `
-    <div class="agenda-stat"><div class="val">${totalOp}</div><div class="lbl">Oportunidades cross-sell</div></div>
+    <div class="agenda-stat"><div class="val">${totalOp}</div><div class="lbl">Oportunidades cross-sell${clientesCerrados.size>0?' ('+clientesCerrados.size+' cerradas)':''}</div></div>
     <div class="agenda-stat"><div class="val" style="color:${segVencidos>0?'var(--rust)':'var(--green)'}">${seguimientosPendientes.length}</div><div class="lbl">Seguimientos próximos${segVencidos>0?' ('+segVencidos+' vencidos)':''}</div></div>
     <div class="agenda-stat"><div class="val">$${Math.round(potencialCombi/1000).toLocaleString('es-AR')}K</div><div class="lbl">Potencial Combinado est.</div></div>
   `;
@@ -862,8 +878,12 @@ function renderAgenda() {
     </div>`;
   }).join('');
 
-  document.getElementById('agenda-lista').innerHTML = lista;
-  document.getElementById('badge-agenda').textContent = items.length;
+  const paginaInfo = totalPags > 1
+    ? `<div style="text-align:center;padding:14px 0;font-size:12px;color:var(--muted)">Página ${agendaPagina+1} de ${totalPags} — presioná <strong>↻ Actualizar</strong> para ver los siguientes</div>`
+    : '';
+
+  document.getElementById('agenda-lista').innerHTML = lista + paginaInfo;
+  document.getElementById('badge-agenda').textContent = items.length || '';
 }
 
 function accionRetirexAgenda(nombre) {
