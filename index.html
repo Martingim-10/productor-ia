@@ -229,6 +229,44 @@ textarea{resize:vertical;line-height:1.6}
 .agenda-stat { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 18px; text-align:center; }
 .agenda-stat .val { font-size:22px; font-weight:700; color:var(--green); font-family:'DM Serif Display',serif; }
 .agenda-stat .lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* SEGUIMIENTOS */
+.seg-section { background:#fff; border:1.5px solid var(--gold); border-radius:12px; padding:16px 20px; margin-bottom:20px; }
+.seg-section-title { font-weight:700; font-size:13px; color:var(--gold); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.seg-card { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.seg-card:last-child { border-bottom:none; }
+.seg-dot { width:10px; height:10px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+.seg-dot.hoy { background:var(--rust); }
+.seg-dot.proximo { background:var(--gold); }
+.seg-dot.vencido { background:#dc2626; }
+.seg-info { flex:1; min-width:0; }
+.seg-nombre { font-weight:600; font-size:13px; }
+.seg-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.seg-nota { font-size:12px; color:var(--ink); margin-top:3px; font-style:italic; }
+.seg-fecha-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+.seg-fecha-chip.vencido { background:var(--red-bg); color:var(--red-fg); }
+.seg-fecha-chip.hoy { background:#fef3c7; color:#92400e; }
+.seg-fecha-chip.proximo { background:var(--green-bg); color:var(--green-fg); }
+
+/* MODAL GESTIÓN */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:var(--paper); border-radius:16px; padding:28px; width:460px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.modal-title { font-family:'DM Serif Display',serif; font-size:20px; margin-bottom:4px; }
+.modal-sub { font-size:12px; color:var(--muted); margin-bottom:20px; }
+.modal-field { margin-bottom:14px; }
+.modal-field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; letter-spacing:.05em; text-transform:uppercase; }
+.modal-field input, .modal-field select, .modal-field textarea {
+  width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px;
+  font-family:'DM Sans',sans-serif; font-size:13px; background:#fff; color:var(--ink);
+}
+.modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus {
+  outline:none; border-color:var(--gold);
+}
+.modal-field textarea { resize:vertical; min-height:70px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.modal-cliente-info { background:var(--cream); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:13px; }
+.modal-cliente-info strong { color:var(--green); }
 </style>
 </head>
 <body>
@@ -294,6 +332,9 @@ textarea{resize:vertical;line-height:1.6}
     <button class="btn btn-primary" onclick="renderAgenda()">↻ Actualizar</button>
   </div>
   <div class="pb">
+
+    <!-- Seguimientos pendientes -->
+    <div id="agenda-seguimientos"></div>
 
     <!-- Resumen de oportunidad -->
     <div id="agenda-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px"></div>
@@ -586,6 +627,45 @@ textarea{resize:vertical;line-height:1.6}
 </main>
 </div>
 
+<!-- ══ MODAL GESTIÓN ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-gestion">
+  <div class="modal-box">
+    <div class="modal-title">📋 Registrar Gestión</div>
+    <div class="modal-sub" id="modal-gestion-sub">Nueva gestión comercial</div>
+    <div class="modal-cliente-info" id="modal-cliente-info"></div>
+    <div class="modal-field">
+      <label>Tipo de gestión</label>
+      <select id="mg-tipo">
+        <option value="llamado">📞 Llamado</option>
+        <option value="whatsapp">💬 WhatsApp</option>
+        <option value="mail">✉️ Mail</option>
+        <option value="visita">🤝 Visita</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Resultado</label>
+      <select id="mg-resultado">
+        <option value="contactado">✅ Contactado</option>
+        <option value="no_contesto">📵 No contestó</option>
+        <option value="interesado">🌟 Interesado</option>
+        <option value="cerrado">🏆 Cerrado / Vendido</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Nota (opcional)</label>
+      <textarea id="mg-nota" placeholder="Ej: Quedó en pensarlo, llamar la semana que viene..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>Recordatorio — próximo seguimiento</label>
+      <input type="date" id="mg-fecha-seg">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cerrarModalGestion()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarGestion()">Guardar gestión</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════
 // DATOS EMBEBIDOS (reporte Sancor 08/03/2026)
@@ -654,69 +734,114 @@ function calcularScore(r, premioMax) {
 
 function renderAgenda() {
   const hoy = new Date();
+  const hoyStr = hoy.toISOString().slice(0,10);
   document.getElementById('agenda-fecha').textContent =
     'Actualizado: ' + hoy.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
-  // Agrupar cartera por cliente (id), solo personas físicas
+  // ── 1. Seguimientos pendientes (vencidos + próximos 7 días) ──────────────
+  const seg7 = new Date(); seg7.setDate(seg7.getDate() + 7);
+  const seg7Str = seg7.toISOString().slice(0,10);
+  const seguimientosPendientes = gestiones
+    .filter(g => g.fechaSeg && g.fechaSeg <= seg7Str)
+    .map(g => {
+      const diasHasta = Math.ceil((new Date(g.fechaSeg) - hoy) / 86400000);
+      return { ...g, _tipo: 'seguimiento', _dias: diasHasta };
+    });
+
+  // ── 2. Oportunidades cross-sell ───────────────────────────────────────────
   const clientes = {};
   carteraActiva.forEach(r => {
-    if (!r.pf) return; // solo personas físicas para Combinado Familiar
+    if (!r.pf) return;
     const key = r.id;
-    if (!clientes[key]) {
-      clientes[key] = {
-        id: key, nombre: r.nombre, pf: r.pf,
-        pmTotal: 0, ramos: new Set(), sinCombinado: false,
-        certs: 0
-      };
-    }
+    if (!clientes[key]) clientes[key] = { id:key, nombre:r.nombre, pf:r.pf, pmTotal:0, ramos:new Set(), sinCombinado:false, certs:0 };
     clientes[key].pmTotal += (r.pm || r.premio || r.prima || 0);
     clientes[key].ramos.add(r.ramo);
     clientes[key].certs++;
   });
-
-  // Marcar los que tienen auto sin combinado
   const autoSinComb = typeof AUTO_SIN_COMBINADO !== 'undefined' ? AUTO_SIN_COMBINADO : new Set();
-  Object.values(clientes).forEach(c => {
-    c.sinCombinado = c.ramos.has(200) && autoSinComb.has(c.id);
-  });
-
-  // Filtrar solo los que tienen oportunidad de cross-sell Combinado (excluir renovadas)
+  Object.values(clientes).forEach(c => { c.sinCombinado = c.ramos.has(200) && autoSinComb.has(c.id); });
   const renovadasSet = typeof polizasRenovadas !== 'undefined' ? polizasRenovadas : new Set();
   const conOportunidad = Object.values(clientes).filter(c => c.sinCombinado && !renovadasSet.has(c.id));
+  const premioMax = conOportunidad.length ? Math.max(...conOportunidad.map(c => c.pmTotal)) : 1;
+  conOportunidad.forEach(c => { c.score = calcularScore(c, premioMax); c._tipo = 'oportunidad'; });
 
-  if (!conOportunidad.length) {
-    document.getElementById('agenda-lista').innerHTML =
-      '<div style="color:var(--muted);font-size:13px;padding:20px 0">No hay oportunidades de cross-sell identificadas.</div>';
-    return;
-  }
+  // ── 3. Mezclar y ordenar ──────────────────────────────────────────────────
+  // Seguimientos vencidos o de hoy primero (urgencia máxima), luego por score/días
+  const items = [
+    ...seguimientosPendientes.map(s => ({
+      ...s,
+      _urgencia: s._dias <= 0 ? 1000 + Math.abs(s._dias) * 10  // vencidos primero, más vencido = más urgente
+                               : 900 - s._dias * 5              // próximos: más cercano = más urgente
+    })),
+    ...conOportunidad.map(c => ({ ...c, _urgencia: c.score }))
+  ].sort((a,b) => b._urgencia - a._urgencia).slice(0, 12);
 
-  // Calcular score y ordenar
-  const premioMax = Math.max(...conOportunidad.map(c => c.pmTotal));
-  conOportunidad.forEach(c => { c.score = calcularScore(c, premioMax); });
-  conOportunidad.sort((a, b) => b.score - a.score);
-  const top10 = conOportunidad.slice(0, 10);
-
-  // Resumen stats
-  const totalOp = conOportunidad.length;
-  const premioEnJuego = conOportunidad.reduce((s,c) => s + c.pmTotal, 0);
-  const potencialCombi = Math.round(premioEnJuego * 0.15); // estimado ~15% del premio auto
+  // ── 4. Stats ──────────────────────────────────────────────────────────────
+  const totalOp   = conOportunidad.length;
+  const premioEnJuego   = conOportunidad.reduce((s,c) => s + c.pmTotal, 0);
+  const potencialCombi  = Math.round(premioEnJuego * 0.15);
+  const segVencidos     = seguimientosPendientes.filter(s => s._dias <= 0).length;
   document.getElementById('agenda-resumen').innerHTML = `
-    <div class="agenda-stat"><div class="val">${totalOp}</div><div class="lbl">Oportunidades totales</div></div>
-    <div class="agenda-stat"><div class="val">$${Math.round(premioEnJuego/1000).toLocaleString('es-AR')}K</div><div class="lbl">Premio mensual en juego</div></div>
+    <div class="agenda-stat"><div class="val">${totalOp}</div><div class="lbl">Oportunidades cross-sell</div></div>
+    <div class="agenda-stat"><div class="val" style="color:${segVencidos>0?'var(--rust)':'var(--green)'}">${seguimientosPendientes.length}</div><div class="lbl">Seguimientos próximos${segVencidos>0?' ('+segVencidos+' vencidos)':''}</div></div>
     <div class="agenda-stat"><div class="val">$${Math.round(potencialCombi/1000).toLocaleString('es-AR')}K</div><div class="lbl">Potencial Combinado est.</div></div>
   `;
 
-  // Render top 10
-  const fmtM = v => v > 0 ? '$' + Math.round(v).toLocaleString('es-AR') : '—';
-  const lista = top10.map((c, i) => {
+  // Limpiar sección de seguimientos separada (ya no se usa)
+  const elSeg = document.getElementById('agenda-seguimientos');
+  if (elSeg) elSeg.innerHTML = '';
+
+  if (!items.length) {
+    document.getElementById('agenda-lista').innerHTML =
+      '<div style="color:var(--muted);font-size:13px;padding:20px 0">Sin actividad para mostrar.</div>';
+    document.getElementById('badge-agenda').textContent = '';
+    return;
+  }
+
+  // ── 5. Render lista unificada ────────────────────────────────────────────
+  const TIPO_ICON = { llamado:'📞', whatsapp:'💬', mail:'✉️', visita:'🤝' };
+  const RES_LABEL = { contactado:'Contactado', no_contesto:'No contestó', interesado:'🌟 Interesado', cerrado:'🏆 Cerrado' };
+
+  const lista = items.map((item, i) => {
     const rankCls = i < 3 ? 'agenda-rank top3' : 'agenda-rank';
+
+    if (item._tipo === 'seguimiento') {
+      const g = item;
+      const esVencido = g._dias <= 0;
+      const esHoy     = g.fechaSeg === hoyStr;
+      const chipBg    = esVencido ? 'var(--red-bg)' : esHoy ? '#fef3c7' : 'var(--green-bg)';
+      const chipFg    = esVencido ? 'var(--red-fg)' : esHoy ? '#92400e'  : 'var(--green-fg)';
+      const chipTxt   = esVencido ? `⚠️ Hace ${Math.abs(g._dias)}d` : esHoy ? '📅 Hoy' : `📅 ${g._dias}d`;
+      const tipoIcon  = TIPO_ICON[g.tipo] || '📋';
+      const resLabel  = RES_LABEL[g.resultado] || g.resultado;
+      const ne = g.clienteNombre.replace(/'/g,"\\'");
+      return `
+      <div class="agenda-card" style="border-left:3px solid ${esVencido?'var(--rust)':esHoy?'#d97706':'var(--green)'}">
+        <div class="${rankCls}">🔔</div>
+        <div class="agenda-info">
+          <div class="agenda-nombre">${g.clienteNombre}</div>
+          <div class="agenda-motivo">${tipoIcon} Últ. gestión: ${resLabel} · ${g.fechaGestion}${g.ramo?' · '+g.ramo:''}</div>
+          ${g.nota ? `<div style="font-size:11px;font-style:italic;color:var(--muted);margin-top:2px">"${g.nota}"</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:${chipBg};color:${chipFg}">${chipTxt}</span>
+          <div class="agenda-btns">
+            <button class="btn btn-secondary btn-sm" style="background:#f3f0ff;color:#5b21b6;border-color:#c4b5fd" onclick="abrirModalGestion('${g.clienteId}','${ne}','${g.ramo}','${g.poliza}')">📋 Nueva gestión</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Oportunidad cross-sell
+    const c = item;
     const motivos = [];
     if (c.sinCombinado) motivos.push('🏠 Sin Combinado Familiar');
     if (c.ramos.size === 1) motivos.push('1 solo ramo — baja retención');
     if (c.pmTotal > 500000) motivos.push('⭐ Cliente premium');
     const motivoStr = motivos.join(' · ');
     const scoreW = Math.round(c.score);
-    const ne = c.nombre.replace(/'/g, "\'");
+    const ne = c.nombre.replace(/'/g,"\\'");
+    const fmtMx = v => v > 0 ? '$' + Math.round(v).toLocaleString('es-AR') : '—';
     return `
     <div class="agenda-card">
       <div class="${rankCls}">${i+1}</div>
@@ -724,7 +849,7 @@ function renderAgenda() {
         <div class="agenda-nombre">${c.nombre}</div>
         <div class="agenda-motivo">${motivoStr}</div>
       </div>
-      <div class="agenda-premio">${fmtM(c.pmTotal)}<span style="font-size:10px;font-weight:400;color:var(--muted)">/mes</span></div>
+      <div class="agenda-premio">${fmtMx(c.pmTotal)}<span style="font-size:10px;font-weight:400;color:var(--muted)">/mes</span></div>
       <div class="agenda-score">
         <div class="score-bar-wrap"><div class="score-bar" style="width:${scoreW}%"></div></div>
         <div class="score-label">Score ${scoreW}</div>
@@ -732,12 +857,13 @@ function renderAgenda() {
       <div class="agenda-btns">
         <button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIAById('combinado','${c.id}','Automotores')">🏠 Combinado</button>
         <button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirexAgenda('${ne}')">🔵 Retirex</button>
+        <button class="btn btn-secondary btn-sm" style="background:#f3f0ff;color:#5b21b6;border-color:#c4b5fd" onclick="abrirModalGestion('${c.id}','${ne}','Cross-sell Combinado','')">📋 Gestión</button>
       </div>
     </div>`;
   }).join('');
 
   document.getElementById('agenda-lista').innerHTML = lista;
-  document.getElementById('badge-agenda').textContent = top10.length;
+  document.getElementById('badge-agenda').textContent = items.length;
 }
 
 function accionRetirexAgenda(nombre) {
@@ -1717,6 +1843,8 @@ function driveAuth() {
       document.getElementById('drive-status-sub').textContent = 'Los snapshots se guardarán en la carpeta ProductorIA_Snapshots';
       document.getElementById('drive-btn').textContent = 'Reconectar';
       await driveCargarSnapshots();
+      await gestionesCargarDrive();
+      renderSeguimientosAgenda();
     }
   });
   client.requestAccessToken();
@@ -2075,6 +2203,172 @@ function cargarCfg(){
   document.getElementById('cfg-matricula').value=localStorage.getItem('cfg_matricula')||'213038';
   document.getElementById('cfg-key').value=localStorage.getItem('apikey')||'';
 }
+
+// ═══════════════════════════════════════════════════════════
+// SISTEMA DE GESTIONES
+// ═══════════════════════════════════════════════════════════
+let gestiones = [];        // array en memoria
+let gestionModalCtx = {};  // contexto del modal abierto
+const GESTIONES_FILENAME = 'gestiones_productor.json';
+
+// ── Cargar desde Drive ────────────────────────────────────────────────────────
+async function gestionesCargarDrive() {
+  if (!driveToken) return;
+  try {
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name='${GESTIONES_FILENAME}' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,
+      { headers: { Authorization: 'Bearer ' + driveToken } });
+    const d = await r.json();
+    if (!d.files || !d.files.length) { gestiones = []; return; }
+    const fileId = d.files[0].id;
+    const fr = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      { headers: { Authorization: 'Bearer ' + driveToken } });
+    gestiones = await fr.json();
+    console.log(`Gestiones cargadas: ${gestiones.length}`);
+  } catch(e) { console.error('Error cargando gestiones:', e); gestiones = []; }
+}
+
+// ── Guardar en Drive (sobreescribir el archivo) ───────────────────────────────
+async function gestionesGuardarDrive() {
+  if (!driveToken) { alert('Conectá Google Drive primero para guardar gestiones.'); return false; }
+  try {
+    const folderId = await driveGetFolderId();
+    // Buscar si ya existe
+    const q = encodeURIComponent(`'${folderId}' in parents and name='${GESTIONES_FILENAME}' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,
+      { headers: { Authorization: 'Bearer ' + driveToken } });
+    const d = await r.json();
+    const payload = JSON.stringify(gestiones, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+
+    if (d.files && d.files.length > 0) {
+      // Actualizar existente
+      const fileId = d.files[0].id;
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        { method: 'PATCH', headers: { Authorization: 'Bearer ' + driveToken, 'Content-Type': 'application/json' }, body: blob });
+    } else {
+      // Crear nuevo
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify({
+        name: GESTIONES_FILENAME, parents: [folderId], mimeType: 'application/json'
+      })], { type: 'application/json' }));
+      form.append('file', blob);
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        { method: 'POST', headers: { Authorization: 'Bearer ' + driveToken }, body: form });
+    }
+    return true;
+  } catch(e) { console.error('Error guardando gestiones:', e); alert('Error al guardar en Drive.'); return false; }
+}
+
+// ── Abrir modal ───────────────────────────────────────────────────────────────
+function abrirModalGestion(clienteId, clienteNombre, ramo, poliza) {
+  gestionModalCtx = { clienteId, clienteNombre, ramo, poliza };
+  document.getElementById('modal-gestion-sub').textContent = 'Nueva gestión comercial';
+  document.getElementById('modal-cliente-info').innerHTML =
+    `<strong>${clienteNombre}</strong><br>
+     <span style="font-size:11px;color:var(--muted)">${ramo}${poliza ? ' · Póliza ' + poliza : ''}</span>`;
+  // Fecha sugerida: 7 días
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  document.getElementById('mg-fecha-seg').value = d.toISOString().slice(0,10);
+  document.getElementById('mg-tipo').value = 'llamado';
+  document.getElementById('mg-resultado').value = 'contactado';
+  document.getElementById('mg-nota').value = '';
+  document.getElementById('modal-gestion').classList.add('open');
+}
+
+function cerrarModalGestion() {
+  document.getElementById('modal-gestion').classList.remove('open');
+}
+
+// ── Guardar gestión ───────────────────────────────────────────────────────────
+async function guardarGestion() {
+  const { clienteId, clienteNombre, ramo, poliza } = gestionModalCtx;
+  const tipo      = document.getElementById('mg-tipo').value;
+  const resultado = document.getElementById('mg-resultado').value;
+  const nota      = document.getElementById('mg-nota').value.trim();
+  const fechaSeg  = document.getElementById('mg-fecha-seg').value;
+
+  const g = {
+    id: Date.now().toString(),
+    clienteId, clienteNombre, ramo, poliza,
+    tipo, resultado, nota, fechaSeg,
+    fechaGestion: new Date().toISOString().slice(0,10)
+  };
+  gestiones.push(g);
+
+  const btn = document.querySelector('#modal-gestion .btn-primary');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  const ok = await gestionesGuardarDrive();
+  btn.textContent = 'Guardar gestión'; btn.disabled = false;
+
+  if (ok) {
+    cerrarModalGestion();
+    renderSeguimientosAgenda();
+    // Toast
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#f5f0e8;padding:12px 20px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+    t.textContent = '✅ Gestión guardada en Drive';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+}
+
+// ── Render seguimientos en agenda ─────────────────────────────────────────────
+function renderSeguimientosAgenda() {
+  const el = document.getElementById('agenda-seguimientos');
+  if (!el) return;
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const enTresDias = new Date(); enTresDias.setDate(enTresDias.getDate() + 3);
+  const tresDiasStr = enTresDias.toISOString().slice(0,10);
+
+  // Filtrar gestiones con seguimiento pendiente (próximos o vencidos)
+  const pendientes = gestiones
+    .filter(g => g.fechaSeg)
+    .sort((a,b) => a.fechaSeg.localeCompare(b.fechaSeg))
+    .filter(g => g.fechaSeg <= tresDiasStr); // hasta 3 días adelante + vencidos
+
+  if (!pendientes.length) { el.innerHTML = ''; return; }
+
+  const TIPO_ICON = { llamado:'📞', whatsapp:'💬', mail:'✉️', visita:'🤝' };
+  const RES_LABEL = { contactado:'Contactado', no_contesto:'No contestó', interesado:'Interesado', cerrado:'Cerrado' };
+
+  const items = pendientes.map(g => {
+    const esVencido = g.fechaSeg < hoy;
+    const esHoy     = g.fechaSeg === hoy;
+    const dotCls    = esVencido ? 'vencido' : esHoy ? 'hoy' : 'proximo';
+    const chipCls   = esVencido ? 'vencido' : esHoy ? 'hoy' : 'proximo';
+    const chipTxt   = esVencido ? '⚠️ Vencido' : esHoy ? '📅 Hoy' : `📅 ${g.fechaSeg}`;
+    const tipoIcon  = TIPO_ICON[g.tipo] || '📋';
+    const resLabel  = RES_LABEL[g.resultado] || g.resultado;
+    return `
+      <div class="seg-card">
+        <div class="seg-dot ${dotCls}"></div>
+        <div class="seg-info">
+          <div class="seg-nombre">${g.clienteNombre}</div>
+          <div class="seg-meta">${tipoIcon} ${g.tipo} · ${resLabel} · ${g.fechaGestion}${g.ramo ? ' · ' + g.ramo : ''}</div>
+          ${g.nota ? `<div class="seg-nota">"${g.nota}"</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <span class="seg-fecha-chip ${chipCls}">${chipTxt}</span>
+          <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="abrirModalGestion('${g.clienteId}','${g.clienteNombre.replace(/'/g,"\\'")}','${g.ramo}','${g.poliza}')">📋 Nueva</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const count = pendientes.length;
+  el.innerHTML = `
+    <div class="seg-section">
+      <div class="seg-section-title">🔔 Seguimientos pendientes <span style="background:var(--rust);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px">${count}</span></div>
+      ${items}
+    </div>`;
+}
+
+// Cerrar modal al hacer click fuera
+document.getElementById('modal-gestion').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalGestion();
+});
 
 // ═══════════════════════════════════════════════════════════
 // INIT
