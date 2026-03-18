@@ -1123,19 +1123,19 @@ Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más
 1. PÓLIZA DE LA COMPETENCIA (primer documento)
 2. MANUAL DE SANCOR para el mismo ramo: ${archivoManual} (segundo documento)
 
-Comparalos y respondé en formato JSON:
+Comparalos y respondé en formato JSON COMPACTO (máximo 5 items por array, textos breves):
 {
-  "compania": "nombre de la compañía competidora",
-  "producto": "nombre del producto",
+  "compania": "nombre compañía",
+  "producto": "nombre producto",
   "ramo_detectado": "${ramoDetectado}",
   "manual_sancor_usado": "${archivoManual}",
-  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura de la competencia"}],
-  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión de la competencia"}],
-  "comparacion_sancor": [{"aspecto":"aspecto específico","competencia":"condición exacta de la competencia","sancor":"condición exacta del manual de Sancor","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "párrafo de 4-5 oraciones con argumento comercial basado en diferencias REALES encontradas en los dos documentos. Citá condiciones específicas del manual de Sancor.",
-  "puntos_clave": ["diferencia concreta 1 con dato real","diferencia concreta 2","diferencia concreta 3"]
+  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura breve"}],
+  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión breve"}],
+  "comparacion_sancor": [{"aspecto":"aspecto","competencia":"condición competencia (breve)","sancor":"condición Sancor (breve)","ventaja":"sancor|competencia|similar"}],
+  "argumento_venta": "3 oraciones máximo con diferencias reales de los documentos.",
+  "puntos_clave": ["punto 1","punto 2","punto 3"]
 }
-Usá el manual de Sancor como fuente de verdad. Respondé SOLO con el JSON.`;
+IMPORTANTE: JSON compacto, máximo 5 items por array, textos de máximo 80 caracteres cada uno. Respondé SOLO con el JSON válido.`;
         content=[content[0],{type:'document',source:{type:'base64',media_type:'application/pdf',data:manualB64}},{type:'text',text:promptComp}];
       }else{
         const sinManual=!driveToken?'Drive no conectado':'Manual no encontrado en Drive';
@@ -1159,12 +1159,28 @@ Respondé SOLO con el JSON.`;
       content.push({type:'text',text:promptSancor});
     }
 
-    const body={model:'claude-sonnet-4-6',max_tokens:2500,system:getSistema(),messages:[{role:'user',content}]};
+    const body={model:'claude-sonnet-4-6',max_tokens:4000,system:getSistema(),messages:[{role:'user',content}]};
     const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:JSON.stringify(body)});
     const data=await res.json();
     const txt=data.content?.[0]?.text||'{}';
-    const clean=txt.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
+    let clean=txt.replace(/```json|```/g,'').trim();
+    // Si el JSON está truncado, intentar cerrarlo
+    if(!clean.endsWith('}')){
+      const lastBrace=clean.lastIndexOf('}');
+      if(lastBrace>0) clean=clean.substring(0,lastBrace+1);
+      let d2=0;
+      for(const c of clean){if(c==='{')d2++;else if(c==='}')d2--;}
+      for(let x=0;x<d2;x++){clean+='}';}
+    }
+    let parsed;
+    try{ parsed=JSON.parse(clean); }
+    catch(e2){
+      // Fallback: mostrar resultado como texto
+      parsed={compania:'Error de formato',producto:'',ramo_detectado:'',manual_sancor_usado:'',
+        coberturas_detectadas:[],exclusiones_detectadas:[],comparacion_sancor:[],
+        argumento_venta:'El análisis fue generado pero el formato JSON no pudo procesarse. Revisá el texto completo abajo.',
+        puntos_clave:[txt.substring(0,500)]};
+    }
     renderCobResultado(parsed,modo);
   }catch(e){
     document.getElementById('cob-result-body').innerHTML='<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
