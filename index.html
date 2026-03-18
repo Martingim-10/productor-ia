@@ -1019,18 +1019,60 @@ function limpiarCobertura(tipo){
   document.getElementById('cob-result').classList.remove('show');
 }
 
+// Mapa ramo -> manual en ProductorIA_Manuales
+const MANUALES_MAP = {
+  'automotores': 'Automotores.pdf', 'auto': 'Automotores.pdf',
+  'combinado': 'combinado fliar.pdf', 'hogar': 'combinado fliar.pdf',
+  'incendio': 'Incendio.pdf',
+  'caucion': 'Caución.pdf', 'caución': 'Caución.pdf',
+  'integral': 'Integral comercio e industria.pdf', 'comercio': 'Integral comercio e industria.pdf',
+  'tecnico': 'Seguro Técnico - Todo Riesgo Operativo.pdf',
+  'contratista': 'Seguro Técnico - Equipo de Contratista.pdf',
+  'transporte': 'Transporte Terrestre.pdf',
+};
+const MANUALES_FOLDER = 'ProductorIA_Manuales';
+
+async function driveGetManualesFolderId(){
+  if(!driveToken)return null;
+  try{
+    const q=encodeURIComponent(`name='${MANUALES_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d=await r.json();return d.files?.[0]?.id||null;
+  }catch(e){return null;}
+}
+
+async function driveCargarManual(nombreArchivo){
+  if(!driveToken)return null;
+  try{
+    const folderId=await driveGetManualesFolderId();if(!folderId)return null;
+    const q=encodeURIComponent(`'${folderId}' in parents and name='${nombreArchivo}' and trashed=false`);
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d=await r.json();if(!d.files?.length)return null;
+    const fr=await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+    const blob=await fr.blob();
+    return new Promise((res,rej)=>{const reader=new FileReader();reader.onload=e=>res(e.target.result.split(',')[1]);reader.onerror=rej;reader.readAsDataURL(blob);});
+  }catch(e){console.warn('Error cargando manual:',e);return null;}
+}
+
+function detectarManual(texto){
+  const t=(texto||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const[key,arch]of Object.entries(MANUALES_MAP)){
+    if(t.includes(key.normalize('NFD').replace(/[\u0300-\u036f]/g,'')))return arch;
+  }
+  return null;
+}
+
 async function analizarCobertura(modo){
-  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
-  const fileData = modo==='sancor' ? cobFileDataSancor : cobFileDataComp;
-  const fileType = modo==='sancor' ? cobFileTypeSancor : cobFileTypeComp;
+  const key=getKey();if(!key){alert('Configurá tu API Key.');return;}
+  const fileData=modo==='sancor'?cobFileDataSancor:cobFileDataComp;
+  const fileType=modo==='sancor'?cobFileTypeSancor:cobFileTypeComp;
   if(!fileData){alert('Primero subí el archivo de la póliza.');return;}
 
   const loader=document.getElementById('cob-loader');
   const result=document.getElementById('cob-result');
-  loader.classList.add('show');
-  result.classList.remove('show');
+  loader.classList.add('show');result.classList.remove('show');
 
-  const promptSancor = `Analizá esta póliza de Sancor Seguros y respondé en formato JSON con esta estructura exacta:
+  const promptSancor=`Analizá esta póliza de Sancor Seguros y respondé en formato JSON con esta estructura exacta:
 {
   "compania": "Sancor Seguros",
   "producto": "nombre del producto",
@@ -1042,54 +1084,94 @@ async function analizarCobertura(modo){
   "alertas": [{"tipo":"warning|danger","texto":"alerta importante para el cliente"}],
   "resumen_simple": "explicación en 2-3 oraciones en lenguaje simple para el cliente"
 }
-Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más frecuentes que generan conflictos en siniestros. Respondé SOLO con el JSON, sin texto adicional.`;
+Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más frecuentes. Respondé SOLO con el JSON.`;
 
-  const promptComp = `Analizá esta póliza de seguro de una compañía competidora y respondé en formato JSON:
+  try{
+    const mediaType=fileType.includes('pdf')?'application/pdf':fileType;
+    const contentType=fileType.includes('pdf')?'document':'image';
+    let content=[
+      contentType==='document'
+        ?{type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
+        :{type:'image',source:{type:'base64',media_type:mediaType,data:fileData}}
+    ];
+
+    if(modo==='competencia'){
+      // Paso 1: detectar ramo
+      loader.querySelector('span').textContent='Detectando producto...';
+      const detRes=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+        method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:50,
+          messages:[{role:'user',content:[content[0],
+            {type:'text',text:'¿Qué tipo de seguro es esta póliza? Respondé SOLO con una de estas palabras: automotores, combinado, incendio, caucion, integral, tecnico, transporte, vida, accidentes. Una sola palabra.'}
+          ]}]})
+      });
+      const detData=await detRes.json();
+      const ramoDetectado=(detData.content?.[0]?.text||'').toLowerCase().trim();
+
+      // Paso 2: buscar manual Sancor
+      const archivoManual=detectarManual(ramoDetectado);
+      let manualB64=null;
+      if(archivoManual&&driveToken){
+        loader.querySelector('span').textContent=`Cargando manual Sancor: ${archivoManual}...`;
+        manualB64=await driveCargarManual(archivoManual);
+      }
+
+      // Paso 3: prompt según si tiene manual o no
+      let promptComp;
+      if(manualB64){
+        promptComp=`Tenés DOS documentos:
+1. PÓLIZA DE LA COMPETENCIA (primer documento)
+2. MANUAL DE SANCOR para el mismo ramo: ${archivoManual} (segundo documento)
+
+Comparalos y respondé en formato JSON:
+{
+  "compania": "nombre de la compañía competidora",
+  "producto": "nombre del producto",
+  "ramo_detectado": "${ramoDetectado}",
+  "manual_sancor_usado": "${archivoManual}",
+  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura de la competencia"}],
+  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión de la competencia"}],
+  "comparacion_sancor": [{"aspecto":"aspecto específico","competencia":"condición exacta de la competencia","sancor":"condición exacta del manual de Sancor","ventaja":"sancor|competencia|similar"}],
+  "argumento_venta": "párrafo de 4-5 oraciones con argumento comercial basado en diferencias REALES encontradas en los dos documentos. Citá condiciones específicas del manual de Sancor.",
+  "puntos_clave": ["diferencia concreta 1 con dato real","diferencia concreta 2","diferencia concreta 3"]
+}
+Usá el manual de Sancor como fuente de verdad. Respondé SOLO con el JSON.`;
+        content=[content[0],{type:'document',source:{type:'base64',media_type:'application/pdf',data:manualB64}},{type:'text',text:promptComp}];
+      }else{
+        const sinManual=!driveToken?'Drive no conectado':'Manual no encontrado en Drive';
+        promptComp=`Analizá esta póliza de seguro de una compañía competidora y respondé en formato JSON:
 {
   "compania": "nombre de la compañía",
   "producto": "nombre del producto",
+  "ramo_detectado": "${ramoDetectado}",
+  "manual_sancor_usado": "${sinManual} — comparación basada en conocimiento general",
   "coberturas_detectadas": [{"icono":"📋","texto":"cobertura identificada"}],
   "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión identificada"}],
-  "comparacion_sancor": [{"aspecto":"nombre","competencia":"lo que tiene","sancor":"lo que ofrece Sancor","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "párrafo de 3-4 oraciones con el argumento comercial para migrar al cliente a Sancor, basado en las diferencias encontradas",
-  "puntos_clave": ["punto 1 a destacar en la conversación","punto 2","punto 3"]
+  "comparacion_sancor": [{"aspecto":"nombre","competencia":"lo que tiene","sancor":"lo que ofrece Sancor típicamente","ventaja":"sancor|competencia|similar"}],
+  "argumento_venta": "párrafo de 3-4 oraciones con argumento comercial para migrar al cliente a Sancor",
+  "puntos_clave": ["punto 1","punto 2","punto 3"]
 }
-Respondé SOLO con el JSON, sin texto adicional.`;
+Respondé SOLO con el JSON.`;
+        content.push({type:'text',text:promptComp});
+      }
+      loader.querySelector('span').textContent='Comparando con manual Sancor...';
+    }else{
+      content.push({type:'text',text:promptSancor});
+    }
 
-  try {
-    const mediaType = fileType.includes('pdf') ? 'application/pdf' : fileType;
-    const contentType = fileType.includes('pdf') ? 'document' : 'image';
-
-    const body = {
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      system: getSistema(),
-      messages: [{
-        role: 'user',
-        content: [
-          contentType==='document'
-            ? {type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
-            : {type:'image',source:{type:'base64',media_type:mediaType,data:fileData}},
-          {type:'text',text: modo==='sancor' ? promptSancor : promptComp}
-        ]
-      }]
-    };
-
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key},
-      body:JSON.stringify(body)
-    });
-    const data = await res.json();
-    const txt = data.content?.[0]?.text||'{}';
-    const clean = txt.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
-    renderCobResultado(parsed, modo);
-  } catch(e){
-    document.getElementById('cob-result-body').innerHTML = '<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
+    const body={model:'claude-sonnet-4-6',max_tokens:2500,system:getSistema(),messages:[{role:'user',content}]};
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:JSON.stringify(body)});
+    const data=await res.json();
+    const txt=data.content?.[0]?.text||'{}';
+    const clean=txt.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    renderCobResultado(parsed,modo);
+  }catch(e){
+    document.getElementById('cob-result-body').innerHTML='<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
     result.classList.add('show');
   }
   loader.classList.remove('show');
+  if(loader.querySelector('span'))loader.querySelector('span').textContent='Analizando póliza...';
 }
 
 function renderCobResultado(data, modo){
