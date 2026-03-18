@@ -240,6 +240,12 @@ textarea{resize:vertical;line-height:1.6}
 .renov-dias.verde{color:var(--green-fg)}
 .renov-prima{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);min-width:90px;text-align:right}
 .renov-estado{min-width:80px;text-align:right}
+.renov-row.en-gestion{background:#fff8f0;border-left:3px solid #f59e0b}
+.renov-row.renovada-ok{background:rgba(42,92,69,0.04);opacity:0.6}
+.renov-row.dada-baja{background:#fff0f0;opacity:0.5}
+.renov-row.en-gestion{background:#fff8f0;border-left:3px solid #f59e0b}
+.renov-row.renovada-ok{background:rgba(42,92,69,0.04);opacity:0.6}
+.renov-row.dada-baja{background:#fff0f0;opacity:0.5}
 
 /* ── ANÁLISIS COBERTURA ────────────────────────────────── */
 .cob-modo-tabs{display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--cream)}
@@ -422,6 +428,8 @@ textarea{resize:vertical;line-height:1.6}
         <option value="criticas">🔴 ≤ 7 días</option>
         <option value="proximas">🟡 8–30 días</option>
         <option value="ok">🟢 Más de 30 días</option>
+        <option value="en_gestion">🟠 En gestión</option>
+        <option value="pendientes">⚪ Sin gestión</option>
       </select>
       <input type="text" id="renov-buscar" placeholder="🔍 Buscar cliente..." oninput="renderRenovacionesFiltradas()" style="width:220px">
       <span class="f-count" id="renov-count"></span>
@@ -877,6 +885,118 @@ function actualizarSemaforoRenovaciones(){
   document.getElementById('badge-renovaciones').textContent = badge > 0 ? badge : '';
 }
 
+// ── ESTADOS DE RENOVACIONES ────────────────────────────────────────────
+// estados: { poliza: 'en_gestion' | 'renovada' | 'baja' }
+let renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1') || '{}');
+
+function guardarRenovEstados(){
+  localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
+  // Guardar en Drive si conectado
+  if(driveToken) driveGuardarRenovEstados();
+}
+
+async function driveGuardarRenovEstados(){
+  try{
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d = await r.json();
+    const blob = new Blob([JSON.stringify(renovEstados)],{type:'application/json'});
+    if(d.files?.length){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${d.files[0].id}?uploadType=media`,
+        {method:'PATCH',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:blob});
+    } else {
+      const form = new FormData();
+      form.append('metadata',new Blob([JSON.stringify({name:'renovaciones_estado.json',parents:[folderId]})],{type:'application/json'}));
+      form.append('file',blob);
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        {method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
+    }
+  }catch(e){console.warn('Error guardando estados renovaciones:',e);}
+}
+
+async function driveCargarRenovEstados(){
+  if(!driveToken)return;
+  try{
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d = await r.json();
+    if(!d.files?.length)return;
+    const fr = await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+    const data = await fr.json();
+    renovEstados = data;
+    localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
+  }catch(e){console.warn('Error cargando estados renovaciones:',e);}
+}
+
+function setRenovEstado(poliza, nombre, estado){
+  if(estado==='renovada'||estado==='baja'){
+    renovEstados[poliza] = estado;
+  } else if(estado==='en_gestion'){
+    renovEstados[poliza] = estado;
+  } else if(estado==='quitar'){
+    delete renovEstados[poliza];
+  }
+  guardarRenovEstados();
+  actualizarSemaforoRenovaciones();
+  renderRenovacionesFiltradas();
+  // Feedback
+  const msgs = {renovada:'✅ Marcada como renovada', baja:'❌ Dada de baja', en_gestion:'🟠 En gestión', quitar:'↩️ Estado removido'};
+  toast(msgs[estado]||'Estado actualizado');
+}
+
+// ── ESTADOS DE RENOVACIONES ─────────────────────────────────────────
+renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1') || '{}');
+
+function guardarRenovEstados(){
+  localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
+  if(driveToken) driveGuardarRenovEstados();
+}
+
+async function driveGuardarRenovEstados(){
+  try{
+    const folderId=await driveGetFolderId();
+    const q=encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d=await r.json();
+    const blob=new Blob([JSON.stringify(renovEstados)],{type:'application/json'});
+    if(d.files?.length){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${d.files[0].id}?uploadType=media`,
+        {method:'PATCH',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:blob});
+    }else{
+      const form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify({name:'renovaciones_estado.json',parents:[folderId]})],{type:'application/json'}));
+      form.append('file',blob);
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
+    }
+  }catch(e){console.warn('Error guardando estados:',e);}
+}
+
+async function driveCargarRenovEstados(){
+  if(!driveToken)return;
+  try{
+    const folderId=await driveGetFolderId();
+    const q=encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d=await r.json();
+    if(!d.files?.length)return;
+    const fr=await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+    renovEstados=await fr.json();
+    localStorage.setItem('renov_estados_v1',JSON.stringify(renovEstados));
+  }catch(e){console.warn('Error cargando estados:',e);}
+}
+
+function setRenovEstado(poliza, nombre, estado){
+  if(estado==='quitar') delete renovEstados[poliza];
+  else renovEstados[poliza]=estado;
+  guardarRenovEstados();
+  actualizarSemaforoRenovaciones();
+  renderRenovacionesFiltradas();
+  const msgs={renovada:'✅ Marcada como renovada',baja:'❌ Dada de baja',en_gestion:'🟠 En gestión',quitar:'↩️ Estado removido'};
+  toast(msgs[estado]||'Estado actualizado');
+}
+
 function renderRenovacionesFiltradas(){
   const filtro = document.getElementById('renov-filtro').value;
   const buscar = (document.getElementById('renov-buscar').value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -908,30 +1028,68 @@ function renderRenovacionesFiltradas(){
     return;
   }
 
-  const renovadas = typeof polizasRenovadas!=='undefined' ? polizasRenovadas : new Set();
+  // Filtrar por estado
+  if(filtro==='en_gestion') datos=datos.filter(r=>renovEstados[r.poliza]==='en_gestion');
+  if(filtro==='pendientes') datos=datos.filter(r=>!renovEstados[r.poliza]);
+  if(['todas','vencidas','criticas','proximas','ok'].includes(filtro)){
+    datos=datos.filter(r=>renovEstados[r.poliza]!=='renovada'&&renovEstados[r.poliza]!=='baja');
+  }
 
-  document.getElementById('renov-lista').innerHTML = datos.map(r=>{
-    let color = 'verde', diasTxt = '';
-    if(r.dias < 0){color='rojo';diasTxt=`Vencida hace ${Math.abs(r.dias)}d`;}
+  document.getElementById('renov-count').textContent=datos.length+' pólizas';
+
+  if(!datos.length){
+    document.getElementById('renov-lista').innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Sin resultados para este filtro.</div>';
+    return;
+  }
+
+  document.getElementById('renov-lista').innerHTML=datos.map(r=>{
+    let color='verde',diasTxt='';
+    if(r.dias<0){color='rojo';diasTxt=`Vencida hace ${Math.abs(r.dias)}d`;}
     else if(r.dias<=7){color='rojo';diasTxt=`${r.dias}d ⚠️`;}
     else if(r.dias<=30){color='amarillo';diasTxt=`${r.dias}d`;}
     else{diasTxt=`${r.dias}d`;}
-    const estaRen = renovadas.has(r.poliza);
-    const primaFmt = r.prima>0?'$'+Math.round(r.prima).toLocaleString('es-AR'):'—';
-    const vtoFmt = r.vto?new Date(r.vto).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
-    const ne = r.nombre.replace(/'/g,"\\'");
-    const ra = (r.ramo||'').replace(/'/g,"\\'");
-    return `<div class="renov-row${estaRen?' renovada':''}">
+
+    const estado=renovEstados[r.poliza]||'';
+    const primaFmt=r.prima>0?'$'+Math.round(r.prima).toLocaleString('es-AR'):'—';
+    const vtoFmt=r.vto?new Date(r.vto).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+    const ne=r.nombre.replace(/'/g,"\'");
+    const ra=(r.ramo||'').replace(/'/g,"\'");
+    const pol=r.poliza.replace(/'/g,"\'");
+
+    let estadoChip='',rowClass='renov-row',acciones='';
+    if(estado==='renovada'){
+      rowClass+=' renovada-ok';
+      estadoChip='<span class="badge b-green" style="margin-left:6px">✅ Renovada</span>';
+      acciones=`<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="setRenovEstado('${pol}','${ne}','quitar')" title="Quitar estado">↩️</button>`;
+    } else if(estado==='baja'){
+      rowClass+=' dada-baja';
+      estadoChip='<span class="badge b-red" style="margin-left:6px">❌ Baja</span>';
+      acciones=`<button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="setRenovEstado('${pol}','${ne}','quitar')" title="Quitar estado">↩️</button>`;
+    } else if(estado==='en_gestion'){
+      rowClass+=' en-gestion';
+      estadoChip='<span class="badge" style="background:#fff3cd;color:#92400e;margin-left:6px">🟠 En gestión</span>';
+      acciones=`
+        <button class="btn btn-secondary btn-sm" style="background:var(--green-bg);color:var(--green-fg)" onclick="setRenovEstado('${pol}','${ne}','renovada')">✅</button>
+        <button class="btn btn-secondary btn-sm" style="background:var(--red-bg);color:var(--red-fg)" onclick="setRenovEstado('${pol}','${ne}','baja')">❌</button>
+        <button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️</button>
+        <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="setRenovEstado('${pol}','${ne}','quitar')">↩️</button>`;
+    } else {
+      acciones=`
+        <button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Contactar</button>
+        <button class="btn btn-secondary btn-sm" style="background:#fff3cd;color:#92400e" onclick="setRenovEstado('${pol}','${ne}','en_gestion')">🟠 Gestión</button>
+        <button class="btn btn-secondary btn-sm" style="background:var(--green-bg);color:var(--green-fg)" onclick="setRenovEstado('${pol}','${ne}','renovada')">✅ Renovada</button>
+        <button class="btn btn-secondary btn-sm" style="background:var(--red-bg);color:var(--red-fg)" onclick="setRenovEstado('${pol}','${ne}','baja')">❌ Baja</button>`;
+    }
+
+    return `<div class="${rowClass}">
       <div class="renov-dot ${color}"></div>
       <div class="renov-info">
-        <div class="renov-nombre">${r.nombre}</div>
+        <div class="renov-nombre">${r.nombre}${estadoChip}</div>
         <div class="renov-ramo">${r.ramo||'—'} · ${vtoFmt}${r.formaPago?' · '+r.formaPago:''}</div>
       </div>
       <div class="renov-prima">${primaFmt}</div>
       <div class="renov-dias ${color}">${diasTxt}</div>
-      <div class="renov-estado">
-        ${!estaRen?`<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Contactar</button>`:'<span class="badge b-green">✅ Renovada</span>'}
-      </div>
+      <div class="renov-estado" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;min-width:180px">${acciones}</div>
     </div>`;
   }).join('');
 }
@@ -1019,60 +1177,18 @@ function limpiarCobertura(tipo){
   document.getElementById('cob-result').classList.remove('show');
 }
 
-// Mapa ramo -> manual en ProductorIA_Manuales
-const MANUALES_MAP = {
-  'automotores': 'Automotores.pdf', 'auto': 'Automotores.pdf',
-  'combinado': 'combinado fliar.pdf', 'hogar': 'combinado fliar.pdf',
-  'incendio': 'Incendio.pdf',
-  'caucion': 'Caución.pdf', 'caución': 'Caución.pdf',
-  'integral': 'Integral comercio e industria.pdf', 'comercio': 'Integral comercio e industria.pdf',
-  'tecnico': 'Seguro Técnico - Todo Riesgo Operativo.pdf',
-  'contratista': 'Seguro Técnico - Equipo de Contratista.pdf',
-  'transporte': 'Transporte Terrestre.pdf',
-};
-const MANUALES_FOLDER = 'ProductorIA_Manuales';
-
-async function driveGetManualesFolderId(){
-  if(!driveToken)return null;
-  try{
-    const q=encodeURIComponent(`name='${MANUALES_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d=await r.json();return d.files?.[0]?.id||null;
-  }catch(e){return null;}
-}
-
-async function driveCargarManual(nombreArchivo){
-  if(!driveToken)return null;
-  try{
-    const folderId=await driveGetManualesFolderId();if(!folderId)return null;
-    const q=encodeURIComponent(`'${folderId}' in parents and name='${nombreArchivo}' and trashed=false`);
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d=await r.json();if(!d.files?.length)return null;
-    const fr=await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
-    const blob=await fr.blob();
-    return new Promise((res,rej)=>{const reader=new FileReader();reader.onload=e=>res(e.target.result.split(',')[1]);reader.onerror=rej;reader.readAsDataURL(blob);});
-  }catch(e){console.warn('Error cargando manual:',e);return null;}
-}
-
-function detectarManual(texto){
-  const t=(texto||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  for(const[key,arch]of Object.entries(MANUALES_MAP)){
-    if(t.includes(key.normalize('NFD').replace(/[\u0300-\u036f]/g,'')))return arch;
-  }
-  return null;
-}
-
 async function analizarCobertura(modo){
-  const key=getKey();if(!key){alert('Configurá tu API Key.');return;}
-  const fileData=modo==='sancor'?cobFileDataSancor:cobFileDataComp;
-  const fileType=modo==='sancor'?cobFileTypeSancor:cobFileTypeComp;
+  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
+  const fileData = modo==='sancor' ? cobFileDataSancor : cobFileDataComp;
+  const fileType = modo==='sancor' ? cobFileTypeSancor : cobFileTypeComp;
   if(!fileData){alert('Primero subí el archivo de la póliza.');return;}
 
   const loader=document.getElementById('cob-loader');
   const result=document.getElementById('cob-result');
-  loader.classList.add('show');result.classList.remove('show');
+  loader.classList.add('show');
+  result.classList.remove('show');
 
-  const promptSancor=`Analizá esta póliza de Sancor Seguros y respondé en formato JSON con esta estructura exacta:
+  const promptSancor = `Analizá esta póliza de Sancor Seguros y respondé en formato JSON con esta estructura exacta:
 {
   "compania": "Sancor Seguros",
   "producto": "nombre del producto",
@@ -1084,110 +1200,54 @@ async function analizarCobertura(modo){
   "alertas": [{"tipo":"warning|danger","texto":"alerta importante para el cliente"}],
   "resumen_simple": "explicación en 2-3 oraciones en lenguaje simple para el cliente"
 }
-Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más frecuentes. Respondé SOLO con el JSON.`;
+Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más frecuentes que generan conflictos en siniestros. Respondé SOLO con el JSON, sin texto adicional.`;
 
-  try{
-    const mediaType=fileType.includes('pdf')?'application/pdf':fileType;
-    const contentType=fileType.includes('pdf')?'document':'image';
-    let content=[
-      contentType==='document'
-        ?{type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
-        :{type:'image',source:{type:'base64',media_type:mediaType,data:fileData}}
-    ];
-
-    if(modo==='competencia'){
-      // Paso 1: detectar ramo
-      loader.querySelector('span').textContent='Detectando producto...';
-      const detRes=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
-        method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:50,
-          messages:[{role:'user',content:[content[0],
-            {type:'text',text:'¿Qué tipo de seguro es esta póliza? Respondé SOLO con una de estas palabras: automotores, combinado, incendio, caucion, integral, tecnico, transporte, vida, accidentes. Una sola palabra.'}
-          ]}]})
-      });
-      const detData=await detRes.json();
-      const ramoDetectado=(detData.content?.[0]?.text||'').toLowerCase().trim();
-
-      // Paso 2: buscar manual Sancor
-      const archivoManual=detectarManual(ramoDetectado);
-      let manualB64=null;
-      if(archivoManual&&driveToken){
-        loader.querySelector('span').textContent=`Cargando manual Sancor: ${archivoManual}...`;
-        manualB64=await driveCargarManual(archivoManual);
-      }
-
-      // Paso 3: prompt según si tiene manual o no
-      let promptComp;
-      if(manualB64){
-        promptComp=`Tenés DOS documentos:
-1. PÓLIZA DE LA COMPETENCIA (primer documento)
-2. MANUAL DE SANCOR para el mismo ramo: ${archivoManual} (segundo documento)
-
-Comparalos y respondé en formato JSON COMPACTO (máximo 5 items por array, textos breves):
-{
-  "compania": "nombre compañía",
-  "producto": "nombre producto",
-  "ramo_detectado": "${ramoDetectado}",
-  "manual_sancor_usado": "${archivoManual}",
-  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura breve"}],
-  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión breve"}],
-  "comparacion_sancor": [{"aspecto":"aspecto","competencia":"condición competencia (breve)","sancor":"condición Sancor (breve)","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "3 oraciones máximo con diferencias reales de los documentos.",
-  "puntos_clave": ["punto 1","punto 2","punto 3"]
-}
-IMPORTANTE: JSON compacto, máximo 5 items por array, textos de máximo 80 caracteres cada uno. Respondé SOLO con el JSON válido.`;
-        content=[content[0],{type:'document',source:{type:'base64',media_type:'application/pdf',data:manualB64}},{type:'text',text:promptComp}];
-      }else{
-        const sinManual=!driveToken?'Drive no conectado':'Manual no encontrado en Drive';
-        promptComp=`Analizá esta póliza de seguro de una compañía competidora y respondé en formato JSON:
+  const promptComp = `Analizá esta póliza de seguro de una compañía competidora y respondé en formato JSON:
 {
   "compania": "nombre de la compañía",
   "producto": "nombre del producto",
-  "ramo_detectado": "${ramoDetectado}",
-  "manual_sancor_usado": "${sinManual} — comparación basada en conocimiento general",
   "coberturas_detectadas": [{"icono":"📋","texto":"cobertura identificada"}],
   "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión identificada"}],
-  "comparacion_sancor": [{"aspecto":"nombre","competencia":"lo que tiene","sancor":"lo que ofrece Sancor típicamente","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "párrafo de 3-4 oraciones con argumento comercial para migrar al cliente a Sancor",
-  "puntos_clave": ["punto 1","punto 2","punto 3"]
+  "comparacion_sancor": [{"aspecto":"nombre","competencia":"lo que tiene","sancor":"lo que ofrece Sancor","ventaja":"sancor|competencia|similar"}],
+  "argumento_venta": "párrafo de 3-4 oraciones con el argumento comercial para migrar al cliente a Sancor, basado en las diferencias encontradas",
+  "puntos_clave": ["punto 1 a destacar en la conversación","punto 2","punto 3"]
 }
-Respondé SOLO con el JSON.`;
-        content.push({type:'text',text:promptComp});
-      }
-      loader.querySelector('span').textContent='Comparando con manual Sancor...';
-    }else{
-      content.push({type:'text',text:promptSancor});
-    }
+Respondé SOLO con el JSON, sin texto adicional.`;
 
-    const body={model:'claude-sonnet-4-6',max_tokens:4000,system:getSistema(),messages:[{role:'user',content}]};
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:JSON.stringify(body)});
-    const data=await res.json();
-    const txt=data.content?.[0]?.text||'{}';
-    let clean=txt.replace(/```json|```/g,'').trim();
-    // Si el JSON está truncado, intentar cerrarlo
-    if(!clean.endsWith('}')){
-      const lastBrace=clean.lastIndexOf('}');
-      if(lastBrace>0) clean=clean.substring(0,lastBrace+1);
-      let d2=0;
-      for(const c of clean){if(c==='{')d2++;else if(c==='}')d2--;}
-      for(let x=0;x<d2;x++){clean+='}';}
-    }
-    let parsed;
-    try{ parsed=JSON.parse(clean); }
-    catch(e2){
-      // Fallback: mostrar resultado como texto
-      parsed={compania:'Error de formato',producto:'',ramo_detectado:'',manual_sancor_usado:'',
-        coberturas_detectadas:[],exclusiones_detectadas:[],comparacion_sancor:[],
-        argumento_venta:'El análisis fue generado pero el formato JSON no pudo procesarse. Revisá el texto completo abajo.',
-        puntos_clave:[txt.substring(0,500)]};
-    }
-    renderCobResultado(parsed,modo);
-  }catch(e){
-    document.getElementById('cob-result-body').innerHTML='<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
+  try {
+    const mediaType = fileType.includes('pdf') ? 'application/pdf' : fileType;
+    const contentType = fileType.includes('pdf') ? 'document' : 'image';
+
+    const body = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      system: getSistema(),
+      messages: [{
+        role: 'user',
+        content: [
+          contentType==='document'
+            ? {type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
+            : {type:'image',source:{type:'base64',media_type:mediaType,data:fileData}},
+          {type:'text',text: modo==='sancor' ? promptSancor : promptComp}
+        ]
+      }]
+    };
+
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key},
+      body:JSON.stringify(body)
+    });
+    const data = await res.json();
+    const txt = data.content?.[0]?.text||'{}';
+    const clean = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    renderCobResultado(parsed, modo);
+  } catch(e){
+    document.getElementById('cob-result-body').innerHTML = '<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
     result.classList.add('show');
   }
   loader.classList.remove('show');
-  if(loader.querySelector('span'))loader.querySelector('span').textContent='Analizando póliza...';
 }
 
 function renderCobResultado(data, modo){
@@ -1347,7 +1407,9 @@ let tplSel='';
 
 function calcularScore(r,premioMax){
   const premioScore=premioMax>0?(r.pmTotal/premioMax)*60:0;
-  const crossScore=r.sinCombinado?40:0;
+  const tieneAuto=r.ramos&&(r.ramos.has(200)||r.ramos.has(3100));
+  const sinCombinado=tieneAuto&&r.ramos&&!r.ramos.has(1800);
+  const crossScore=sinCombinado?40:r.ramos&&r.ramos.size===1?20:0;
   return Math.round(premioScore+crossScore);
 }
 
@@ -1443,13 +1505,19 @@ function renderAgenda(rotar){
     clientes[key].ramos.add(r.ramo);
     clientes[key].certs++;
   });
-  Object.values(clientes).forEach(c=>{c.sinCombinado=c.ramos.has(200)&&AUTO_SIN_COMBINADO.has(c.id);});
+  // Calcular dinámicamente: tiene auto (200) y NO tiene combinado (1800)
+  Object.values(clientes).forEach(c=>{c.sinCombinado=c.ramos.has(200)&&!c.ramos.has(1800);});
   const renovadasSet=typeof polizasRenovadas!=='undefined'?polizasRenovadas:new Set();
 
   // Excluir cerrados e interesados (ya en pipeline)
-  const conOportunidad=Object.values(clientes).filter(c=>
-    c.sinCombinado&&!renovadasSet.has(c.id)&&!clientesCerrados.has(c.id)&&!clientesInteresados.has(c.id)
-  );
+  // Oportunidades: tiene auto sin combinado OR tiene solo 1 ramo (cualquier ramo)
+  const conOportunidad=Object.values(clientes).filter(c=>{
+    if(renovadasSet.has(c.id)||clientesCerrados.has(c.id)||clientesInteresados.has(c.id))return false;
+    const tieneAuto=c.ramos.has(200)||c.ramos.has(3100);
+    const sinCombinado=tieneAuto&&!c.ramos.has(1800);
+    const soloUnRamo=c.ramos.size===1&&c.pmTotal>0;
+    return sinCombinado||soloUnRamo;
+  });
   const premioMax=conOportunidad.length?Math.max(...conOportunidad.map(c=>c.pmTotal)):1;
   conOportunidad.forEach(c=>{c.score=calcularScore(c,premioMax);c._tipo='oportunidad';});
   conOportunidad.sort((a,b)=>b.score-a.score);
@@ -1575,7 +1643,7 @@ function fmtF(isoStr){if(!isoStr)return'—';const d=new Date(isoStr);return isN
 function fmtM(n){if(!n)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'$'+Math.round(n/1000)+'K';return'$'+Math.round(n).toLocaleString('es-AR');}
 
 function initCartera(data){
-  carteraActiva=data.map(r=>({nombre:r.n||'',cuit:r.c||'',id:r.id||r.c||'',ramo:r.r||0,poliza:r.p||'',cert:r.cert||1,venc:r.v||null,premio:r.pm||0,prima:r.pm||0,pf:r.pf!==undefined?r.pf:true,crossell:AUTO_SIN_COMBINADO.has(r.id||r.c||'')})).filter(r=>r.nombre);
+  carteraActiva=data.map(r=>({nombre:r.n||'',cuit:r.c||'',id:r.id||r.c||'',ramo:r.r||0,poliza:r.p||'',cert:r.cert||1,venc:r.v||null,premio:r.pm||0,prima:r.pm||0,pf:r.pf!==undefined?r.pf:true,crossell:false})).filter(r=>r.nombre);
   carteraActiva.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
   const ramos=[...new Set(carteraActiva.map(r=>r.ramo).filter(Boolean))].sort((a,b)=>a-b);
   const sel=document.getElementById('f-ramo');
@@ -2072,7 +2140,8 @@ function driveAuth(){
     document.getElementById('btn-sync-drive').style.display='inline-flex';
     await driveCargarSnapshots();
     await gestionesCargarDrive();
-    await driveCargarComisionesExcel(); // ← auto-carga comisiones
+    await driveCargarComisionesExcel();
+    await driveCargarRenovEstados(); // ← auto-carga comisiones
     renderSeguimientosAgenda();
   }});
   client.requestAccessToken();
