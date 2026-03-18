@@ -1220,7 +1220,7 @@ Respondé SOLO con el JSON, sin texto adicional.`;
 
     const body = {
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: getSistema(),
       messages: [{
         role: 'user',
@@ -1239,9 +1239,28 @@ Respondé SOLO con el JSON, sin texto adicional.`;
       body:JSON.stringify(body)
     });
     const data = await res.json();
-    const txt = data.content?.[0]?.text||'{}';
-    const clean = txt.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
+    let txt = data.content?.[0]?.text||'{}';
+    let clean = txt.replace(/```json|```/g,'').trim();
+    // Reparar JSON truncado si es necesario
+    if(!clean.endsWith('}')){
+      const lastBrace = clean.lastIndexOf('}');
+      if(lastBrace > 0) clean = clean.substring(0, lastBrace+1);
+      let d2=0;
+      for(const ch of clean){if(ch==='{')d2++;else if(ch==='}')d2--;}
+      for(let x=0;x<d2;x++) clean+='}';
+    }
+    let parsed;
+    try{ parsed = JSON.parse(clean); }
+    catch(e2){
+      parsed = {
+        compania:'—', producto:'—', asegurado:'—', vigencia:'—',
+        coberturas:[], exclusiones:[], deducibles:[],
+        alertas:[{tipo:'warning',texto:'El análisis se generó pero el JSON vino incompleto. Intentá con un PDF más liviano o subí solo las páginas de coberturas.'}],
+        resumen_simple: txt.substring(0,600),
+        coberturas_detectadas:[], exclusiones_detectadas:[],
+        comparacion_sancor:[], argumento_venta: txt.substring(0,600), puntos_clave:[]
+      };
+    }
     renderCobResultado(parsed, modo);
   } catch(e){
     document.getElementById('cob-result-body').innerHTML = '<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
