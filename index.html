@@ -870,6 +870,9 @@ function actualizarSemaforoRenovaciones(){
   let vencidas=0,criticas=0,proximas=0,ok=0;
   renovData.forEach(r=>{
     if(!r.vto) return;
+    // Excluir renovadas y bajas del semáforo
+    const est = renovEstados[r.poliza];
+    if(est==='renovada' || est==='baja') return;
     const d = new Date(r.vto); d.setHours(0,0,0,0);
     const dias = Math.round((d-hoy)/86400000);
     if(dias<0) vencidas++;
@@ -951,7 +954,7 @@ renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1') || '{}');
 
 function guardarRenovEstados(){
   localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
-  if(driveToken) driveGuardarRenovEstados().catch(e=>console.warn('Drive save failed, localStorage ok:',e));
+  if(driveToken) driveGuardarRenovEstados();
 }
 
 async function driveGuardarRenovEstados(){
@@ -982,15 +985,9 @@ async function driveCargarRenovEstados(){
     const d=await r.json();
     if(!d.files?.length)return;
     const fr=await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
-    const data=await fr.json();
-    // Merge Drive data with localStorage (Drive wins)
-    renovEstados={...renovEstados,...data};
+    renovEstados=await fr.json();
     localStorage.setItem('renov_estados_v1',JSON.stringify(renovEstados));
-    // Refresh renovaciones if panel is visible
-    if(document.getElementById('renovaciones-panel')?.classList.contains('active')){
-      renderRenovacionesFiltradas();
-    }
-  }catch(e){console.warn('Error cargando estados renovaciones:',e);}
+  }catch(e){console.warn('Error cargando estados:',e);}
 }
 
 function setRenovEstado(poliza, nombre, estado){
@@ -1183,60 +1180,6 @@ function limpiarCobertura(tipo){
   document.getElementById('cob-result').classList.remove('show');
 }
 
-// ── MANUALES SANCOR DESDE DRIVE ─────────────────────────────────────
-const MANUALES_MAP = {
-  'automotores':'Automotores.pdf', 'auto':'Automotores.pdf',
-  'combinado':'combinado fliar.pdf', 'hogar':'combinado fliar.pdf',
-  'incendio':'Incendio.pdf',
-  'caucion':'Caución.pdf', 'caución':'Caución.pdf',
-  'caución ambiental':'Caución Ambiental.pdf',
-  'integral':'Integral comercio e industria.pdf',
-  'comercio':'Integral comercio e industria.pdf',
-  'tecnico':'Seguro Técnico - Todo Riesgo Operativo.pdf',
-  'contratista':'Seguro Técnico - Equipo de Contratista.pdf',
-  'transporte':'Transporte Terrestre.pdf',
-};
-const MANUALES_FOLDER = 'ProductorIA_Manuales';
-
-async function driveGetManualesFolderId(){
-  if(!driveToken) return null;
-  try{
-    const q=encodeURIComponent(`name='${MANUALES_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d=await r.json();
-    return d.files?.[0]?.id||null;
-  }catch(e){return null;}
-}
-
-async function driveCargarManual(nombreArchivo){
-  if(!driveToken) return null;
-  try{
-    const folderId=await driveGetManualesFolderId();
-    if(!folderId) return null;
-    const q=encodeURIComponent(`'${folderId}' in parents and name='${nombreArchivo}' and trashed=false`);
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d=await r.json();
-    if(!d.files?.length) return null;
-    const fr=await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
-    const blob=await fr.blob();
-    return new Promise((res,rej)=>{
-      const reader=new FileReader();
-      reader.onload=e=>res(e.target.result.split(',')[1]);
-      reader.onerror=rej;
-      reader.readAsDataURL(blob);
-    });
-  }catch(e){console.warn('Error cargando manual:',e);return null;}
-}
-
-function detectarManual(texto){
-  const t=(texto||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-  for(const[key,arch]of Object.entries(MANUALES_MAP)){
-    const k=key.normalize('NFD').replace(/[̀-ͯ]/g,'');
-    if(t.includes(k)) return arch;
-  }
-  return null;
-}
-
 async function analizarCobertura(modo){
   const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
   const fileData = modo==='sancor' ? cobFileDataSancor : cobFileDataComp;
@@ -1278,66 +1221,19 @@ Respondé SOLO con el JSON, sin texto adicional.`;
     const mediaType = fileType.includes('pdf') ? 'application/pdf' : fileType;
     const contentType = fileType.includes('pdf') ? 'document' : 'image';
 
-    let contentArr = [
-      contentType==='document'
-        ? {type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
-        : {type:'image',source:{type:'base64',media_type:mediaType,data:fileData}}
-    ];
-    let promptFinal = modo==='sancor' ? promptSancor : promptComp;
-
-    // Para modo competencia: detectar ramo y cargar manual de Drive
-    if(modo==='competencia' && driveToken){
-      loader.querySelector('span').textContent='Detectando producto...';
-      try{
-        const detRes=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
-          method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},
-          body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:50,
-            messages:[{role:'user',content:[contentArr[0],
-              {type:'text',text:'¿Qué tipo de seguro es esta póliza? Respondé SOLO con una de estas palabras: automotores, combinado, incendio, caucion, integral, tecnico, transporte, vida, accidentes. Una sola palabra sin tildes.'}
-            ]}]})
-        });
-        const detData=await detRes.json();
-        const ramoDetectado=(detData.content?.[0]?.text||'').toLowerCase().trim();
-        const archivoManual=detectarManual(ramoDetectado);
-
-        if(archivoManual){
-          loader.querySelector('span').textContent=`Cargando manual Sancor: ${archivoManual}...`;
-          const manualB64=await driveCargarManual(archivoManual);
-          if(manualB64){
-            loader.querySelector('span').textContent='Comparando con manual Sancor...';
-            contentArr=[
-              contentArr[0],
-              {type:'document',source:{type:'base64',media_type:'application/pdf',data:manualB64}}
-            ];
-            promptFinal=`Tenés DOS documentos:
-1. PÓLIZA DE LA COMPETENCIA (primer documento)
-2. MANUAL DE SANCOR — ${archivoManual} (segundo documento)
-
-Comparalos y respondé en JSON COMPACTO (máx 5 items por array, textos breves):
-{
-  "compania": "nombre compañía",
-  "producto": "nombre producto",
-  "ramo_detectado": "${ramoDetectado}",
-  "manual_sancor_usado": "${archivoManual}",
-  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura breve"}],
-  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión breve"}],
-  "comparacion_sancor": [{"aspecto":"aspecto","competencia":"condición competencia","sancor":"condición real del manual Sancor","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "3 oraciones con diferencias reales de los documentos citando condiciones específicas del manual.",
-  "puntos_clave": ["diferencia concreta 1","diferencia concreta 2","diferencia concreta 3"]
-}
-Respondé SOLO con el JSON válido y completo.`;
-          }
-        }
-      }catch(e){console.warn('Error cargando manual, continuando sin él:',e);}
-    }
-
-    contentArr.push({type:'text',text:promptFinal});
-
     const body = {
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
       system: getSistema(),
-      messages: [{role:'user', content: contentArr}]
+      messages: [{
+        role: 'user',
+        content: [
+          contentType==='document'
+            ? {type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
+            : {type:'image',source:{type:'base64',media_type:mediaType,data:fileData}},
+          {type:'text',text: modo==='sancor' ? promptSancor : promptComp}
+        ]
+      }]
     };
 
     const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
@@ -2515,65 +2411,6 @@ initCartera(CARTERA_EMBEBIDA);
 cargarComisionesLocal();
 if(comisionesActuales)renderComisiones();
 enriquecerCarteraConComisiones();
-
-// Cargar estados desde localStorage inmediatamente (sin Drive)
-renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1') || '{}');
-
-// Auto-reconectar Drive si hay Client ID guardado
-(async function autoConectarDrive(){
-  const clientId = localStorage.getItem('drive_client_id');
-  if(!clientId) return;
-  try{
-    // Intentar obtener token silenciosamente (sin popup)
-    await new Promise((resolve, reject) => {
-      // Esperar a que la librería de Google esté lista
-      const maxWait = 5000;
-      const start = Date.now();
-      const check = setInterval(()=>{
-        if(typeof google !== 'undefined' && google.accounts){
-          clearInterval(check);
-          const client = google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: 'https://www.googleapis.com/auth/drive.file',
-            prompt: '', // sin popup — solo funciona si ya autorizó antes
-            callback: async(resp)=>{
-              if(resp.error){ resolve(); return; }
-              driveToken = resp.access_token;
-              // Actualizar UI
-              document.getElementById('drive-status-icon').textContent='✅';
-              document.getElementById('drive-status-txt').textContent='Drive reconectado automáticamente';
-              document.getElementById('drive-status-sub').textContent='Sincronizando datos...';
-              document.getElementById('drive-btn').textContent='Reconectar';
-              const btnSync = document.getElementById('btn-sync-drive');
-              if(btnSync) btnSync.style.display='inline-flex';
-              // Cargar todos los datos de Drive
-              await driveCargarSnapshots();
-              await gestionesCargarDrive();
-              await driveCargarComisionesExcel();
-              await driveCargarRenovEstados();
-              renderSeguimientosAgenda();
-              renderAgenda();
-              // Actualizar renovaciones si el panel está activo
-              if(document.getElementById('renovaciones-panel').classList.contains('active')){
-                cargarRenovaciones();
-              }
-              document.getElementById('drive-status-sub').textContent=
-                `✅ Sincronizado · ${new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
-              resolve();
-            }
-          });
-          // requestAccessToken sin prompt intenta silencioso
-          client.requestAccessToken({prompt:''});
-        } else if(Date.now()-start > maxWait){
-          clearInterval(check);
-          resolve();
-        }
-      }, 200);
-    });
-  }catch(e){
-    console.log('Auto-reconexión Drive no disponible:', e.message);
-  }
-})();
 </script>
 </body>
 </html>
