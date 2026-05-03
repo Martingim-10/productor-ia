@@ -2302,26 +2302,55 @@ async function procesarCarteraXLS(input){
       setProgXSL(30,'Detectando columnas...');
       if(rows.length < 2){ alert('El archivo parece estar vacío.'); resetCrosselling(); return; }
 
-      const headers = rows[0].map(h=>String(h||'').trim());
+      // Buscar dinámicamente la fila de headers — el reporte de Sancor
+      // tiene varias filas de título antes de los datos reales
+      let headerRowIdx = -1;
+      let headers = [];
+      for(let i=0; i<Math.min(rows.length,30); i++){
+        const row = rows[i].map(h=>String(h||'').trim());
+        // La fila de headers contiene "Ramo" y "Denominación"
+        if(row.some(h=>h==='Ramo') && row.some(h=>h.includes('Denominaci'))){
+          headerRowIdx = i;
+          headers = row;
+          break;
+        }
+      }
 
-      // Detectar columnas con findCol robusto
-      const iRamo      = findColXSL(headers,['Ramo','ramo','RAMO']);
-      const iProducto  = findColXSL(headers,['Producto','producto','PRODUCTO']);
-      const iDenom     = findColXSL(headers,['Denominación','Denominacion','denominación','denominacion','DENOMINACION']);
-      const iNroAsoc   = findColXSL(headers,['Nro. Asoc.','Nro.Asoc.','nro. asoc.','NRO. ASOC.','Nro Asoc','nroasoc']);
-      const iCliente   = findColXSL(headers,['Cliente','cliente','CLIENTE']);
-      const iPoliza    = findColXSL(headers,['Póliza','Poliza','póliza','poliza','POLIZA']);
-      const iFechaFin  = findColXSL(headers,['Fecha Fin Vigencia','fecha fin vigencia','FECHA FIN VIGENCIA','Fin Vigencia']);
-      const iPrima     = findColXSL(headers,['Prima','prima','PRIMA']);
+      if(headerRowIdx<0){
+        alert('No se encontró la fila de columnas (Ramo, Denominación). Verificá que el archivo sea el reporte "Pólizas y Certificados Vigentes" de Sancor.');
+        resetCrosselling(); return;
+      }
 
-      if(iRamo<0 || iDenom<0){ alert('No se encontraron columnas Ramo o Denominación. Verificá que el archivo sea la Cartera Activa de Sancor.'); resetCrosselling(); return; }
+      // Detectar columnas con findCol robusto — busca por nombre exacto e ignorando tildes
+      const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      const findH = (...nombres) => headers.findIndex(h=>nombres.some(n=>norm(h)===norm(n)));
+
+      const iRamo      = findH('Ramo');
+      const iProducto  = findH('Producto');
+      const iDenom     = findH('Denominación','Denominacion');
+      const iNroAsoc   = findH('Nro. Asoc.','Nro.Asoc.','Nro Asoc');
+      const iCliente   = findH('Cliente');
+      const iPoliza    = findH('Póliza','Poliza');
+      const iFechaFin  = findH('Fecha Fin Vigencia','Fin Vigencia');
+      const iPrima     = findH('Prima');
+
+      console.log('Headers detectados en fila', headerRowIdx, ':', headers);
+      console.log('Índices — Ramo:',iRamo,'Denom:',iDenom,'NroAsoc:',iNroAsoc,'Producto:',iProducto);
+
+      if(iRamo<0 || iDenom<0){
+        alert(`No se encontraron columnas clave.\nRamo: columna ${iRamo}\nDenominación: columna ${iDenom}\n\nColumnas detectadas: ${headers.filter(h=>h).join(', ')}`);
+        resetCrosselling(); return;
+      }
+
+      // Los datos empiezan en la fila siguiente a los headers
+      const dataStartRow = headerRowIdx + 1;
 
       setProgXSL(55,'Agrupando clientes...');
       await new Promise(r=>setTimeout(r,50));
 
-      // Agrupar por cliente
+      // Los datos empiezan en dataStartRow
       const mapaClientes = new Map();
-      for(let i=1;i<rows.length;i++){
+      for(let i=dataStartRow; i<rows.length; i++){
         const row = rows[i];
         const denom = String(row[iDenom]||'').trim();
         if(!denom) continue;
