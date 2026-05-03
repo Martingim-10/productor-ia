@@ -240,7 +240,46 @@ textarea{resize:vertical;line-height:1.6}
 .cob-alert.danger{background:var(--red-bg);border-color:#f87171;color:var(--red-fg);border-left-color:#ef4444}
 .cob-arg{background:var(--green-bg);border:1px solid #6ee7b7;border-radius:8px;padding:12px 16px;font-size:13px;color:var(--green-fg);line-height:1.6;border-left:3px solid var(--green)}
 
-/* ── ANALIZADOR PÓLIZAS ────────────────────────────────── */
+/* ── CROSS-SELLING ─────────────────────────────────────── */
+.xsl-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.xsl-stat{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.xsl-stat-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink)}
+.xsl-stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.xsl-stat.purple{border-left:3px solid #7c3aed}
+.xsl-stat.green{border-left:3px solid var(--green)}
+.xsl-stat.gold{border-left:3px solid var(--gold)}
+.xsl-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.xsl-filter-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.xsl-filter-btn:hover{border-color:var(--gold);color:var(--gold)}
+.xsl-filter-btn.active{background:var(--ink);color:var(--gold-l);border-color:var(--ink)}
+.xsl-search{padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;width:220px;background:var(--white)}
+.xsl-table{width:100%;border-collapse:collapse;font-size:13px}
+.xsl-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap}
+.xsl-table td{padding:12px 14px;border-bottom:1px solid var(--cream);vertical-align:top}
+.xsl-table tr:hover td{background:#faf8f5}
+.xsl-cliente{font-weight:600;font-size:13px}
+.xsl-tiene{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.xsl-tag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.xsl-tag.pat{background:var(--blue-bg);color:var(--blue-fg)}
+.xsl-tag.ret{background:var(--green-bg);color:var(--green-fg)}
+.xsl-tag.vid{background:#f3e8ff;color:#6b21a8}
+.xsl-oportunidades{display:flex;flex-wrap:wrap;gap:4px}
+.xsl-op{font-size:11px;padding:3px 10px;border-radius:10px;background:#fef9ec;color:#92400e;border:1px solid #fde68a;cursor:pointer;transition:all .15s}
+.xsl-op:hover{background:#92400e;color:#fff}
+.xsl-score{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:700}
+.xsl-score.alta{background:#fee2e2;color:#991b1b}
+.xsl-score.media{background:#fef9ec;color:#92400e}
+.xsl-score.baja{background:var(--green-bg);color:var(--green-fg)}
+.xsl-empty{text-align:center;padding:60px 28px;color:var(--muted)}
+.xsl-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.xsl-modal.show{display:flex}
+.xsl-modal-box{background:var(--white);border-radius:16px;padding:28px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
+.xsl-modal-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:4px}
+.xsl-modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.xsl-msg-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:#0c4a6e;margin-bottom:12px}
+.xsl-prog{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:16px}
+.xsl-prog-bar{flex:1;height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
+.xsl-prog-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s}
 .anl-drop{border:2px dashed var(--border);border-radius:12px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);position:relative}
 .anl-drop:hover,.anl-drop.drag{border-color:var(--gold);background:#fffbf2}
 .anl-drop-icon{font-size:40px;margin-bottom:12px}
@@ -323,6 +362,10 @@ textarea{resize:vertical;line-height:1.6}
   <div class="nav-item" data-panel="analizador">
     <span class="ic">📑</span>Analizador de Pólizas
     <span style="font-size:9px;background:#2a5c45;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
+  </div>
+  <div class="nav-item" data-panel="crosselling">
+    <span class="ic">🎯</span>Oportunidades
+    <span style="font-size:9px;background:#6b21a8;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
   </div>
   <div class="nav-item" data-panel="cobertura">
     <span class="ic">🔍</span>Análisis Cobertura
@@ -678,6 +721,104 @@ textarea{resize:vertical;line-height:1.6}
       <div style="font-weight:600;font-size:13px;margin-bottom:12px">Análisis IA</div>
       <button class="btn btn-primary" onclick="analizarComisionesIA()" id="btn-analizar-com">🤖 Analizar con IA</button>
       <div id="com-ia-out" style="margin-top:14px;font-size:13px;line-height:1.6"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CROSS-SELLING / OPORTUNIDADES ═══════════════════════════════════ -->
+<div id="crosselling-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">🎯 Oportunidades de Venta</div>
+      <div class="ph-sub">Analizá tu cartera completa y detectá qué le falta a cada cliente</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" onclick="resetCrosselling()">🗑️ Limpiar</button>
+      <label class="btn btn-primary" style="cursor:pointer">
+        📂 Cargar Cartera Excel
+        <input type="file" id="xsl-file-input" accept=".xlsx,.xls" style="display:none" onchange="procesarCarteraXLS(this)">
+      </label>
+    </div>
+  </div>
+  <div class="pb">
+
+    <!-- Estado inicial -->
+    <div id="xsl-inicial" style="text-align:center;padding:60px 28px">
+      <div style="font-size:48px;margin-bottom:16px">📊</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:8px">Cargá el Excel de Cartera Activa</div>
+      <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 24px">El mismo archivo que exportás de Sancor. El sistema detecta automáticamente las columnas.</div>
+      <label class="btn btn-primary" style="cursor:pointer;font-size:14px;padding:12px 28px">
+        📂 Seleccionar archivo .xlsx
+        <input type="file" accept=".xlsx,.xls" style="display:none" onchange="procesarCarteraXLS(this)">
+      </label>
+    </div>
+
+    <!-- Procesando -->
+    <div id="xsl-loading" style="display:none;text-align:center;padding:60px 28px">
+      <div class="dots" style="transform:scale(1.4);margin-bottom:20px"><span></span><span></span><span></span></div>
+      <div style="font-size:13px;color:var(--muted)" id="xsl-loading-txt">Leyendo archivo...</div>
+      <div style="margin-top:16px;max-width:300px;margin-left:auto;margin-right:auto">
+        <div class="xsl-prog"><span id="xsl-prog-txt">0%</span><div class="xsl-prog-bar"><div class="xsl-prog-fill" id="xsl-prog-fill" style="width:0%"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div id="xsl-resultados" style="display:none">
+
+      <!-- Stats -->
+      <div class="xsl-stats" id="xsl-stats"></div>
+
+      <!-- Filtros -->
+      <div class="xsl-filters">
+        <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarXSL()" id="xsl-search">
+        <button class="xsl-filter-btn active" data-filtro="todos" onclick="setFiltroXSL(this,'todos')">Todos</button>
+        <button class="xsl-filter-btn" data-filtro="3" onclick="setFiltroXSL(this,'3')">🔴 Alta prioridad</button>
+        <button class="xsl-filter-btn" data-filtro="2" onclick="setFiltroXSL(this,'2')">🟡 Media</button>
+        <button class="xsl-filter-btn" data-filtro="1" onclick="setFiltroXSL(this,'1')">🟢 Baja</button>
+        <button class="xsl-filter-btn" data-filtro="retiro" onclick="setFiltroXSL(this,'retiro')">Sin Retiro</button>
+        <button class="xsl-filter-btn" data-filtro="vida" onclick="setFiltroXSL(this,'vida')">Sin Vida</button>
+      </div>
+
+      <!-- Tabla -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <table class="xsl-table">
+          <thead>
+            <tr>
+              <th>Prioridad</th>
+              <th>Cliente</th>
+              <th>Tiene contratado</th>
+              <th>Oportunidades</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="xsl-tbody"></tbody>
+        </table>
+        <div id="xsl-empty" class="xsl-empty" style="display:none">Sin resultados para este filtro.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal mensaje -->
+<div class="xsl-modal" id="xsl-modal">
+  <div class="xsl-modal-box">
+    <div class="xsl-modal-title" id="xsl-modal-title"></div>
+    <div class="xsl-modal-sub" id="xsl-modal-sub"></div>
+    <div id="xsl-modal-loader" style="display:none;text-align:center;padding:20px">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px">Generando mensaje personalizado...</div>
+    </div>
+    <div id="xsl-modal-content" style="display:none">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Mensaje listo para WhatsApp o email</div>
+      <div class="xsl-msg-box" id="xsl-modal-msg"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="anl-copy-btn" onclick="copiarMsgXSL()">📋 Copiar mensaje</button>
+        <button class="anl-copy-btn wsp" onclick="copiarMsgXSL('wsp')">💬 WhatsApp</button>
+      </div>
+    </div>
+    <div style="margin-top:18px;text-align:right">
+      <button class="btn btn-secondary" onclick="cerrarModalXSL()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2104,6 +2245,336 @@ function renderSeguimientosAgenda(){
 }
 
 document.getElementById('modal-gestion').addEventListener('click',function(e){if(e.target===this)cerrarModalGestion();});
+
+// ═══════════════════════════════════════════════════════════
+// CROSS-SELLING / OPORTUNIDADES
+// ═══════════════════════════════════════════════════════════
+let xslCartera = [];      // clientes procesados
+let xslFiltroActivo = 'todos';
+let xslMsgActual = '';
+
+// Ramos de Sancor clasificados
+const RAMOS_PATRIMONIAL = ['100','110','111','120','130','140','160','170','200','210','220','230','300','310','320','400','410','500'];
+const RAMOS_RETIRO      = ['800','810','811','812','813','814','820'];
+const RAMOS_VIDA        = ['700','710','720','730','740','750','760'];
+
+function clasificarRamo(ramo){
+  const r = String(ramo||'').trim();
+  if(RAMOS_RETIRO.some(x=>r.startsWith(x))) return 'retiro';
+  if(RAMOS_VIDA.some(x=>r.startsWith(x)))   return 'vida';
+  if(r) return 'patrimonial';
+  return null;
+}
+
+function findColXSL(headers, nombres){
+  for(const n of nombres){
+    const idx = headers.findIndex(h=>String(h||'').toLowerCase().trim()===n.toLowerCase().trim());
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+
+function resetCrosselling(){
+  xslCartera = [];
+  xslFiltroActivo = 'todos';
+  document.getElementById('xsl-inicial').style.display = 'block';
+  document.getElementById('xsl-loading').style.display = 'none';
+  document.getElementById('xsl-resultados').style.display = 'none';
+  document.getElementById('xsl-file-input').value = '';
+}
+
+async function procesarCarteraXLS(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  document.getElementById('xsl-inicial').style.display = 'none';
+  document.getElementById('xsl-loading').style.display = 'block';
+  document.getElementById('xsl-resultados').style.display = 'none';
+  setProgXSL(10,'Leyendo archivo Excel...');
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+      setProgXSL(30,'Detectando columnas...');
+      if(rows.length < 2){ alert('El archivo parece estar vacío.'); resetCrosselling(); return; }
+
+      const headers = rows[0].map(h=>String(h||'').trim());
+
+      // Detectar columnas con findCol robusto
+      const iRamo      = findColXSL(headers,['Ramo','ramo','RAMO']);
+      const iProducto  = findColXSL(headers,['Producto','producto','PRODUCTO']);
+      const iDenom     = findColXSL(headers,['Denominación','Denominacion','denominación','denominacion','DENOMINACION']);
+      const iNroAsoc   = findColXSL(headers,['Nro. Asoc.','Nro.Asoc.','nro. asoc.','NRO. ASOC.','Nro Asoc','nroasoc']);
+      const iCliente   = findColXSL(headers,['Cliente','cliente','CLIENTE']);
+      const iPoliza    = findColXSL(headers,['Póliza','Poliza','póliza','poliza','POLIZA']);
+      const iFechaFin  = findColXSL(headers,['Fecha Fin Vigencia','fecha fin vigencia','FECHA FIN VIGENCIA','Fin Vigencia']);
+      const iPrima     = findColXSL(headers,['Prima','prima','PRIMA']);
+
+      if(iRamo<0 || iDenom<0){ alert('No se encontraron columnas Ramo o Denominación. Verificá que el archivo sea la Cartera Activa de Sancor.'); resetCrosselling(); return; }
+
+      setProgXSL(55,'Agrupando clientes...');
+      await new Promise(r=>setTimeout(r,50));
+
+      // Agrupar por cliente
+      const mapaClientes = new Map();
+      for(let i=1;i<rows.length;i++){
+        const row = rows[i];
+        const denom = String(row[iDenom]||'').trim();
+        if(!denom) continue;
+
+        const ramo    = String(row[iRamo]||'').trim();
+        const nroAsoc = iNroAsoc>=0 ? String(row[iNroAsoc]||'').trim() : '';
+        const key     = nroAsoc || denom;
+
+        if(!mapaClientes.has(key)){
+          mapaClientes.set(key,{
+            nombre: denom,
+            nroAsoc: nroAsoc,
+            polizas: [],
+            tienePatrimonial: false,
+            tieneRetiro: false,
+            tieneVida: false,
+            productos: []
+          });
+        }
+        const cli = mapaClientes.get(key);
+        const tipo = clasificarRamo(ramo);
+        const prod = String(row[iProducto]||'').trim();
+        const poliza = iPoliza>=0 ? String(row[iPoliza]||'').trim() : '';
+
+        cli.polizas.push({ramo, producto:prod, poliza});
+        if(!cli.productos.includes(prod) && prod) cli.productos.push(prod);
+        if(tipo==='patrimonial') cli.tienePatrimonial = true;
+        if(tipo==='retiro')      cli.tieneRetiro = true;
+        if(tipo==='vida')        cli.tieneVida = true;
+      }
+
+      setProgXSL(80,'Calculando oportunidades...');
+      await new Promise(r=>setTimeout(r,50));
+
+      // Calcular oportunidades y score
+      xslCartera = [];
+      mapaClientes.forEach((cli,key)=>{
+        const ops = [];
+        if(!cli.tieneRetiro)      ops.push('Retiro / Jubilación');
+        if(!cli.tieneVida)        ops.push('Seguro de Vida');
+        if(!cli.tienePatrimonial) ops.push('Seguro Patrimonial');
+
+        // Score: cuántas oportunidades tiene
+        const score = ops.length;
+        if(score===0) return; // cliente completo, no mostrar
+
+        xslCartera.push({...cli, oportunidades:ops, score, key});
+      });
+
+      // Ordenar por score descendente
+      xslCartera.sort((a,b)=>b.score-a.score);
+
+      setProgXSL(100,'Listo');
+      await new Promise(r=>setTimeout(r,300));
+
+      document.getElementById('xsl-loading').style.display = 'none';
+      document.getElementById('xsl-resultados').style.display = 'block';
+      renderStatsXSL();
+      renderTablaXSL();
+
+    } catch(err){
+      alert('Error procesando el archivo: '+err.message);
+      resetCrosselling();
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function setProgXSL(pct, txt){
+  document.getElementById('xsl-prog-fill').style.width = pct+'%';
+  document.getElementById('xsl-prog-txt').textContent = pct+'%';
+  document.getElementById('xsl-loading-txt').textContent = txt;
+}
+
+function renderStatsXSL(){
+  const total = xslCartera.length;
+  const alta  = xslCartera.filter(c=>c.score>=3).length;
+  const sinRet = xslCartera.filter(c=>!c.tieneRetiro).length;
+  const sinVid = xslCartera.filter(c=>!c.tieneVida).length;
+
+  document.getElementById('xsl-stats').innerHTML = `
+    <div class="xsl-stat purple">
+      <div class="xsl-stat-val">${total}</div>
+      <div class="xsl-stat-lbl">Clientes con oportunidades</div>
+    </div>
+    <div class="xsl-stat" style="border-left:3px solid #dc2626">
+      <div class="xsl-stat-val">${alta}</div>
+      <div class="xsl-stat-lbl">Alta prioridad (3 gaps)</div>
+    </div>
+    <div class="xsl-stat green">
+      <div class="xsl-stat-val">${sinRet}</div>
+      <div class="xsl-stat-lbl">Sin Retiro / Jubilación</div>
+    </div>
+    <div class="xsl-stat gold">
+      <div class="xsl-stat-val">${sinVid}</div>
+      <div class="xsl-stat-lbl">Sin Seguro de Vida</div>
+    </div>
+  `;
+}
+
+function getClientesFiltrados(){
+  const busqueda = (document.getElementById('xsl-search')?.value||'').toLowerCase();
+  return xslCartera.filter(c=>{
+    const matchSearch = !busqueda || c.nombre.toLowerCase().includes(busqueda);
+    let matchFiltro = true;
+    if(xslFiltroActivo==='3') matchFiltro = c.score>=3;
+    else if(xslFiltroActivo==='2') matchFiltro = c.score===2;
+    else if(xslFiltroActivo==='1') matchFiltro = c.score===1;
+    else if(xslFiltroActivo==='retiro') matchFiltro = !c.tieneRetiro;
+    else if(xslFiltroActivo==='vida') matchFiltro = !c.tieneVida;
+    return matchSearch && matchFiltro;
+  });
+}
+
+function renderTablaXSL(){
+  const clientes = getClientesFiltrados();
+  const tbody = document.getElementById('xsl-tbody');
+  const empty = document.getElementById('xsl-empty');
+
+  if(clientes.length===0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = clientes.map((c,i)=>{
+    const scoreClass = c.score>=3?'alta':c.score===2?'media':'baja';
+    const scoreLabel = c.score>=3?'🔴':c.score===2?'🟡':'🟢';
+
+    const tieneTags = [
+      c.tienePatrimonial?`<span class="xsl-tag pat">Patrimonial</span>`:'',
+      c.tieneRetiro?`<span class="xsl-tag ret">Retiro</span>`:'',
+      c.tieneVida?`<span class="xsl-tag vid">Vida</span>`:'',
+    ].filter(Boolean).join('');
+
+    const opBtns = c.oportunidades.map(op=>
+      `<span class="xsl-op" onclick="abrirModalXSL('${c.key}','${op}')">${op}</span>`
+    ).join('');
+
+    return `<tr>
+      <td><span class="xsl-score ${scoreClass}" title="${c.score} oportunidades">${scoreLabel}</span></td>
+      <td>
+        <div class="xsl-cliente">${c.nombre}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.polizas.length} póliza${c.polizas.length!==1?'s':''} · Nro ${c.nroAsoc||'—'}</div>
+        <div class="xsl-tiene" style="margin-top:6px">${tieneTags||'<span style="font-size:11px;color:var(--muted)">Sin coberturas detectadas</span>'}</div>
+      </td>
+      <td>
+        <div style="font-size:12px;color:var(--muted)">${c.productos.slice(0,3).join(', ')}${c.productos.length>3?' +más':''}</div>
+      </td>
+      <td><div class="xsl-oportunidades">${opBtns}</div></td>
+      <td>
+        <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px" onclick="abrirModalXSLTodo('${c.key}')">✉️ Mensaje completo</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarXSL(){ renderTablaXSL(); }
+
+function setFiltroXSL(btn, filtro){
+  xslFiltroActivo = filtro;
+  document.querySelectorAll('.xsl-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTablaXSL();
+}
+
+function abrirModalXSL(key, oportunidad){
+  const cli = xslCartera.find(c=>c.key===key);
+  if(!cli) return;
+  mostrarModalXSL(cli, oportunidad);
+}
+
+function abrirModalXSLTodo(key){
+  const cli = xslCartera.find(c=>c.key===key);
+  if(!cli) return;
+  mostrarModalXSL(cli, null);
+}
+
+async function mostrarModalXSL(cli, oportunidad){
+  const key = getKey();
+  if(!key){ alert('Configurá tu API Key primero.'); return; }
+
+  document.getElementById('xsl-modal-title').textContent = cli.nombre;
+  document.getElementById('xsl-modal-sub').textContent = oportunidad
+    ? `Mensaje para ofrecer: ${oportunidad}`
+    : `Mensaje completo — ${cli.oportunidades.length} oportunidades`;
+  document.getElementById('xsl-modal-loader').style.display = 'block';
+  document.getElementById('xsl-modal-content').style.display = 'none';
+  document.getElementById('xsl-modal').classList.add('show');
+
+  const nombre = localStorage.getItem('cfg_nombre')||'tu productor';
+  const ops = oportunidad ? [oportunidad] : cli.oportunidades;
+  const tiene = [
+    cli.tienePatrimonial?'seguros patrimoniales (hogar/auto)':'',
+    cli.tieneRetiro?'seguro de retiro/jubilación':'',
+    cli.tieneVida?'seguro de vida':''
+  ].filter(Boolean).join(', ') || 'ningún producto aún identificado';
+
+  const prompt = `Sos ${nombre}, productor asesor de seguros de Sancor en Argentina. 
+Redactá un mensaje corto y cálido (máximo 120 palabras) para ${cli.nombre}.
+
+El cliente YA TIENE: ${tiene}.
+Querés ofrecerle: ${ops.join(', ')}.
+
+Reglas:
+- Tono amigable, de igual a igual, sin sonar a vendedor agresivo
+- Mencioná lo que ya tiene como base positiva
+- Presentá la oportunidad como una protección que le falta, no como una venta
+- Sin asteriscos de markdown, texto plano
+- Terminá con una pregunta abierta que invite a responder
+- Firmá como ${nombre}`;
+
+  try {
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:400,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    xslMsgActual = data.content?.[0]?.text||'Sin respuesta.';
+    document.getElementById('xsl-modal-msg').textContent = xslMsgActual;
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+  } catch(err){
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+    document.getElementById('xsl-modal-msg').textContent = 'Error generando mensaje: '+err.message;
+  }
+}
+
+function cerrarModalXSL(){
+  document.getElementById('xsl-modal').classList.remove('show');
+  xslMsgActual = '';
+}
+
+function copiarMsgXSL(tipo){
+  if(!xslMsgActual) return;
+  navigator.clipboard.writeText(xslMsgActual).then(()=>{
+    const btn = tipo==='wsp'
+      ? document.querySelector('.anl-copy-btn.wsp')
+      : document.querySelector('#xsl-modal-content .anl-copy-btn:not(.wsp)');
+    if(btn){ const o=btn.textContent; btn.textContent='✓ Copiado!'; setTimeout(()=>btn.textContent=o,2000); }
+  });
+}
+
+document.getElementById('xsl-modal').addEventListener('click',function(e){
+  if(e.target===this) cerrarModalXSL();
+});
 
 // ═══════════════════════════════════════════════════════════
 // ANALIZADOR DE PÓLIZAS
