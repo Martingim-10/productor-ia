@@ -207,6 +207,7 @@ textarea{resize:vertical;line-height:1.6}
 .renov-sem-lbl{font-size:11px;color:var(--muted);margin-top:3px}
 .renov-row{display:flex;align-items:center;gap:14px;padding:11px 14px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;transition:box-shadow .15s}
 .renov-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.renov-row.en-gestion{background:#fff8f0;border-left:3px solid #f59e0b}
 .renov-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .renov-dot.rojo{background:#ef4444}
 .renov-dot.amarillo{background:#f59e0b}
@@ -240,7 +241,30 @@ textarea{resize:vertical;line-height:1.6}
 .cob-alert.danger{background:var(--red-bg);border-color:#f87171;color:var(--red-fg);border-left-color:#ef4444}
 .cob-arg{background:var(--green-bg);border:1px solid #6ee7b7;border-radius:8px;padding:12px 16px;font-size:13px;color:var(--green-fg);line-height:1.6;border-left:3px solid var(--green)}
 
-/* ── CROSS-SELLING ─────────────────────────────────────── */
+/* ── RETIRO ────────────────────────────────────────────── */
+.ret-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px}
+.ret-tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:all .15s}
+.ret-tab.active{color:#0369a1;border-bottom-color:#0369a1;font-weight:600}
+.ret-tab:hover{color:var(--ink)}
+.ret-upload{border:2px dashed var(--border);border-radius:12px;padding:36px 28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white)}
+.ret-upload:hover{border-color:#0369a1;background:#f0f9ff}
+.ret-upload-icon{font-size:36px;margin-bottom:10px}
+.ret-cruce-banner{background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:12px}
+.ret-stat{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.ret-stat.blue{border-left:3px solid #0369a1}
+.ret-stat.orange{border-left:3px solid #f59e0b}
+.ret-stat.green{border-left:3px solid var(--green)}
+.ret-stat.red{border-left:3px solid #dc2626}
+.ret-table{width:100%;border-collapse:collapse;font-size:13px}
+.ret-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap}
+.ret-table td{padding:11px 14px;border-bottom:1px solid var(--cream);vertical-align:top}
+.ret-table tr:hover td{background:#f0f9ff}
+.ret-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:10px;font-weight:500}
+.ret-badge.tiene{background:#dcfce7;color:#166534}
+.ret-badge.no{background:#fee2e2;color:#991b1b}
+.ret-badge.suspendido{background:#fef9ec;color:#92400e}
+.ret-msg-btn{font-size:11px;padding:5px 12px;background:#0369a1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.ret-msg-btn:hover{background:#0284c7}
 .xsl-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
 .xsl-stat{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .xsl-stat-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink)}
@@ -366,6 +390,10 @@ textarea{resize:vertical;line-height:1.6}
   <div class="nav-item" data-panel="crosselling">
     <span class="ic">🎯</span>Oportunidades
     <span style="font-size:9px;background:#6b21a8;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
+  </div>
+  <div class="nav-item" data-panel="retiro">
+    <span class="ic">🏦</span>Retiro
+    <span style="font-size:9px;background:#0369a1;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
   </div>
   <div class="nav-item" data-panel="cobertura">
     <span class="ic">🔍</span>Análisis Cobertura
@@ -725,6 +753,106 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 </div>
 
+<!-- ══ RETIRO ══════════════════════════════════════════════════════════ -->
+<div id="retiro-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">🏦 Prevención Retiro</div>
+      <div class="ph-sub">Cartera de retiro + cruce con Sancor para detectar oportunidades</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" onclick="resetRetiro()">🗑️ Limpiar</button>
+      <label class="btn btn-primary" style="cursor:pointer">
+        📂 Cargar Excel Retiro
+        <input type="file" id="ret-file-input" accept=".xlsx,.xls" style="display:none" onchange="procesarRetiroXLS(this)">
+      </label>
+    </div>
+  </div>
+  <div class="pb">
+
+    <!-- Estado inicial -->
+    <div id="ret-inicial">
+      <div class="ret-upload" onclick="document.getElementById('ret-file-input').click()">
+        <div class="ret-upload-icon">🏦</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:6px">Cargá el Excel de Prevención Retiro</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Export de pólizas vigentes de Prevención Retiro</div>
+        <div class="btn btn-primary" style="display:inline-block">📂 Seleccionar archivo .xlsx</div>
+      </div>
+      <div style="margin-top:20px;background:var(--cream);border-radius:10px;padding:16px 18px;font-size:13px;color:var(--muted)">
+        💡 <strong>Tip:</strong> Si además cargás la cartera Sancor en el panel de Oportunidades, el sistema cruza automáticamente y detecta qué clientes no tienen Retiro todavía.
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="ret-loading" style="display:none;text-align:center;padding:60px 28px">
+      <div class="dots" style="transform:scale(1.4);margin-bottom:20px"><span></span><span></span><span></span></div>
+      <div style="font-size:13px;color:var(--muted)" id="ret-loading-txt">Leyendo archivo...</div>
+    </div>
+
+    <!-- Resultados -->
+    <div id="ret-resultados" style="display:none">
+
+      <!-- Stats -->
+      <div class="xsl-stats" id="ret-stats" style="margin-bottom:20px"></div>
+
+      <!-- Tabs -->
+      <div class="ret-tabs">
+        <div class="ret-tab active" onclick="setRetTab(this,'cartera')">📋 Cartera Retiro</div>
+        <div class="ret-tab" onclick="setRetTab(this,'sinretiro')">⚠️ Clientes sin Retiro</div>
+      </div>
+
+      <!-- Tab: Cartera Retiro -->
+      <div id="ret-tab-cartera">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarRetiro()" id="ret-search">
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <table class="ret-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>DNI / CUIT</th>
+                <th>Póliza</th>
+                <th>Plan</th>
+                <th>Premio mensual</th>
+                <th>En Sancor</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="ret-tbody-cartera"></tbody>
+          </table>
+          <div id="ret-empty-cartera" class="xsl-empty" style="display:none">Sin resultados.</div>
+        </div>
+      </div>
+
+      <!-- Tab: Clientes sin Retiro -->
+      <div id="ret-tab-sinretiro" style="display:none">
+        <div class="ret-cruce-banner">
+          <span style="font-size:20px">🔗</span>
+          <div id="ret-cruce-info">Cruzando con cartera Sancor...</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <table class="ret-table">
+            <thead>
+              <tr>
+                <th>Cliente (Sancor)</th>
+                <th>DNI / CUIT</th>
+                <th>Productos que tiene</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="ret-tbody-sinretiro"></tbody>
+          </table>
+          <div id="ret-empty-sinretiro" class="xsl-empty" style="display:none">
+            Cargá también la cartera Sancor en el panel de Oportunidades para ver este cruce.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- ══ CROSS-SELLING / OPORTUNIDADES ═══════════════════════════════════ -->
 <div id="crosselling-panel" class="panel">
   <div class="ph">
@@ -772,11 +900,10 @@ textarea{resize:vertical;line-height:1.6}
       <div class="xsl-filters">
         <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarXSL()" id="xsl-search">
         <button class="xsl-filter-btn active" data-filtro="todos" onclick="setFiltroXSL(this,'todos')">Todos</button>
-        <button class="xsl-filter-btn" data-filtro="3" onclick="setFiltroXSL(this,'3')">🔴 Alta prioridad</button>
-        <button class="xsl-filter-btn" data-filtro="2" onclick="setFiltroXSL(this,'2')">🟡 Media</button>
-        <button class="xsl-filter-btn" data-filtro="1" onclick="setFiltroXSL(this,'1')">🟢 Baja</button>
-        <button class="xsl-filter-btn" data-filtro="retiro" onclick="setFiltroXSL(this,'retiro')">Sin Retiro</button>
-        <button class="xsl-filter-btn" data-filtro="vida" onclick="setFiltroXSL(this,'vida')">Sin Vida</button>
+        <button class="xsl-filter-btn" data-filtro="2" onclick="setFiltroXSL(this,'2')">🔴 Alta prioridad</button>
+        <button class="xsl-filter-btn" data-filtro="1" onclick="setFiltroXSL(this,'1')">🟡 1 oportunidad</button>
+        <button class="xsl-filter-btn" data-filtro="autoSinCombinado" onclick="setFiltroXSL(this,'autoSinCombinado')">🚗 Auto sin Combinado</button>
+        <button class="xsl-filter-btn" data-filtro="sinVida" onclick="setFiltroXSL(this,'sinVida')">❤️ Sin Vida</button>
       </div>
 
       <!-- Tabla -->
@@ -1119,6 +1246,9 @@ function actualizarSemaforoRenovaciones(){
   let vencidas=0,criticas=0,proximas=0,ok=0;
   renovData.forEach(r=>{
     if(!r.vto) return;
+    // Excluir las que ya fueron gestionadas como renovadas o anuladas
+    const estado = renovEstados[r.poliza];
+    if(estado==='renovada'||estado==='anulada') return;
     const d = new Date(r.vto); d.setHours(0,0,0,0);
     const dias = Math.round((d-hoy)/86400000);
     if(dias<0) vencidas++;
@@ -1134,6 +1264,69 @@ function actualizarSemaforoRenovaciones(){
   document.getElementById('badge-renovaciones').textContent = badge > 0 ? badge : '';
 }
 
+// Alias para llamadas desde setEstadoRenov
+const actualizarSemaforoRenov = actualizarSemaforoRenovaciones;
+
+// ═══════════════════════════════════════════════════════════
+// ESTADOS DE RENOVACIONES — Drive + localStorage
+// Estados: 'en_gestion' | 'renovada' | 'anulada'
+// ═══════════════════════════════════════════════════════════
+let renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1')||'{}');
+
+function guardarRenovEstados(){
+  localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
+  if(driveToken) driveGuardarRenovEstados();
+}
+
+async function driveGuardarRenovEstados(){
+  try{
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d = await r.json();
+    const blob = new Blob([JSON.stringify(renovEstados)],{type:'application/json'});
+    if(d.files?.length){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${d.files[0].id}?uploadType=media`,
+        {method:'PATCH',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:blob});
+    } else {
+      const form = new FormData();
+      form.append('metadata',new Blob([JSON.stringify({name:'renovaciones_estado.json',parents:[folderId],mimeType:'application/json'})],{type:'application/json'}));
+      form.append('file',blob);
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        {method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
+    }
+  }catch(e){console.warn('Error guardando estados renovaciones:',e);}
+}
+
+async function driveCargarRenovEstados(){
+  if(!driveToken) return;
+  try{
+    const folderId = await driveGetFolderId();
+    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
+    const d = await r.json();
+    if(!d.files?.length) return;
+    const fr = await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+    const remoto = await fr.json();
+    // Merge: Drive tiene prioridad sobre localStorage
+    renovEstados = {...renovEstados, ...remoto};
+    localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
+    renderRenovacionesFiltradas();
+  }catch(e){console.warn('Error cargando estados renovaciones:',e);}
+}
+
+function setEstadoRenov(poliza, estado){
+  // Toggle: si ya tiene ese estado, lo saca
+  if(renovEstados[poliza]===estado){
+    delete renovEstados[poliza];
+  } else {
+    renovEstados[poliza] = estado;
+  }
+  guardarRenovEstados();
+  renderRenovacionesFiltradas();
+  actualizarSemaforoRenov();
+}
+
 function renderRenovacionesFiltradas(){
   const filtro = document.getElementById('renov-filtro').value;
   const buscar = (document.getElementById('renov-buscar').value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -1141,6 +1334,9 @@ function renderRenovacionesFiltradas(){
 
   let datos = renovData.filter(r=>{
     if(!r.vto) return false;
+    const estado = renovEstados[r.poliza];
+    // Renovada y anulada desaparecen del listado principal
+    if(estado==='renovada'||estado==='anulada') return false;
     const d = new Date(r.vto); d.setHours(0,0,0,0);
     const dias = Math.round((d-hoy)/86400000);
     if(filtro==='vencidas' && dias>=0) return false;
@@ -1165,29 +1361,46 @@ function renderRenovacionesFiltradas(){
     return;
   }
 
-  const renovadas = typeof polizasRenovadas!=='undefined' ? polizasRenovadas : new Set();
-
   document.getElementById('renov-lista').innerHTML = datos.map(r=>{
     let color = 'verde', diasTxt = '';
     if(r.dias < 0){color='rojo';diasTxt=`Vencida hace ${Math.abs(r.dias)}d`;}
     else if(r.dias<=7){color='rojo';diasTxt=`${r.dias}d ⚠️`;}
     else if(r.dias<=30){color='amarillo';diasTxt=`${r.dias}d`;}
     else{diasTxt=`${r.dias}d`;}
-    const estaRen = renovadas.has(r.poliza);
+
+    const estado = renovEstados[r.poliza]||'';
+    const enGestion = estado==='en_gestion';
     const primaFmt = r.prima>0?'$'+Math.round(r.prima).toLocaleString('es-AR'):'—';
     const vtoFmt = r.vto?new Date(r.vto).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
     const ne = r.nombre.replace(/'/g,"\\'");
     const ra = (r.ramo||'').replace(/'/g,"\\'");
-    return `<div class="renov-row${estaRen?' renovada':''}">
+    const pol = (r.poliza||'').replace(/'/g,"\\'");
+
+    const rowClass = enGestion ? ' en-gestion' : '';
+
+    return `<div class="renov-row${rowClass}">
       <div class="renov-dot ${color}"></div>
       <div class="renov-info">
         <div class="renov-nombre">${r.nombre}</div>
-        <div class="renov-ramo">${r.ramo||'—'} · ${vtoFmt}${r.formaPago?' · '+r.formaPago:''}</div>
+        <div class="renov-ramo">${r.ramo||'—'} · Póliza ${r.poliza||'—'} · ${vtoFmt}${r.formaPago?' · '+r.formaPago:''}</div>
+        ${enGestion?'<span style="font-size:10px;color:#92400e;font-weight:600">⏳ EN GESTIÓN</span>':''}
       </div>
       <div class="renov-prima">${primaFmt}</div>
       <div class="renov-dias ${color}">${diasTxt}</div>
-      <div class="renov-estado">
-        ${!estaRen?`<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Contactar</button>`:'<span class="badge b-green">✅ Renovada</span>'}
+      <div class="renov-estado" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Msg</button>
+        <button class="btn btn-sm" style="background:${enGestion?'#f59e0b':'var(--cream)'};color:${enGestion?'#fff':'var(--ink)'};border:1px solid var(--border)" 
+          onclick="setEstadoRenov('${pol}','en_gestion')" title="Marcar en gestión">
+          ⏳${enGestion?' En gestión':' En gestión'}
+        </button>
+        <button class="btn btn-sm" style="background:var(--green);color:#fff" 
+          onclick="setEstadoRenov('${pol}','renovada')" title="Marcar como renovada — desaparece del panel">
+          ✅ Renovada
+        </button>
+        <button class="btn btn-sm" style="background:var(--red-bg);color:var(--red-fg);border:1px solid #fca5a5" 
+          onclick="setEstadoRenov('${pol}','anulada')" title="Marcar como anulada — desaparece del panel">
+          ❌ Anulada
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -2008,7 +2221,7 @@ function driveAuth(){
     document.getElementById('drive-status-sub').textContent='Los snapshots se guardarán en ProductorIA_Snapshots';
     document.getElementById('drive-btn').textContent='Reconectar';
     document.getElementById('btn-sync-drive').style.display='inline-flex';
-    await driveCargarSnapshots();await gestionesCargarDrive();renderSeguimientosAgenda();
+    await driveCargarSnapshots();await gestionesCargarDrive();await driveCargarRenovEstados();renderSeguimientosAgenda();
   }});
   client.requestAccessToken();
 }
@@ -2247,23 +2460,360 @@ function renderSeguimientosAgenda(){
 document.getElementById('modal-gestion').addEventListener('click',function(e){if(e.target===this)cerrarModalGestion();});
 
 // ═══════════════════════════════════════════════════════════
+// RETIRO — Prevención Retiro
+// ═══════════════════════════════════════════════════════════
+let retiroCartera = [];
+let retiroTabActiva = 'cartera';
+
+function resetRetiro(){
+  retiroCartera = [];
+  document.getElementById('ret-inicial').style.display = 'block';
+  document.getElementById('ret-loading').style.display = 'none';
+  document.getElementById('ret-resultados').style.display = 'none';
+  document.getElementById('ret-file-input').value = '';
+}
+
+function setRetTab(el, tab){
+  retiroTabActiva = tab;
+  document.querySelectorAll('.ret-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ret-tab-cartera').style.display   = tab==='cartera'   ? 'block':'none';
+  document.getElementById('ret-tab-sinretiro').style.display = tab==='sinretiro' ? 'block':'none';
+  if(tab==='sinretiro') renderRetiroSinRetiro();
+}
+
+// Normaliza DNI/CUIT para comparación cruzada
+// Sancor: D0000029983505 → 29983505 | J33-71600853-9 → 3371600853
+// Retiro: NU_DOCUMENTO viene como número directo
+function normalizarDoc(doc){
+  let s = String(doc||'').trim();
+  // Remover prefijo D o J
+  if(s.startsWith('D')) s = s.substring(1).replace(/^0+/,'');
+  else if(s.startsWith('J')) s = s.substring(1).replace(/-/g,'');
+  else s = s.replace(/-/g,'').replace(/^0+/,'');
+  return s.trim();
+}
+
+async function procesarRetiroXLS(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  document.getElementById('ret-inicial').style.display = 'none';
+  document.getElementById('ret-loading').style.display = 'block';
+  document.getElementById('ret-resultados').style.display = 'none';
+  document.getElementById('ret-loading-txt').textContent = 'Leyendo archivo...';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+      // Buscar fila de headers — contiene CONTRACT_ID o POLIZA_ID
+      let headerRowIdx = -1;
+      let headers = [];
+      for(let i=0; i<Math.min(rows.length,20); i++){
+        const row = rows[i].map(h=>String(h||'').trim().toUpperCase());
+        if(row.includes('POLIZA_ID') || row.includes('CONTRACT_ID')){
+          headerRowIdx = i;
+          headers = rows[i].map(h=>String(h||'').trim());
+          break;
+        }
+      }
+      // Si no encontró header row, asumir fila 0
+      if(headerRowIdx<0){ headerRowIdx=0; headers=rows[0].map(h=>String(h||'').trim()); }
+
+      const findR = (...names) => headers.findIndex(h=>names.some(n=>h.toUpperCase()===n.toUpperCase()));
+
+      const iPoliza    = findR('POLIZA_ID');
+      const iRazon     = findR('razon','RAZON','MASTER_NOMBRE');
+      const iDoc       = findR('NU_DOCUMENTO');
+      const iPlan      = findR('PLAN_ID_DESCRIPCION');
+      const iPremio    = findR('AP_REGULAR_PREMIO');
+      const iEstado    = findR('POLIZA_ESTADO_ID_DESC');
+      const iSuspendida= findR('POLIZA_SUSPENDIDA');
+      const iCiudad    = findR('CIUDAD_ID_01_DESC');
+      const iContrato  = findR('CONTRACT_ID');
+
+      document.getElementById('ret-loading-txt').textContent = 'Procesando clientes...';
+      await new Promise(r=>setTimeout(r,50));
+
+      retiroCartera = [];
+      for(let i=headerRowIdx+1; i<rows.length; i++){
+        const row = rows[i];
+        const razon = String(row[iRazon]||'').trim();
+        if(!razon) continue;
+
+        const doc = iDoc>=0 ? String(row[iDoc]||'').trim() : '';
+        retiroCartera.push({
+          razon,
+          docRaw: doc,
+          docNorm: normalizarDoc(doc),
+          poliza: iPoliza>=0 ? String(row[iPoliza]||'').trim() : '',
+          plan: iPlan>=0 ? String(row[iPlan]||'').trim() : '',
+          premio: iPremio>=0 ? row[iPremio] : '',
+          suspendida: iSuspendida>=0 ? String(row[iSuspendida]||'').trim() : '',
+          ciudad: iCiudad>=0 ? String(row[iCiudad]||'').trim() : '',
+          contrato: iContrato>=0 ? String(row[iContrato]||'').trim() : '',
+        });
+      }
+
+      document.getElementById('ret-loading').style.display = 'none';
+      document.getElementById('ret-resultados').style.display = 'block';
+      renderRetiroStats();
+      renderRetiroCartera();
+
+    } catch(err){
+      alert('Error procesando archivo de Retiro: '+err.message);
+      resetRetiro();
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function renderRetiroStats(){
+  const total = retiroCartera.length;
+  const suspendidos = retiroCartera.filter(c=>c.suspendida==='S'||c.suspendida==='1'||c.suspendida==='true').length;
+
+  // Cruce con Sancor si está disponible
+  let enSancor = 0;
+  if(xslCartera.length>0){
+    const docsSancor = new Set(xslCartera.flatMap(c=>
+      c.polizas.map(p=>p).length>0 ? [normalizarDoc(c.nroAsoc)] : []
+    ));
+    enSancor = retiroCartera.filter(c=>docsSancor.has(c.docNorm)).length;
+  }
+
+  document.getElementById('ret-stats').innerHTML = `
+    <div class="ret-stat blue">
+      <div class="xsl-stat-val">${total}</div>
+      <div class="xsl-stat-lbl">Pólizas vigentes Retiro</div>
+    </div>
+    <div class="ret-stat orange">
+      <div class="xsl-stat-val">${suspendidos}</div>
+      <div class="xsl-stat-lbl">Suspendidas — requieren atención</div>
+    </div>
+    <div class="ret-stat green">
+      <div class="xsl-stat-val">${enSancor}</div>
+      <div class="xsl-stat-lbl">También en cartera Sancor</div>
+    </div>
+    <div class="ret-stat red">
+      <div class="xsl-stat-val">${xslCartera.length>0 ? (xslCartera.length - enSancor) : '—'}</div>
+      <div class="xsl-stat-lbl">En Sancor sin Retiro</div>
+    </div>
+  `;
+}
+
+function filtrarRetiro(){
+  renderRetiroCartera();
+}
+
+function renderRetiroCartera(){
+  const busqueda = (document.getElementById('ret-search')?.value||'').toLowerCase();
+
+  // Construir set de docs con Retiro para cruce
+  const docsConRetiro = new Set(retiroCartera.map(c=>c.docNorm));
+
+  // Cruce con Sancor — qué clientes de Retiro también tienen Sancor
+  const docsSancorMap = new Map();
+  if(xslCartera.length>0){
+    xslCartera.forEach(c=>{
+      const dn = normalizarDoc(c.nroAsoc);
+      if(dn) docsSancorMap.set(dn, c);
+    });
+  }
+
+  const filtrados = retiroCartera.filter(c=>
+    !busqueda || c.razon.toLowerCase().includes(busqueda) || c.docRaw.includes(busqueda)
+  );
+
+  const tbody = document.getElementById('ret-tbody-cartera');
+  const empty = document.getElementById('ret-empty-cartera');
+
+  if(filtrados.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const fmt = v => {
+    const n = parseFloat(v);
+    if(isNaN(n)) return '—';
+    return '$'+n.toLocaleString('es-AR',{maximumFractionDigits:0});
+  };
+
+  tbody.innerHTML = filtrados.map(c=>{
+    const suspBadge = (c.suspendida==='S'||c.suspendida==='1'||c.suspendida==='true')
+      ? `<span class="ret-badge suspendido">⚠️ Suspendida</span>` : '';
+    const sancorCli = docsSancorMap.get(c.docNorm);
+    const sancorBadge = sancorCli
+      ? `<span class="ret-badge tiene">✅ Sí</span>`
+      : `<span class="ret-badge no">❌ No</span>`;
+
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${c.razon}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.ciudad||''}</div>
+        ${suspBadge}
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.docRaw||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.poliza||'—'}</td>
+      <td style="font-size:12px">${c.plan||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${fmt(c.premio)}</td>
+      <td>${sancorBadge}</td>
+      <td><button class="ret-msg-btn" onclick="generarMsgRetiro('${c.docNorm}','retiro')">✉️ Mensaje</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRetiroSinRetiro(){
+  const infoEl = document.getElementById('ret-cruce-info');
+  const tbody  = document.getElementById('ret-tbody-sinretiro');
+  const empty  = document.getElementById('ret-empty-sinretiro');
+
+  if(xslCartera.length===0){
+    tbody.innerHTML='';
+    empty.style.display='block';
+    empty.textContent='Cargá la cartera Sancor en el panel de Oportunidades para ver este cruce.';
+    return;
+  }
+
+  const docsConRetiro = new Set(retiroCartera.map(c=>c.docNorm).filter(Boolean));
+
+  // Clientes de Sancor que NO tienen Retiro
+  const sinRetiro = xslCartera.filter(c=>{
+    const dn = normalizarDoc(c.nroAsoc);
+    return dn && !docsConRetiro.has(dn);
+  });
+
+  // También incluir clientes de Sancor sin nroAsoc mapeado
+  const sinRetiroSinDoc = xslCartera.filter(c=>!c.nroAsoc || !normalizarDoc(c.nroAsoc));
+
+  infoEl.textContent = `${sinRetiro.length} clientes de tu cartera Sancor no tienen Retiro todavía — oportunidad directa.`;
+
+  if(sinRetiro.length===0){ tbody.innerHTML=''; empty.style.display='block'; empty.textContent='¡Todos tus clientes de Sancor ya tienen Retiro!'; return; }
+  empty.style.display='none';
+
+  tbody.innerHTML = sinRetiro.map(c=>{
+    const tieneTags = [
+      c.tieneAuto             ? `<span class="xsl-tag pat">Auto/Moto</span>`:'',
+      c.tieneCombinadoFamiliar? `<span class="xsl-tag ret">Combinado</span>`:'',
+      c.tieneVida             ? `<span class="xsl-tag vid">Vida</span>`:'',
+    ].filter(Boolean).join('') || '<span style="font-size:11px;color:var(--muted)">Solo otros ramos</span>';
+
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${c.nombre}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.nroAsoc||'—'}</td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:4px">${tieneTags}</div></td>
+      <td><button class="ret-msg-btn" onclick="generarMsgRetiro('${c.key}','sancor')">✉️ Ofrecer Retiro</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function generarMsgRetiro(key, origen){
+  const apiKey = getKey();
+  if(!apiKey){ alert('Configurá tu API Key primero.'); return; }
+
+  let nombre, productos, contexto;
+
+  if(origen==='retiro'){
+    const cli = retiroCartera.find(c=>c.docNorm===key);
+    if(!cli) return;
+    nombre = cli.razon;
+    productos = `Plan de Retiro ${cli.plan||''}`;
+    contexto = 'El cliente YA TIENE un plan de retiro. Querés ofrecerle seguros patrimoniales de Sancor Seguros (Auto, Combinado Familiar).';
+  } else {
+    const cli = xslCartera.find(c=>c.key===key);
+    if(!cli) return;
+    nombre = cli.nombre;
+    const tiene = [
+      cli.tieneAuto?'Automotores':'',
+      cli.tieneCombinadoFamiliar?'Combinado Familiar':'',
+      cli.tieneVida?'Seguro de Vida':'',
+    ].filter(Boolean).join(', ') || 'otros seguros Sancor';
+    productos = tiene;
+    contexto = `El cliente tiene ${tiene} en Sancor pero NO tiene plan de retiro/jubilación. Querés ofrecerle Prevención Retiro.`;
+  }
+
+  const nombreProductor = localStorage.getItem('cfg_nombre')||'tu productor';
+
+  // Modal rápido
+  document.getElementById('xsl-modal-title').textContent = nombre;
+  document.getElementById('xsl-modal-sub').textContent = origen==='retiro' ? 'Ofrecerle productos Sancor' : 'Ofrecerle Plan de Retiro';
+  document.getElementById('xsl-modal-loader').style.display = 'block';
+  document.getElementById('xsl-modal-content').style.display = 'none';
+  document.getElementById('xsl-modal').classList.add('show');
+
+  const prompt = `Sos ${nombreProductor}, productor asesor de seguros en Argentina.
+${contexto}
+Redactá un mensaje corto y cálido (máximo 100 palabras) para ${nombre}.
+Tono amigable, de igual a igual. Sin markdown. Terminá con una pregunta abierta.
+Firmá como ${nombreProductor}.`;
+
+  try {
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    xslMsgActual = data.content?.[0]?.text||'Sin respuesta.';
+    document.getElementById('xsl-modal-msg').textContent = xslMsgActual;
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+  } catch(err){
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+    document.getElementById('xsl-modal-msg').textContent = 'Error: '+err.message;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // CROSS-SELLING / OPORTUNIDADES
 // ═══════════════════════════════════════════════════════════
 let xslCartera = [];      // clientes procesados
 let xslFiltroActivo = 'todos';
 let xslMsgActual = '';
 
-// Ramos de Sancor clasificados
-const RAMOS_PATRIMONIAL = ['100','110','111','120','130','140','160','170','200','210','220','230','300','310','320','400','410','500'];
-const RAMOS_RETIRO      = ['800','810','811','812','813','814','820'];
-const RAMOS_VIDA        = ['700','710','720','730','740','750','760'];
+// ── Ramos reales de Sancor (cartera Martín Giménez) ─────────────────
+const RAMOS = {
+  200:  'Automotores',
+  300:  'Incendio',
+  600:  'Accidentes Personales',
+  700:  'Robo',
+  1000: 'Casco Embarcaciones',
+  1400: 'Seguro Técnico',
+  1500: 'Responsabilidad Civil',
+  1600: 'Caución',
+  1720: 'Vida Obligatorio (ART)',  // vinculado a ART, NO cuenta como Vida independiente
+  1730: 'Vida Colectivo',
+  1800: 'Combinado Familiar',
+  2100: 'Seguro Integral',
+  2500: 'Salud',
+  3100: 'Motovehículo',
+};
 
-function clasificarRamo(ramo){
+const RAMOS_AUTO      = new Set(['200','3100']);   // Automotor + Moto
+const RAMOS_COMBINADO = new Set(['1800']);          // Combinado Familiar
+// 1720 excluido: Vida Obligatorio vinculado a ART, no es Vida independiente
+const RAMOS_VIDA      = new Set(['1730','2500']);   // Vida Colectivo, Salud
+
+function clasificarRamo(ramo, producto){
   const r = String(ramo||'').trim();
-  if(RAMOS_RETIRO.some(x=>r.startsWith(x))) return 'retiro';
-  if(RAMOS_VIDA.some(x=>r.startsWith(x)))   return 'vida';
-  if(r) return 'patrimonial';
-  return null;
+  const p = String(producto||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(RAMOS_AUTO.has(r))      return 'auto';
+  if(RAMOS_COMBINADO.has(r)) return 'combinado';
+  if(RAMOS_VIDA.has(r))      return 'vida';
+  // Fallback por nombre de producto
+  if(p.includes('automot')||p.includes('moto')) return 'auto';
+  if(p.includes('combinado')||p.includes('familiar')) return 'combinado';
+  if(p.includes('vida colectivo')||p.includes('salud')) return 'vida';
+  return 'otro'; // Incendio, Robo, AP, RC, Técnico, Caución, Integral, Vida Obligatorio ART
+}
+
+function nombreRamo(ramo){
+  return RAMOS[parseInt(ramo)] || `Ramo ${ramo}`;
 }
 
 function findColXSL(headers, nombres){
@@ -2356,6 +2906,7 @@ async function procesarCarteraXLS(input){
         if(!denom) continue;
 
         const ramo    = String(row[iRamo]||'').trim();
+        const prod    = String(row[iProducto]||'').trim();
         const nroAsoc = iNroAsoc>=0 ? String(row[iNroAsoc]||'').trim() : '';
         const key     = nroAsoc || denom;
 
@@ -2364,38 +2915,49 @@ async function procesarCarteraXLS(input){
             nombre: denom,
             nroAsoc: nroAsoc,
             polizas: [],
-            tienePatrimonial: false,
-            tieneRetiro: false,
+            tieneAuto: false,
+            tieneCombinadoFamiliar: false,
             tieneVida: false,
             productos: []
           });
         }
         const cli = mapaClientes.get(key);
-        const tipo = clasificarRamo(ramo);
-        const prod = String(row[iProducto]||'').trim();
+        const tipo = clasificarRamo(ramo, prod);
         const poliza = iPoliza>=0 ? String(row[iPoliza]||'').trim() : '';
 
-        cli.polizas.push({ramo, producto:prod, poliza});
+        cli.polizas.push({ramo, ramoNombre: nombreRamo(ramo), producto:prod, poliza});
         if(!cli.productos.includes(prod) && prod) cli.productos.push(prod);
-        if(tipo==='patrimonial') cli.tienePatrimonial = true;
-        if(tipo==='retiro')      cli.tieneRetiro = true;
-        if(tipo==='vida')        cli.tieneVida = true;
+        if(tipo==='auto')      cli.tieneAuto = true;
+        if(tipo==='combinado') cli.tieneCombinadoFamiliar = true;
+        if(tipo==='vida')      cli.tieneVida = true;
       }
 
       setProgXSL(80,'Calculando oportunidades...');
       await new Promise(r=>setTimeout(r,50));
 
-      // Calcular oportunidades y score
+      // Calcular oportunidades con reglas reales de cross-selling
       xslCartera = [];
       mapaClientes.forEach((cli,key)=>{
         const ops = [];
-        if(!cli.tieneRetiro)      ops.push('Retiro / Jubilación');
-        if(!cli.tieneVida)        ops.push('Seguro de Vida');
-        if(!cli.tienePatrimonial) ops.push('Seguro Patrimonial');
+        // Regla 1: tiene Auto pero NO Combinado Familiar → oportunidad principal
+        if(cli.tieneAuto && !cli.tieneCombinadoFamiliar)
+          ops.push('Combinado Familiar');
+        // Regla 2: tiene Combinado pero NO Auto
+        if(cli.tieneCombinadoFamiliar && !cli.tieneAuto)
+          ops.push('Automotores');
+        // Regla 3: no tiene Vida/Colectivo
+        if(!cli.tieneVida)
+          ops.push('Seguro de Vida');
+        // Regla 4: cliente con 1 solo producto → ofrecer todo lo que falta
+        if(cli.polizas.length===1){
+          if(!cli.tieneAuto && !ops.includes('Automotores'))
+            ops.push('Automotores');
+          if(!cli.tieneCombinadoFamiliar && !ops.includes('Combinado Familiar'))
+            ops.push('Combinado Familiar');
+        }
 
-        // Score: cuántas oportunidades tiene
         const score = ops.length;
-        if(score===0) return; // cliente completo, no mostrar
+        if(score===0) return;
 
         xslCartera.push({...cli, oportunidades:ops, score, key});
       });
@@ -2426,10 +2988,10 @@ function setProgXSL(pct, txt){
 }
 
 function renderStatsXSL(){
-  const total = xslCartera.length;
-  const alta  = xslCartera.filter(c=>c.score>=3).length;
-  const sinRet = xslCartera.filter(c=>!c.tieneRetiro).length;
-  const sinVid = xslCartera.filter(c=>!c.tieneVida).length;
+  const total   = xslCartera.length;
+  const alta    = xslCartera.filter(c=>c.score>=2).length;
+  const autoSinCombinado = xslCartera.filter(c=>c.tieneAuto && !c.tieneCombinadoFamiliar).length;
+  const sinVida = xslCartera.filter(c=>!c.tieneVida).length;
 
   document.getElementById('xsl-stats').innerHTML = `
     <div class="xsl-stat purple">
@@ -2438,14 +3000,14 @@ function renderStatsXSL(){
     </div>
     <div class="xsl-stat" style="border-left:3px solid #dc2626">
       <div class="xsl-stat-val">${alta}</div>
-      <div class="xsl-stat-lbl">Alta prioridad (3 gaps)</div>
-    </div>
-    <div class="xsl-stat green">
-      <div class="xsl-stat-val">${sinRet}</div>
-      <div class="xsl-stat-lbl">Sin Retiro / Jubilación</div>
+      <div class="xsl-stat-lbl">Prioridad alta (2+ gaps)</div>
     </div>
     <div class="xsl-stat gold">
-      <div class="xsl-stat-val">${sinVid}</div>
+      <div class="xsl-stat-val">${autoSinCombinado}</div>
+      <div class="xsl-stat-lbl">Auto sin Combinado Familiar</div>
+    </div>
+    <div class="xsl-stat green">
+      <div class="xsl-stat-val">${sinVida}</div>
       <div class="xsl-stat-lbl">Sin Seguro de Vida</div>
     </div>
   `;
@@ -2456,11 +3018,10 @@ function getClientesFiltrados(){
   return xslCartera.filter(c=>{
     const matchSearch = !busqueda || c.nombre.toLowerCase().includes(busqueda);
     let matchFiltro = true;
-    if(xslFiltroActivo==='3') matchFiltro = c.score>=3;
-    else if(xslFiltroActivo==='2') matchFiltro = c.score===2;
-    else if(xslFiltroActivo==='1') matchFiltro = c.score===1;
-    else if(xslFiltroActivo==='retiro') matchFiltro = !c.tieneRetiro;
-    else if(xslFiltroActivo==='vida') matchFiltro = !c.tieneVida;
+    if(xslFiltroActivo==='2')             matchFiltro = c.score>=2;
+    else if(xslFiltroActivo==='1')        matchFiltro = c.score===1;
+    else if(xslFiltroActivo==='autoSinCombinado') matchFiltro = c.tieneAuto && !c.tieneCombinadoFamiliar;
+    else if(xslFiltroActivo==='sinVida')  matchFiltro = !c.tieneVida;
     return matchSearch && matchFiltro;
   });
 }
@@ -2482,9 +3043,9 @@ function renderTablaXSL(){
     const scoreLabel = c.score>=3?'🔴':c.score===2?'🟡':'🟢';
 
     const tieneTags = [
-      c.tienePatrimonial?`<span class="xsl-tag pat">Patrimonial</span>`:'',
-      c.tieneRetiro?`<span class="xsl-tag ret">Retiro</span>`:'',
-      c.tieneVida?`<span class="xsl-tag vid">Vida</span>`:'',
+      c.tieneAuto             ? `<span class="xsl-tag pat">Automotor/Moto</span>`:'',
+      c.tieneCombinadoFamiliar? `<span class="xsl-tag ret">Combinado Familiar</span>`:'',
+      c.tieneVida             ? `<span class="xsl-tag vid">Vida/Salud</span>`:'',
     ].filter(Boolean).join('');
 
     const opBtns = c.oportunidades.map(op=>
