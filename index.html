@@ -1388,7 +1388,7 @@ function renderRenovacionesFiltradas(){
       <div class="renov-prima">${primaFmt}</div>
       <div class="renov-dias ${color}">${diasTxt}</div>
       <div class="renov-estado" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ra}')">✉️ Msg</button>
+        <button class="btn btn-secondary btn-sm" onclick="generarEmailRenovacion('${pol}','${ne}','${ra}',${r.dias})">✉️ Email aviso</button>
         <button class="btn btn-sm" style="background:${enGestion?'#f59e0b':'var(--cream)'};color:${enGestion?'#fff':'var(--ink)'};border:1px solid var(--border)" 
           onclick="setEstadoRenov('${pol}','en_gestion')" title="Marcar en gestión">
           ⏳${enGestion?' En gestión':' En gestión'}
@@ -1404,6 +1404,72 @@ function renderRenovacionesFiltradas(){
       </div>
     </div>`;
   }).join('');
+}
+
+async function generarEmailRenovacion(poliza, nombre, ramo, dias){
+  const key = getKey();
+  if(!key){ alert('Configurá tu API Key primero.'); return; }
+
+  const nombreProductor = localStorage.getItem('cfg_nombre')||'tu productor';
+  const ciudad = localStorage.getItem('cfg_ciudad')||'Trelew';
+
+  // Construir el contexto de vencimiento
+  let contextoVto = '';
+  if(dias < 0){
+    contextoVto = `La póliza venció hace ${Math.abs(dias)} días. El mensaje debe ser amable y urgente, sin generar alarma innecesaria, indicando que ya estamos gestionando la renovación.`;
+  } else if(dias === 0){
+    contextoVto = `La póliza vence HOY. El mensaje debe ser claro y tranquilizador, indicando que estamos al tanto y gestionando la renovación.`;
+  } else if(dias <= 7){
+    contextoVto = `La póliza vence en ${dias} días. El mensaje debe transmitir urgencia amable y que ya estamos trabajando en la renovación.`;
+  } else {
+    contextoVto = `La póliza vence en ${dias} días. El mensaje debe ser informativo y tranquilo, avisando con anticipación.`;
+  }
+
+  const prompt = `Sos ${nombreProductor}, productor asesor de seguros de Sancor en ${ciudad}.
+Redactá un email de aviso de renovación para el cliente ${nombre}.
+
+Datos:
+- Producto: ${ramo}
+- Póliza nro: ${poliza}
+- Situación: ${contextoVto}
+
+Instrucciones:
+- Tono cálido, profesional, de igual a igual
+- NO menciones la prima ni el importe
+- NO detalles coberturas — solo mencioná que adjuntás la documentación
+- Explicá brevemente qué va a pasar (vamos a gestionar la renovación / ya la estamos gestionando)
+- Máximo 120 palabras en el cuerpo
+- Incluí un asunto de email claro al inicio con el formato "Asunto: ..."
+- Terminá con una línea de contacto y firmá como ${nombreProductor}
+- Texto plano, sin markdown ni asteriscos`;
+
+  // Usar el modal del cross-selling que ya existe
+  document.getElementById('xsl-modal-title').textContent = `Email de aviso — ${nombre}`;
+  document.getElementById('xsl-modal-sub').textContent = `${ramo} · Póliza ${poliza} · ${dias<0?'Vencida hace '+Math.abs(dias)+'d':dias===0?'Vence hoy':'Vence en '+dias+'d'}`;
+  document.getElementById('xsl-modal-loader').style.display = 'block';
+  document.getElementById('xsl-modal-content').style.display = 'none';
+  document.getElementById('xsl-modal').classList.add('show');
+
+  try {
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:400,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    xslMsgActual = data.content?.[0]?.text||'Sin respuesta.';
+    document.getElementById('xsl-modal-msg').textContent = xslMsgActual;
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+  } catch(err){
+    document.getElementById('xsl-modal-loader').style.display = 'none';
+    document.getElementById('xsl-modal-content').style.display = 'block';
+    document.getElementById('xsl-modal-msg').textContent = 'Error: '+err.message;
+  }
 }
 
 async function analizarRenovacionesIA(){
