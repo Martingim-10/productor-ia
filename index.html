@@ -3270,11 +3270,6 @@ document.getElementById('xsl-modal').addEventListener('click',function(e){
   if(e.target===this) cerrarModalXSL();
 });
 
-// ═══════════════════════════════════════════════════════════
-// ANALIZADOR DE PÓLIZAS
-// ═══════════════════════════════════════════════════════════
-let analizadorPDFData = null;
-let analizadorResultado = null;
 
 // ═══════════════════════════════════════════════════════════
 // ANALIZADOR DE PÓLIZAS v2 — con Data Masking local
@@ -3318,9 +3313,7 @@ function maskSensitiveData(text) {
 }
 
 // ── 2. ESTADO ──────────────────────────────────────────────────────────
-let analizadorPDFData = null;
 let analizadorRawText = null;   // texto plano extraído del PDF
-let analizadorResultado = null;
 
 // ── 3. DROP / FILE SELECT ──────────────────────────────────────────────
 function analizadorDrop(e) {
@@ -3618,31 +3611,7 @@ function copiarAnalizador(tipo) {
     if (btn) { const o = btn.textContent; btn.textContent = '✓ Copiado!'; setTimeout(() => btn.textContent = o, 2000); }
   });
 }
-function copiarAnalizador(tipo){
-  if(!analizadorResultado) return;
-  let txt = '';
-  if(tipo==='email'){
-    const asunto = analizadorResultado.email_asunto||'Tu póliza';
-    txt = `Asunto: ${asunto}\n\n${analizadorResultado.email_cuerpo||''}`;
-  } else {
-    // WhatsApp: versión más corta y directa
-    const d = analizadorResultado;
-    txt = `*Tu cobertura — ${d.datos?.producto||'Póliza'}*\n\n`;
-    if(d.coberturas?.length){
-      txt += '*Lo que tenés cubierto:*\n';
-      d.coberturas.slice(0,5).forEach(c=>{ txt += `✅ ${c.texto}\n`; });
-    }
-    if(d.brechas?.length){
-      txt += `\n*Una cosa importante:*\n`;
-      txt += `⚠️ ${d.brechas[0].riesgo}: ${d.brechas[0].impacto}\n`;
-    }
-    txt += `\nCualquier consulta, avisame. — ${localStorage.getItem('cfg_nombre')||'Tu productor'}`;
-  }
-  navigator.clipboard.writeText(txt).then(()=>{
-    const btns = document.querySelectorAll('.anl-copy-btn');
-    btns.forEach(b=>{ if(b.textContent.includes(tipo==='email'?'email':'WhatsApp')){ const orig=b.textContent; b.textContent='✓ Copiado!'; setTimeout(()=>b.textContent=orig,2000); }});
-  });
-}
+
 
 // ═══════════════════════════════════════════════════════════
 // INIT
