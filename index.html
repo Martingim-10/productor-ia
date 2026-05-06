@@ -3666,7 +3666,19 @@ function copiarAnalizador(tipo) {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
-document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+function clasificarRamo(ramo, producto) {
+  const r = String(ramo||'').trim();
+  const p = String(producto||'').toLowerCase();
+  if(r==='200'||r==='3100'||p.includes('auto')||p.includes('moto')) return 'auto';
+  if(r==='1800'||p.includes('combinado')||p.includes('hogar')||p.includes('familia')) return 'combinado';
+  if(r==='1720'||r==='1730'||r==='2500'||p.includes('vida')||p.includes('salud')||p.includes('accidente')) return 'vida';
+  return 'otro';
+}
+
+function nombreRamo(ramo) {
+  return RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo '+ramo;
+}
+  document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
 cargarCfg();
 initCartera([]);
 cargarComisionesLocal();
