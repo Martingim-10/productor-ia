@@ -2958,66 +2958,24 @@ Firmá como ${nombreProductor}.`;
 }
 
 // ═══════════════════════════════════════════════════════════
-// CROSS-SELLING / OPORTUNIDADES
 // ═══════════════════════════════════════════════════════════
-let xslCartera = [];      // clientes procesados
-let xslFiltroActivo = 'todos';
-let xslMsgActual = '';
+// CROSS-SELLING v2 — Briefing Oportunidades de Venta
+// ═══════════════════════════════════════════════════════════
 
-// ── Ramos reales de Sancor (cartera Martín Giménez) ─────────────────
-const RAMOS = {
-  200:  'Automotores',
-  300:  'Incendio',
-  600:  'Accidentes Personales',
-  700:  'Robo',
-  1000: 'Casco Embarcaciones',
-  1400: 'Seguro Técnico',
-  1500: 'Responsabilidad Civil',
-  1600: 'Caución',
-  1720: 'Vida Obligatorio (ART)',  // vinculado a ART, NO cuenta como Vida independiente
-  1730: 'Vida Colectivo',
-  1800: 'Combinado Familiar',
-  2100: 'Seguro Integral',
-  2500: 'Salud',
-  3100: 'Motovehículo',
-};
-
-const RAMOS_AUTO      = new Set(['200','3100']);   // Automotor + Moto
-const RAMOS_COMBINADO = new Set(['1800']);          // Combinado Familiar
-// 1720 excluido: Vida Obligatorio vinculado a ART, no es Vida independiente
-const RAMOS_VIDA      = new Set(['1730','2500']);   // Vida Colectivo, Salud
-
-function clasificarRamo(ramo, producto){
-  const r = String(ramo||'').trim();
-  const p = String(producto||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  if(RAMOS_AUTO.has(r))      return 'auto';
-  if(RAMOS_COMBINADO.has(r)) return 'combinado';
-  if(RAMOS_VIDA.has(r))      return 'vida';
-  // Fallback por nombre de producto
-  if(p.includes('automot')||p.includes('moto')) return 'auto';
-  if(p.includes('combinado')||p.includes('familiar')) return 'combinado';
-  if(p.includes('vida colectivo')||p.includes('salud')) return 'vida';
-  return 'otro'; // Incendio, Robo, AP, RC, Técnico, Caución, Integral, Vida Obligatorio ART
-}
-
-function nombreRamo(ramo){
-  return RAMOS[parseInt(ramo)] || `Ramo ${ramo}`;
-}
-
-function findColXSL(headers, nombres){
-  for(const n of nombres){
-    const idx = headers.findIndex(h=>String(h||'').toLowerCase().trim()===n.toLowerCase().trim());
-    if(idx>=0) return idx;
-  }
-  return -1;
-}
+// ── Estado global ──────────────────────────────────────────
+let xslCartera       = [];
+let xslFiltroActivo  = 'todos';
+let xslMsgActual     = '';
+let crsClienteActual = null;
 
 function resetCrosselling(){
   xslCartera = [];
   xslFiltroActivo = 'todos';
+  crsClienteActual = null;
   document.getElementById('xsl-inicial').style.display = 'block';
   document.getElementById('xsl-loading').style.display = 'none';
   document.getElementById('xsl-resultados').style.display = 'none';
+  document.getElementById('crs-editor').classList.remove('show');
   document.getElementById('xsl-file-input').value = '';
 }
 
@@ -3028,6 +2986,7 @@ async function procesarCarteraXLS(input){
   document.getElementById('xsl-inicial').style.display = 'none';
   document.getElementById('xsl-loading').style.display = 'block';
   document.getElementById('xsl-resultados').style.display = 'none';
+  document.getElementById('crs-editor').classList.remove('show');
   setProgXSL(10,'Leyendo archivo Excel...');
 
   const reader = new FileReader();
@@ -3040,59 +2999,38 @@ async function procesarCarteraXLS(input){
       setProgXSL(30,'Detectando columnas...');
       if(rows.length < 2){ alert('El archivo parece estar vacío.'); resetCrosselling(); return; }
 
-      // Buscar dinámicamente la fila de headers — el reporte de Sancor
-      // tiene varias filas de título antes de los datos reales
       let headerRowIdx = -1;
       let headers = [];
       for(let i=0; i<Math.min(rows.length,30); i++){
         const row = rows[i].map(h=>String(h||'').trim());
-        // La fila de headers contiene "Ramo" y "Denominación"
         if(row.some(h=>h==='Ramo') && row.some(h=>h.includes('Denominaci'))){
-          headerRowIdx = i;
-          headers = row;
-          break;
+          headerRowIdx = i; headers = row; break;
         }
       }
-
       if(headerRowIdx<0){
-        alert('No se encontró la fila de columnas (Ramo, Denominación). Verificá que el archivo sea el reporte "Pólizas y Certificados Vigentes" de Sancor.');
+        alert('No se encontró la fila de columnas (Ramo, Denominación).');
         resetCrosselling(); return;
       }
 
-      // Detectar columnas con findCol robusto — busca por nombre exacto e ignorando tildes
       const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
       const findH = (...nombres) => headers.findIndex(h=>nombres.some(n=>norm(h)===norm(n)));
 
-      const iRamo      = findH('Ramo');
-      const iProducto  = findH('Producto');
-      const iDenom     = findH('Denominación','Denominacion');
-      const iNroAsoc   = findH('Nro. Asoc.','Nro.Asoc.','Nro Asoc');
-      const iCliente   = findH('Cliente');
-      const iPoliza    = findH('Póliza','Poliza');
-      const iFechaFin  = findH('Fecha Fin Vigencia','Fin Vigencia');
-      const iPrima     = findH('Prima');
+      const iRamo     = findH('Ramo');
+      const iProducto = findH('Producto');
+      const iDenom    = findH('Denominación','Denominacion');
+      const iNroAsoc  = findH('Nro. Asoc.','Nro.Asoc.','Nro Asoc');
+      const iPoliza   = findH('Póliza','Poliza');
 
-      console.log('Headers detectados en fila', headerRowIdx, ':', headers);
-      console.log('Índices — Ramo:',iRamo,'Denom:',iDenom,'NroAsoc:',iNroAsoc,'Producto:',iProducto);
-
-      if(iRamo<0 || iDenom<0){
-        alert(`No se encontraron columnas clave.\nRamo: columna ${iRamo}\nDenominación: columna ${iDenom}\n\nColumnas detectadas: ${headers.filter(h=>h).join(', ')}`);
-        resetCrosselling(); return;
-      }
-
-      // Los datos empiezan en la fila siguiente a los headers
-      const dataStartRow = headerRowIdx + 1;
+      if(iRamo<0 || iDenom<0){ alert('No se encontraron columnas clave.'); resetCrosselling(); return; }
 
       setProgXSL(55,'Agrupando clientes...');
       await new Promise(r=>setTimeout(r,50));
 
-      // Los datos empiezan en dataStartRow
       const mapaClientes = new Map();
-      for(let i=dataStartRow; i<rows.length; i++){
+      for(let i=headerRowIdx+1; i<rows.length; i++){
         const row = rows[i];
         const denom = String(row[iDenom]||'').trim();
         if(!denom) continue;
-
         const ramo    = String(row[iRamo]||'').trim();
         const prod    = String(row[iProducto]||'').trim();
         const nroAsoc = iNroAsoc>=0 ? String(row[iNroAsoc]||'').trim() : '';
@@ -3100,19 +3038,14 @@ async function procesarCarteraXLS(input){
 
         if(!mapaClientes.has(key)){
           mapaClientes.set(key,{
-            nombre: denom,
-            nroAsoc: nroAsoc,
-            polizas: [],
-            tieneAuto: false,
-            tieneCombinadoFamiliar: false,
-            tieneVida: false,
-            productos: []
+            nombre: denom, nroAsoc, polizas: [],
+            tieneAuto:false, tieneCombinadoFamiliar:false, tieneVida:false,
+            productos: [], key
           });
         }
         const cli = mapaClientes.get(key);
         const tipo = clasificarRamo(ramo, prod);
         const poliza = iPoliza>=0 ? String(row[iPoliza]||'').trim() : '';
-
         cli.polizas.push({ramo, ramoNombre: nombreRamo(ramo), producto:prod, poliza});
         if(!cli.productos.includes(prod) && prod) cli.productos.push(prod);
         if(tipo==='auto')      cli.tieneAuto = true;
@@ -3123,36 +3056,28 @@ async function procesarCarteraXLS(input){
       setProgXSL(80,'Calculando oportunidades...');
       await new Promise(r=>setTimeout(r,50));
 
-      // Calcular oportunidades con reglas reales de cross-selling
       xslCartera = [];
-      mapaClientes.forEach((cli,key)=>{
+      mapaClientes.forEach((cli, key)=>{
         const ops = [];
-        // Regla 1: tiene Auto pero NO Combinado Familiar → oportunidad principal
-        if(cli.tieneAuto && !cli.tieneCombinadoFamiliar)
-          ops.push('Combinado Familiar');
-        // Regla 2: tiene Combinado pero NO Auto
-        if(cli.tieneCombinadoFamiliar && !cli.tieneAuto)
-          ops.push('Automotores');
-        // Regla 3: no tiene Vida/Colectivo
-        if(!cli.tieneVida)
-          ops.push('Seguro de Vida');
-        // Regla 4: cliente con 1 solo producto → ofrecer todo lo que falta
+        if(cli.tieneAuto && !cli.tieneCombinadoFamiliar)  ops.push({tipo:'hogar',  label:'Combinado Familiar', emoji:'🏠'});
+        if(cli.tieneCombinadoFamiliar && !cli.tieneAuto)  ops.push({tipo:'auto',   label:'Automotores',        emoji:'🚗'});
+        if(!cli.tieneVida)                                 ops.push({tipo:'vida',   label:'Seguro de Vida',     emoji:'❤️'});
         if(cli.polizas.length===1){
-          if(!cli.tieneAuto && !ops.includes('Automotores'))
-            ops.push('Automotores');
-          if(!cli.tieneCombinadoFamiliar && !ops.includes('Combinado Familiar'))
-            ops.push('Combinado Familiar');
+          if(!cli.tieneAuto && !ops.find(o=>o.tipo==='auto'))
+            ops.push({tipo:'auto', label:'Automotores', emoji:'🚗'});
+          if(!cli.tieneCombinadoFamiliar && !ops.find(o=>o.tipo==='hogar'))
+            ops.push({tipo:'hogar', label:'Combinado Familiar', emoji:'🏠'});
         }
-
         const score = ops.length;
         if(score===0) return;
-
-        xslCartera.push({...cli, oportunidades:ops, score, key});
+        const sanitized = {
+          nombreDisplay: cli.nombre,
+          productoActual: cli.productos.slice(0,2).join(' + ') || 'Seguros Sancor',
+        };
+        xslCartera.push({...cli, oportunidades:ops, score, key, sanitized});
       });
 
-      // Ordenar por score descendente
       xslCartera.sort((a,b)=>b.score-a.score);
-
       setProgXSL(100,'Listo');
       await new Promise(r=>setTimeout(r,300));
 
@@ -3178,27 +3103,13 @@ function setProgXSL(pct, txt){
 function renderStatsXSL(){
   const total   = xslCartera.length;
   const alta    = xslCartera.filter(c=>c.score>=2).length;
-  const autoSinCombinado = xslCartera.filter(c=>c.tieneAuto && !c.tieneCombinadoFamiliar).length;
+  const sinComb = xslCartera.filter(c=>c.tieneAuto && !c.tieneCombinadoFamiliar).length;
   const sinVida = xslCartera.filter(c=>!c.tieneVida).length;
-
   document.getElementById('xsl-stats').innerHTML = `
-    <div class="xsl-stat purple">
-      <div class="xsl-stat-val">${total}</div>
-      <div class="xsl-stat-lbl">Clientes con oportunidades</div>
-    </div>
-    <div class="xsl-stat" style="border-left:3px solid #dc2626">
-      <div class="xsl-stat-val">${alta}</div>
-      <div class="xsl-stat-lbl">Prioridad alta (2+ gaps)</div>
-    </div>
-    <div class="xsl-stat gold">
-      <div class="xsl-stat-val">${autoSinCombinado}</div>
-      <div class="xsl-stat-lbl">Auto sin Combinado Familiar</div>
-    </div>
-    <div class="xsl-stat green">
-      <div class="xsl-stat-val">${sinVida}</div>
-      <div class="xsl-stat-lbl">Sin Seguro de Vida</div>
-    </div>
-  `;
+    <div class="xsl-stat purple"><div class="xsl-stat-val">${total}</div><div class="xsl-stat-lbl">Clientes con gaps</div></div>
+    <div class="xsl-stat" style="border-left:3px solid #dc2626"><div class="xsl-stat-val">${alta}</div><div class="xsl-stat-lbl">Alta prioridad (2+ gaps)</div></div>
+    <div class="xsl-stat gold"><div class="xsl-stat-val">${sinComb}</div><div class="xsl-stat-lbl">Falta Hogar/Combinado</div></div>
+    <div class="xsl-stat green"><div class="xsl-stat-val">${sinVida}</div><div class="xsl-stat-lbl">Sin Seguro de Vida</div></div>`;
 }
 
 function getClientesFiltrados(){
@@ -3206,12 +3117,22 @@ function getClientesFiltrados(){
   return xslCartera.filter(c=>{
     const matchSearch = !busqueda || c.nombre.toLowerCase().includes(busqueda);
     let matchFiltro = true;
-    if(xslFiltroActivo==='2')             matchFiltro = c.score>=2;
-    else if(xslFiltroActivo==='1')        matchFiltro = c.score===1;
-    else if(xslFiltroActivo==='autoSinCombinado') matchFiltro = c.tieneAuto && !c.tieneCombinadoFamiliar;
-    else if(xslFiltroActivo==='sinVida')  matchFiltro = !c.tieneVida;
+    if(xslFiltroActivo==='2')                matchFiltro = c.score>=2;
+    if(xslFiltroActivo==='1')                matchFiltro = c.score===1;
+    if(xslFiltroActivo==='autoSinCombinado') matchFiltro = c.tieneAuto && !c.tieneCombinadoFamiliar;
+    if(xslFiltroActivo==='sinVida')          matchFiltro = !c.tieneVida;
+    if(xslFiltroActivo==='sinAuto')          matchFiltro = !c.tieneAuto;
     return matchSearch && matchFiltro;
   });
+}
+
+function filtrarXSL(){ renderTablaXSL(); }
+
+function setFiltroXSL(btn, filtro){
+  xslFiltroActivo = filtro;
+  document.querySelectorAll('.crs-filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTablaXSL();
 }
 
 function renderTablaXSL(){
@@ -3219,120 +3140,161 @@ function renderTablaXSL(){
   const tbody = document.getElementById('xsl-tbody');
   const empty = document.getElementById('xsl-empty');
 
-  if(clientes.length===0){
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  if(clientes.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
 
-  tbody.innerHTML = clientes.map((c,i)=>{
+  tbody.innerHTML = clientes.map(c=>{
     const scoreClass = c.score>=3?'alta':c.score===2?'media':'baja';
     const scoreLabel = c.score>=3?'🔴':c.score===2?'🟡':'🟢';
 
     const tieneTags = [
-      c.tieneAuto             ? `<span class="xsl-tag pat">Automotor/Moto</span>`:'',
-      c.tieneCombinadoFamiliar? `<span class="xsl-tag ret">Combinado Familiar</span>`:'',
-      c.tieneVida             ? `<span class="xsl-tag vid">Vida/Salud</span>`:'',
-    ].filter(Boolean).join('');
+      c.tieneAuto             ? `<span class="crs-tag tiene">🚗 Auto/Moto</span>`:'',
+      c.tieneCombinadoFamiliar? `<span class="crs-tag tiene">🏠 Combinado</span>`:'',
+      c.tieneVida             ? `<span class="crs-tag tiene">❤️ Vida/Salud</span>`:'',
+    ].filter(Boolean).join('') || `<span style="font-size:11px;color:var(--muted)">Sin coberturas detectadas</span>`;
 
-    const opBtns = c.oportunidades.map(op=>
-      `<span class="xsl-op" onclick="abrirModalXSL('${c.key}','${op}')">${op}</span>`
+    const opTags = c.oportunidades.map(op=>
+      `<span class="crs-tag oportunidad ${op.tipo}">${op.emoji} ${op.label}</span>`
+    ).join('');
+
+    const genBtns = c.oportunidades.map(op=>
+      `<button class="crs-btn-gen" onclick="crsGenerarMensaje('${c.key}','${op.tipo}','${op.label}')">🤖 ${op.emoji} ${op.label}</button>`
     ).join('');
 
     return `<tr>
-      <td><span class="xsl-score ${scoreClass}" title="${c.score} oportunidades">${scoreLabel}</span></td>
-      <td>
-        <div class="xsl-cliente">${c.nombre}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.polizas.length} póliza${c.polizas.length!==1?'s':''} · Nro ${c.nroAsoc||'—'}</div>
-        <div class="xsl-tiene" style="margin-top:6px">${tieneTags||'<span style="font-size:11px;color:var(--muted)">Sin coberturas detectadas</span>'}</div>
-      </td>
-      <td>
-        <div style="font-size:12px;color:var(--muted)">${c.productos.slice(0,3).join(', ')}${c.productos.length>3?' +más':''}</div>
-      </td>
-      <td><div class="xsl-oportunidades">${opBtns}</div></td>
-      <td>
-        <button class="btn btn-secondary" style="font-size:11px;padding:6px 12px" onclick="abrirModalXSLTodo('${c.key}')">✉️ Mensaje completo</button>
-      </td>
+      <td><span class="crs-prioridad ${scoreClass}">${scoreLabel}</span></td>
+      <td><div class="crs-nombre">${c.nombre}</div><div class="crs-sub">Nro ${c.nroAsoc||'—'} · ${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div></td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:3px">${tieneTags}</div></td>
+      <td><div style="display:flex;flex-wrap:wrap;gap:3px">${opTags}</div></td>
+      <td><div style="display:flex;flex-direction:column;gap:5px">${genBtns}</div></td>
     </tr>`;
   }).join('');
 }
 
-function filtrarXSL(){ renderTablaXSL(); }
+function crsBuildPrompt(cli, tipoOp, labelOp){
+  const primerNombre = cli.sanitized.nombreDisplay.split(' ')[0];
+  const productoActual = cli.sanitized.productoActual;
+  const nombreProductor = localStorage.getItem('cfg_nombre') || 'tu productor';
+  return `Actuás como ${nombreProductor}, productor asesor de seguros de Sancor en Argentina.
 
-function setFiltroXSL(btn, filtro){
-  xslFiltroActivo = filtro;
-  document.querySelectorAll('.xsl-filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTablaXSL();
+Generá un mensaje de WhatsApp CORTO, persuasivo y cercano:
+- Cliente: ${primerNombre}
+- Producto actual: ${productoActual}
+- Oportunidad: Le falta ${labelOp}
+
+Requisitos:
+1. No uses "Estimado/a" — arrancá con el nombre o directo al punto
+2. Mencioná un beneficio de "protección integral" relacionado con ${labelOp}
+3. CTA directo: invitá a una breve llamada
+4. MÁXIMO 280 caracteres
+5. Tono humano, de igual a igual, sin markdown
+6. Firmá como ${nombreProductor}
+
+Devolvé ÚNICAMENTE el texto del mensaje.`;
 }
 
+async function crsGenerarMensaje(key, tipoOp, labelOp){
+  const apiKey = getKey();
+  if(!apiKey){ alert('Configurá tu API Key primero.'); return; }
+
+  const cli = xslCartera.find(c=>c.key===key);
+  if(!cli) return;
+
+  crsClienteActual = {...cli, tipoOp, labelOp};
+
+  const loaderEl = document.getElementById('crs-loader-inline');
+  const editorEl = document.getElementById('crs-editor');
+  loaderEl.classList.add('show');
+  document.getElementById('crs-loader-txt').textContent = `Generando para ${cli.nombre.split(' ')[0]}...`;
+  editorEl.classList.remove('show');
+  document.getElementById('crs-audit-badge').style.display = 'none';
+  loaderEl.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  try {
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,messages:[{role:'user',content:crsBuildPrompt(cli,tipoOp,labelOp)}]})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const msg = data.content?.[0]?.text?.trim() || 'Sin respuesta.';
+    xslMsgActual = msg;
+
+    document.getElementById('crs-editor-cliente').textContent = cli.nombre;
+    const badge = document.getElementById('crs-oportunidad-badge');
+    badge.textContent = `${tipoOp==='hogar'?'🏠':tipoOp==='vida'?'❤️':'🚗'} ${labelOp}`;
+    badge.className = `crs-tag oportunidad ${tipoOp}`;
+
+    const textarea = document.getElementById('crs-textarea');
+    textarea.value = msg;
+    crsContarChars(textarea);
+    document.getElementById('crs-btn-wsp').disabled = false;
+
+    loaderEl.classList.remove('show');
+    editorEl.classList.add('show');
+    editorEl.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+    dbLogCrossSelling('ÉXITO', key, labelOp, data.usage?.output_tokens||0);
+  } catch(e) {
+    loaderEl.classList.remove('show');
+    alert('Error: '+e.message);
+    dbLogCrossSelling('ERROR', key, e.message, 0);
+  }
+}
+
+function crsContarChars(textarea){
+  const len = textarea.value.length;
+  const el = document.getElementById('crs-char-count');
+  el.textContent = `${len} / 280`;
+  el.classList.toggle('over', len > 280);
+}
+
+function crsEnviarWsp(){
+  const txt = document.getElementById('crs-textarea').value.trim();
+  if(!txt) return;
+  document.getElementById('crs-audit-badge').style.display = 'flex';
+  window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+}
+
+function crsCopiar(){
+  const txt = document.getElementById('crs-textarea').value.trim();
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.querySelector('.crs-btn-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(()=>btn.textContent=orig, 2000);
+  });
+}
+
+async function dbLogCrossSelling(resultado, clienteId, detalle, tokens){
+  try {
+    await fetch('/api/db/log_procedimiento', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({PROCEDIMIENTO:'Cross-selling Generation',RESULTADO:resultado,DETALLE:`Mensaje generado para ID_CLIENTE: ${clienteId} — ${detalle}`,TOKEN_USAGE:tokens})
+    });
+  } catch(e){ console.info('[DB Auditoría] skipped:', e.message); }
+}
+
+// ── Compatibilidad con módulo Retiro (usa modal legacy) ────────────────
 function abrirModalXSL(key, oportunidad){
   const cli = xslCartera.find(c=>c.key===key);
   if(!cli) return;
-  mostrarModalXSL(cli, oportunidad);
+  const op = cli.oportunidades.find(o=>o.label===oportunidad) || cli.oportunidades[0];
+  if(op) crsGenerarMensaje(key, op.tipo, op.label);
 }
 
 function abrirModalXSLTodo(key){
   const cli = xslCartera.find(c=>c.key===key);
-  if(!cli) return;
-  mostrarModalXSL(cli, null);
+  if(!cli || !cli.oportunidades.length) return;
+  const op = cli.oportunidades[0];
+  crsGenerarMensaje(key, op.tipo, op.label);
 }
 
 async function mostrarModalXSL(cli, oportunidad){
-  const key = getKey();
-  if(!key){ alert('Configurá tu API Key primero.'); return; }
-
-  document.getElementById('xsl-modal-title').textContent = cli.nombre;
-  document.getElementById('xsl-modal-sub').textContent = oportunidad
-    ? `Mensaje para ofrecer: ${oportunidad}`
-    : `Mensaje completo — ${cli.oportunidades.length} oportunidades`;
-  document.getElementById('xsl-modal-loader').style.display = 'block';
-  document.getElementById('xsl-modal-content').style.display = 'none';
-  document.getElementById('xsl-modal').classList.add('show');
-
-  const nombre = localStorage.getItem('cfg_nombre')||'tu productor';
-  const ops = oportunidad ? [oportunidad] : cli.oportunidades;
-  const tiene = [
-    cli.tienePatrimonial?'seguros patrimoniales (hogar/auto)':'',
-    cli.tieneRetiro?'seguro de retiro/jubilación':'',
-    cli.tieneVida?'seguro de vida':''
-  ].filter(Boolean).join(', ') || 'ningún producto aún identificado';
-
-  const prompt = `Sos ${nombre}, productor asesor de seguros de Sancor en Argentina. 
-Redactá un mensaje corto y cálido (máximo 120 palabras) para ${cli.nombre}.
-
-El cliente YA TIENE: ${tiene}.
-Querés ofrecerle: ${ops.join(', ')}.
-
-Reglas:
-- Tono amigable, de igual a igual, sin sonar a vendedor agresivo
-- Mencioná lo que ya tiene como base positiva
-- Presentá la oportunidad como una protección que le falta, no como una venta
-- Sin asteriscos de markdown, texto plano
-- Terminá con una pregunta abierta que invite a responder
-- Firmá como ${nombre}`;
-
-  try {
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:400,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data = await res.json();
-    xslMsgActual = data.content?.[0]?.text||'Sin respuesta.';
-    document.getElementById('xsl-modal-msg').textContent = xslMsgActual;
-    document.getElementById('xsl-modal-loader').style.display = 'none';
-    document.getElementById('xsl-modal-content').style.display = 'block';
-  } catch(err){
-    document.getElementById('xsl-modal-loader').style.display = 'none';
-    document.getElementById('xsl-modal-content').style.display = 'block';
-    document.getElementById('xsl-modal-msg').textContent = 'Error generando mensaje: '+err.message;
-  }
+  const op = cli.oportunidades?.find(o=>o.label===oportunidad) || cli.oportunidades?.[0];
+  if(op) crsGenerarMensaje(cli.key, op.tipo, op.label);
 }
 
 function cerrarModalXSL(){
@@ -3353,7 +3315,6 @@ function copiarMsgXSL(tipo){
 document.getElementById('xsl-modal').addEventListener('click',function(e){
   if(e.target===this) cerrarModalXSL();
 });
-
 
 // ═══════════════════════════════════════════════════════════
 // ANALIZADOR DE PÓLIZAS v2 — con Data Masking local
