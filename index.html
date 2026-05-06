@@ -366,6 +366,54 @@ textarea{resize:vertical;line-height:1.6}
 .anl-email-editable{background:var(--blue-bg);border:1px solid #bae6fd;border-radius:8px;padding:16px;font-size:13px;line-height:1.8;color:#0c4a6e;min-height:120px;outline:none;white-space:pre-wrap;cursor:text}
 .anl-email-editable:focus{border-color:#0369a1;background:#e0f2fe}
 .anl-email-toolbar{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  /* ── CROSS-SELLING v2 ─────────────────────────────── */
+.crs-filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.crs-filtro-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;color:var(--muted)}
+.crs-filtro-btn:hover{border-color:var(--gold);color:var(--gold)}
+.crs-filtro-btn.active{background:var(--ink);color:var(--gold-l);border-color:var(--ink)}
+.crs-filtro-btn.falta-hogar.active{background:#2a5c45;border-color:#2a5c45;color:#fff}
+.crs-filtro-btn.falta-vida.active{background:#6b21a8;border-color:#6b21a8;color:#fff}
+.crs-filtro-btn.falta-auto.active{background:#1e40af;border-color:#1e40af;color:#fff}
+.crs-tabla{width:100%;border-collapse:collapse;font-size:13px}
+.crs-tabla th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap;background:var(--white)}
+.crs-tabla td{padding:11px 14px;border-bottom:1px solid var(--cream);vertical-align:top}
+.crs-tabla tr:hover td{background:#faf8f5}
+.crs-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-right:3px;margin-bottom:2px}
+.crs-tag.tiene{background:var(--green-bg);color:var(--green-fg)}
+.crs-tag.oportunidad{background:#fffbf2;color:#92400e;border:1px solid var(--gold);font-weight:700}
+.crs-tag.oportunidad.hogar{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+.crs-tag.oportunidad.vida{background:#f3e8ff;color:#6b21a8;border-color:#d8b4fe}
+.crs-tag.oportunidad.auto{background:var(--blue-bg);color:var(--blue-fg);border-color:#93c5fd}
+.crs-nombre{font-weight:600;font-size:13px;color:var(--ink)}
+.crs-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.crs-prioridad{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0}
+.crs-prioridad.alta{background:#fee2e2;color:#991b1b}
+.crs-prioridad.media{background:#fef9ec;color:#92400e}
+.crs-prioridad.baja{background:var(--green-bg);color:var(--green-fg)}
+.crs-btn-gen{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--ink);color:var(--gold-l);border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.crs-btn-gen:hover{background:var(--gold);color:var(--ink)}
+.crs-btn-gen:disabled{opacity:.45;cursor:default}
+.crs-editor{display:none;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:20px;animation:fadeInUp .3s ease}
+.crs-editor.show{display:block}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.crs-editor-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--cream)}
+.crs-editor-hdr span{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.crs-editor-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.crs-char-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.crs-char-count.over{color:var(--red-fg);font-weight:700}
+.crs-textarea{width:100%;padding:16px;border:none;font-family:'DM Sans',sans-serif;font-size:13.5px;line-height:1.7;color:var(--ink);background:var(--white);resize:vertical;min-height:100px;max-height:220px;outline:none}
+.crs-textarea:focus{background:#fffbf2}
+.crs-editor-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--cream);flex-wrap:wrap}
+.crs-btn-wsp{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.crs-btn-wsp:hover{background:#128c7e}
+.crs-btn-wsp:disabled{opacity:.4;cursor:default}
+.crs-btn-copy{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:var(--gold-l);border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.crs-btn-copy:hover{background:var(--gold);color:var(--ink)}
+.crs-audit-badge{margin-left:auto;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.crs-audit-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.crs-loader-inline{display:none;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px 0}
+.crs-loader-inline.show{display:flex}
+.crs-empty{text-align:center;padding:60px 28px;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -874,12 +922,12 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 </div>
 
-<!-- ══ CROSS-SELLING / OPORTUNIDADES ═══════════════════════════════════ -->
+<!-- ══ CROSS-SELLING / OPORTUNIDADES v2 ════════════════════════════════ -->
 <div id="crosselling-panel" class="panel">
   <div class="ph">
     <div>
       <div class="ph-title">🎯 Oportunidades de Venta</div>
-      <div class="ph-sub">Analizá tu cartera completa y detectá qué le falta a cada cliente</div>
+      <div class="ph-sub">Detección automática de gaps · Mensajes personalizados con IA</div>
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-secondary" onclick="resetCrosselling()">🗑️ Limpiar</button>
@@ -895,7 +943,7 @@ textarea{resize:vertical;line-height:1.6}
     <div id="xsl-inicial" style="text-align:center;padding:60px 28px">
       <div style="font-size:48px;margin-bottom:16px">📊</div>
       <div style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:8px">Cargá el Excel de Cartera Activa</div>
-      <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 24px">El mismo archivo que exportás de Sancor. El sistema detecta automáticamente las columnas.</div>
+      <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 24px">El mismo archivo que exportás de Sancor. El sistema detecta gaps de cobertura y genera mensajes personalizados.</div>
       <label class="btn btn-primary" style="cursor:pointer;font-size:14px;padding:12px 28px">
         📂 Seleccionar archivo .xlsx
         <input type="file" accept=".xlsx,.xls" style="display:none" onchange="procesarCarteraXLS(this)">
@@ -917,31 +965,67 @@ textarea{resize:vertical;line-height:1.6}
       <!-- Stats -->
       <div class="xsl-stats" id="xsl-stats"></div>
 
-      <!-- Filtros -->
-      <div class="xsl-filters">
-        <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarXSL()" id="xsl-search">
-        <button class="xsl-filter-btn active" data-filtro="todos" onclick="setFiltroXSL(this,'todos')">Todos</button>
-        <button class="xsl-filter-btn" data-filtro="2" onclick="setFiltroXSL(this,'2')">🔴 Alta prioridad</button>
-        <button class="xsl-filter-btn" data-filtro="1" onclick="setFiltroXSL(this,'1')">🟡 1 oportunidad</button>
-        <button class="xsl-filter-btn" data-filtro="autoSinCombinado" onclick="setFiltroXSL(this,'autoSinCombinado')">🚗 Auto sin Combinado</button>
-        <button class="xsl-filter-btn" data-filtro="sinVida" onclick="setFiltroXSL(this,'sinVida')">❤️ Sin Vida</button>
+      <!-- Filtros v2 -->
+      <div class="crs-filtros">
+        <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:4px">Filtrar:</span>
+        <button class="crs-filtro-btn active" data-filtro="todos" onclick="setFiltroXSL(this,'todos')">Todos</button>
+        <button class="crs-filtro-btn falta-hogar" data-filtro="autoSinCombinado" onclick="setFiltroXSL(this,'autoSinCombinado')">🏠 Falta Hogar</button>
+        <button class="crs-filtro-btn falta-vida" data-filtro="sinVida" onclick="setFiltroXSL(this,'sinVida')">❤️ Falta Vida</button>
+        <button class="crs-filtro-btn falta-auto" data-filtro="sinAuto" onclick="setFiltroXSL(this,'sinAuto')">🚗 Falta Auto</button>
+        <button class="crs-filtro-btn" data-filtro="2" onclick="setFiltroXSL(this,'2')">🔴 Alta prioridad</button>
+        <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarXSL()" id="xsl-search" style="margin-left:auto">
       </div>
 
-      <!-- Tabla -->
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-        <table class="xsl-table">
+      <!-- Tabla v2 con OpportunityTable -->
+      <div id="crs-view" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <table class="crs-tabla">
           <thead>
             <tr>
-              <th>Prioridad</th>
+              <th style="width:28px">P.</th>
               <th>Cliente</th>
               <th>Tiene contratado</th>
-              <th>Oportunidades</th>
-              <th>Acción</th>
+              <th>Oportunidad detectada</th>
+              <th>Acción IA</th>
             </tr>
           </thead>
           <tbody id="xsl-tbody"></tbody>
         </table>
-        <div id="xsl-empty" class="xsl-empty" style="display:none">Sin resultados para este filtro.</div>
+        <div id="xsl-empty" class="crs-empty" style="display:none">Sin resultados para este filtro.</div>
+      </div>
+
+      <!-- Loader inline generación -->
+      <div class="crs-loader-inline" id="crs-loader-inline">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span id="crs-loader-txt">Generando mensaje personalizado...</span>
+      </div>
+
+      <!-- Editor de mensaje (#crs-editor) -->
+      <div class="crs-editor" id="crs-editor">
+        <div class="crs-editor-hdr">
+          <div>
+            <span>✏️ Editor de Mensaje</span>
+            <div style="font-size:12px;color:var(--ink);font-weight:600;margin-top:3px" id="crs-editor-cliente">—</div>
+          </div>
+          <div class="crs-editor-meta">
+            <span class="crs-char-count" id="crs-char-count">0 / 280</span>
+            <span id="crs-oportunidad-badge" class="crs-tag oportunidad" style="margin:0"></span>
+          </div>
+        </div>
+        <textarea class="crs-textarea" id="crs-textarea"
+          placeholder="El mensaje aparecerá aquí para que lo editás antes de enviar..."
+          oninput="crsContarChars(this)"></textarea>
+        <div class="crs-editor-foot">
+          <button class="crs-btn-wsp" id="crs-btn-wsp" onclick="crsEnviarWsp()" disabled>
+            💬 Enviar por WhatsApp
+          </button>
+          <button class="crs-btn-copy" onclick="crsCopiar()">
+            📋 Copiar
+          </button>
+          <div class="crs-audit-badge" id="crs-audit-badge" style="display:none">
+            <span class="crs-audit-dot"></span>
+            <span>Registrado en auditoría</span>
+          </div>
+        </div>
       </div>
 
     </div>
