@@ -1888,7 +1888,12 @@ function procesarRowsExcel(rows, fileName){
     return{nombre:nom,cuit:(denom&&cli!==denom)?cli:'',ramo:iR>=0?(parseInt(r[iR])||0):0,poliza:iP>=0?String(r[iP]||''):'',cert:iC>=0?(parseInt(r[iC])||1):1,venc:exDate(iFin>=0?r[iFin]:null),premio:iPr>=0?(parseFloat(r[iPr])||0):0,prima:iPm>=0?(parseFloat(r[iPm])||0):0};
   }).filter(r=>r.nombre&&r.nombre!=='nan');
   if(!nuevos.length){alert('No se encontraron registros válidos.');return;}
-  carteraActiva=nuevos.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
+  carteraActiva=nuevos.map(r=>({
+  ...r,
+  id: (r.cuit||'').replace(/\D/g,'')||r.nombre,
+  pf: !/S\.?A\.?$|S\.?R\.?L\.?$|SAS$|S\.A\.S\.?$/i.test(r.nombre.trim()),
+  crossell: AUTO_SIN_COMBINADO.has((r.cuit||'').replace(/\D/g,''))
+})).sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
   renderStats(carteraActiva);renderTabla(carteraActiva);renderAgenda();
   driveSnapshotActual();
 }
@@ -2038,7 +2043,7 @@ function renderStats(data){
 function renderTabla(data){
   const tbody=document.getElementById('tbl-body');
   document.getElementById('f-count').textContent=data.length+' registros';
-  if(!data.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">Sin resultados</td></tr>';return;}
+  if(!data.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">📂 Cargá el Excel de cartera Sancor para comenzar</td></tr>';return;}
   tbody.innerHTML=data.map((r,i)=>{
     const dias=diasA(r.venc);let rowCls,badge;
     const estaRenovada=typeof polizasRenovadas!=='undefined'&&polizasRenovadas.has(String(r.id));
@@ -3663,7 +3668,7 @@ function copiarAnalizador(tipo) {
 // ═══════════════════════════════════════════════════════════
 document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
 cargarCfg();
-initCartera();
+initCartera([]);
 cargarComisionesLocal();
 if(comisionesActuales)renderComisiones();
 enriquecerCarteraConComisiones();
