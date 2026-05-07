@@ -4,35 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Productor IA — Sancor</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
-  --ink:#080f1e; --ink2:#0f1f3d; --ink3:#1a3260;
-  --paper:#f4f7fb; --cream:#eaeff8; --surface:#ffffff;
-  --gold:#d4a017; --gold-l:#f0c030; --gold-d:#a87c10;
-  --gold-glow:rgba(212,160,23,.2);
-  --green:#059669; --rust:#e04444; --muted:#7e8fa8;
-  --border:#dde4f0; --border-light:#edf1f9; --white:#ffffff;
-  --red-bg:#fff2f2; --red-fg:#b91c1c;
-  --yellow-bg:#fffbec; --yellow-fg:#92400e;
-  --green-bg:#ecfdf5; --green-fg:#065f46;
-  --blue-bg:#eff6ff; --blue-fg:#1e40af;
-  --shadow-xs:0 1px 2px rgba(8,15,30,.06);
-  --shadow-sm:0 2px 8px rgba(8,15,30,.08),0 1px 2px rgba(8,15,30,.04);
-  --shadow-md:0 8px 24px rgba(8,15,30,.10),0 2px 6px rgba(8,15,30,.05);
-  --shadow-lg:0 20px 48px rgba(8,15,30,.14),0 6px 16px rgba(8,15,30,.07);
-  --shadow-gold:0 4px 20px rgba(212,160,23,.3);
-  --glow-gold:0 0 0 3px rgba(212,160,23,.16);
-  --radius:12px; --radius-lg:16px; --radius-xl:22px;
-  --trans:all .2s cubic-bezier(.4,0,.2,1);
+  /* === Design Tokens (Brief) === */
+  --primary-ink:#0F172A;
+  --secondary-ink:#1E293B;
+  --gold-accent:#D4AF37;
+  --gold-hover:#B8962E;
+  --bg-paper:#F8FAFC;
+  --surface:#FFFFFF;
+  --text-main:#1E293B;
+  --text-muted:#64748B;
+  --border-color:#E2E8F0;
+  --success-emerald:#10B981;
+  --radius-lg:16px;
+  --shadow-sm:0 4px 6px -1px rgb(0 0 0/.1);
+  --shadow-md:0 10px 15px -3px rgb(0 0 0/.05),0 4px 6px -2px rgb(0 0 0/.05);
+
+  /* === Aliases para compatibilidad === */
+  --ink:var(--primary-ink);
+  --ink2:var(--secondary-ink);
+  --ink3:#234;
+  --paper:var(--bg-paper);
+  --cream:#EEF2F7;
+  --white:var(--surface);
+  --gold:var(--gold-accent);
+  --gold-l:#E8C94E;
+  --gold-d:var(--gold-hover);
+  --gold-glow:rgba(212,175,55,.18);
+  --green:var(--success-emerald);
+  --rust:#E53E3E;
+  --muted:var(--text-muted);
+  --border:var(--border-color);
+  --border-light:#F1F5F9;
+
+  /* === Status === */
+  --red-bg:#FFF5F5; --red-fg:#C53030;
+  --yellow-bg:#FFFBEB; --yellow-fg:#92400E;
+  --green-bg:#F0FDF4; --green-fg:#065F46;
+  --blue-bg:#EFF6FF; --blue-fg:#1E40AF;
+
+  /* === Extended === */
+  --shadow-xs:0 1px 2px rgb(0 0 0/.06);
+  --shadow-lg:0 20px 48px rgb(0 0 0/.12),0 8px 16px rgb(0 0 0/.06);
+  --shadow-gold:0 0 20px rgba(212,175,55,.3);
+  --glow-gold:0 0 0 3px rgba(212,175,55,.18);
+  --radius:12px; --radius-xl:22px;
+  --trans:all .25s cubic-bezier(.4,0,.2,1);
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-header{background:linear-gradient(120deg,var(--ink) 0%,var(--ink2) 60%,var(--ink3) 100%);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(8,15,30,.4);border-bottom:1px solid rgba(255,255,255,.05)}
-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-l),var(--gold),transparent)}
+*{box-sizing:border-box;margin:0;padding:0;transition:color .25s cubic-bezier(.4,0,.2,1),background-color .25s cubic-bezier(.4,0,.2,1),border-color .25s cubic-bezier(.4,0,.2,1),box-shadow .25s cubic-bezier(.4,0,.2,1),transform .25s cubic-bezier(.4,0,.2,1),opacity .25s cubic-bezier(.4,0,.2,1)}
+button:active{transform:scale(.96)!important}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-paper);color:var(--text-main);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+header{background:var(--primary-ink);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.07)}
+header::after{content:'';position:absolute;bottom:0;left:32px;right:32px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-accent) 30%,var(--gold-l) 50%,var(--gold-accent) 70%,transparent)}
 .logo{display:flex;align-items:center;gap:12px}
 .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-l) 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 3px 10px rgba(201,162,39,.4)}
 .logo-text{font-family:'DM Serif Display',serif;font-size:20px;letter-spacing:-.2px}
@@ -41,35 +69,39 @@ header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;ba
 .dot{width:7px;height:7px;background:#34d399;border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite;box-shadow:0 0 8px #34d399}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .shell{display:flex;flex:1;min-height:calc(100vh - 68px)}
-nav{width:224px;background:linear-gradient(180deg,var(--ink) 0%,var(--ink2) 100%);padding:16px 0 24px;display:flex;flex-direction:column;gap:1px;flex-shrink:0;box-shadow:4px 0 20px rgba(0,0,0,.18);border-right:1px solid rgba(255,255,255,.04)}
-.nav-sec{padding:18px 20px 5px;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.22);font-weight:700;margin-top:4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;color:rgba(255,255,255,.48);cursor:pointer;font-size:13px;transition:var(--trans);user-select:none;margin:1px 8px;border-radius:10px;position:relative;border:none}
-.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
-.nav-item.active{background:rgba(212,160,23,.15);color:var(--gold-l);font-weight:600;box-shadow:inset 0 0 0 1px rgba(212,160,23,.28),0 2px 12px rgba(0,0,0,.15)}
-.nav-item.active::after{content:'';position:absolute;left:0;top:25%;bottom:25%;width:3px;background:linear-gradient(180deg,var(--gold-l),var(--gold));border-radius:0 3px 3px 0}
+nav{width:228px;background:var(--primary-ink);padding:16px 0 24px;display:flex;flex-direction:column;gap:0;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06)}
+.nav-sec{padding:20px 20px 5px;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.2);font-weight:700;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px 11px 24px;color:rgba(255,255,255,.48);cursor:pointer;font-size:13px;user-select:none;border-left:3px solid transparent;margin:1px 0}
+.nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.85);border-left-color:rgba(212,175,55,.3)}
+.nav-item.active{background:rgba(255,255,255,.07);color:#fff;font-weight:600;border-left-color:var(--gold-accent)}
 .nav-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
-.nav-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;padding:1px 7px;border-radius:20px;font-weight:600}
+.nav-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
 main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .panel{display:none;flex-direction:column;flex:1;overflow:hidden}
 .panel.active{display:flex}
-.ph{background:var(--white);border-bottom:1px solid var(--border);padding:20px 30px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 6px rgba(8,15,30,.06)}
-.ph-title{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-.4px;color:var(--ink)}
-.ph-sub{font-size:12px;color:var(--muted);margin-top:3px;letter-spacing:.01em}
+.ph{background:rgba(248,250,252,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--border-color);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ph-title{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-.5px;color:var(--primary-ink);font-weight:700}
+.ph-sub{font-size:12px;color:var(--text-muted);margin-top:3px}
 .pb{flex:1;overflow-y:auto;padding:28px 32px}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:var(--trans);white-space:nowrap;letter-spacing:.01em}
-.btn-primary{background:linear-gradient(135deg,var(--ink2) 0%,var(--ink3) 100%);color:var(--gold-l);box-shadow:0 2px 10px rgba(8,15,30,.25),inset 0 1px 0 rgba(255,255,255,.08)}
-.btn-primary:hover{background:linear-gradient(135deg,var(--gold-d) 0%,var(--gold) 100%);color:#fff;box-shadow:var(--shadow-gold);transform:translateY(-1px)}
-.btn-primary:active{transform:translateY(0)}
-.btn-secondary{background:var(--white);color:var(--ink);border:1.5px solid var(--border);box-shadow:var(--shadow-xs)}
-.btn-secondary:hover{background:var(--cream);border-color:#c8d4e8;box-shadow:var(--shadow-sm)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:var(--trans);white-space:nowrap;letter-spacing:.01em}
+.btn-primary{background:var(--primary-ink);color:#fff;box-shadow:var(--shadow-sm)}
+.btn-primary:hover{background:var(--secondary-ink);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)!important}
+.btn-secondary{background:var(--surface);color:var(--text-main);border:1.5px solid var(--border-color);box-shadow:var(--shadow-xs)}
+.btn-secondary:hover{background:var(--bg-paper);border-color:#CBD5E1;box-shadow:var(--shadow-sm)}
+.btn-ai{background:var(--primary-ink);color:var(--gold-accent);border:1.5px solid var(--gold-accent);box-shadow:0 0 10px var(--gold-glow)}
+.btn-ai:hover{background:var(--secondary-ink);color:var(--gold-l);box-shadow:0 0 18px var(--gold-glow),var(--shadow-sm);transform:translateY(-1px)}
 .btn-sm{padding:4px 10px;font-size:11px}
 .btn-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .alert{background:#fef9ec;border:1px solid #f0d070;border-radius:8px;padding:11px 15px;font-size:13px;color:#7a5a10;margin-bottom:18px;display:flex;align-items:center;gap:10px}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow-sm);transition:var(--trans);position:relative;overflow:hidden}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold-d),var(--gold),var(--gold-l))}
-.stat-card::after{content:'';position:absolute;bottom:-20px;right:-20px;width:90px;height:90px;background:radial-gradient(circle,var(--gold-glow) 0%,transparent 70%);pointer-events:none}
-.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:22px 24px;box-shadow:var(--shadow-sm);transition:var(--trans);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold-hover),var(--gold-accent),var(--gold-l))}
+.stat-card::after{content:'';position:absolute;bottom:-24px;right:-24px;width:100px;height:100px;background:radial-gradient(circle,rgba(212,175,55,.1) 0%,transparent 70%);pointer-events:none}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-4px)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600}
+.stat-val{font-family:'DM Serif Display',serif;font-size:28px;margin-top:6px;color:var(--primary-ink);font-weight:700;letter-spacing:-.02em}
+.stat-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
 .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
 .stat-val{font-family:'DM Serif Display',serif;font-size:26px;margin-top:5px}
 .stat-sub{font-size:11px;color:var(--muted);margin-top:2px}
@@ -79,18 +111,18 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .filters input{width:240px}
 .filters select{width:140px}
 .f-count{font-size:12px;color:var(--muted)}
-.tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow-md)}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow-sm)}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead tr{background:linear-gradient(120deg,var(--ink) 0%,var(--ink3) 100%)}
-th{padding:12px 16px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--gold-l);white-space:nowrap}
-td{padding:12px 16px;border-bottom:1px solid var(--border-light);vertical-align:middle}
+thead tr{background:var(--primary-ink)}
+th{padding:12px 18px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:rgba(255,255,255,.55);white-space:nowrap}
+td{padding:13px 18px;border-bottom:1px solid var(--border-color);vertical-align:middle;color:var(--text-main)}
 tr:last-child td{border-bottom:none}
-tr.even td{background:#fff}
-tr.odd td{background:var(--paper)}
+tr.even td{background:var(--surface)}
+tr.odd td{background:#FAFBFC}
 tr.urgent td{background:var(--red-bg)}
 tr.soon td{background:var(--yellow-bg)}
-tr.renovada td{background:rgba(5,150,105,.04);opacity:0.55;text-decoration:line-through;text-decoration-color:rgba(5,150,105,.35)}
-tr:hover td{background:#f0f6ff;transition:background .15s}
+tr.renovada td{background:rgba(16,185,129,.04);opacity:.55;text-decoration:line-through;text-decoration-color:rgba(16,185,129,.35)}
+tr:hover td{background:#F0F7FF}
 .badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-red{background:var(--red-bg);color:var(--red-fg)}
 .b-yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
@@ -132,8 +164,8 @@ tr:hover td{background:#f0f6ff;transition:background .15s}
 .send:disabled{opacity:.5;cursor:default}
 .fg{margin-bottom:16px}
 label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
-input[type=text],input[type=email],textarea,select{width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:var(--trans);box-shadow:var(--shadow-xs)}
-input:focus,textarea:focus,select:focus{border-color:var(--gold);box-shadow:var(--glow-gold)}
+input[type=text],input[type=email],textarea,select{width:100%;background:var(--surface);border:1.5px solid var(--border-color);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-main);outline:none;box-shadow:var(--shadow-xs)}
+input:focus,textarea:focus,select:focus{border-color:var(--gold-accent);box-shadow:var(--glow-gold)}
 textarea{resize:vertical;line-height:1.6}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:22px}
@@ -322,14 +354,14 @@ textarea{resize:vertical;line-height:1.6}
 .xsl-prog{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:16px}
 .xsl-prog-bar{flex:1;height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
 .xsl-prog-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s}
-.anl-drop{border:2px dashed var(--border);border-radius:12px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);position:relative}
+.anl-drop{border:2px dashed var(--gold-accent);border-radius:12px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);position:relative}
 .anl-drop:hover,.anl-drop.drag{border-color:var(--gold);background:#fffbf2}
 .anl-drop-icon{font-size:40px;margin-bottom:12px}
 .anl-drop-title{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:6px}
 .anl-drop-sub{font-size:13px;color:var(--muted)}
 .anl-file-info{display:none;background:var(--green-bg);border:1px solid #6ee7b7;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:13px;color:var(--green-fg);align-items:center;gap:10px}
 .anl-file-info.show{display:flex}
-.anl-sections{display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px}
+.anl-sections{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
 .anl-card{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none}
 .anl-card.show{display:block}
 .anl-card-hdr{padding:13px 18px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
@@ -432,6 +464,21 @@ textarea{resize:vertical;line-height:1.6}
 .crs-loader-inline{display:none;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px 0}
 .crs-loader-inline.show{display:flex}
 .crs-empty{text-align:center;padding:60px 28px;color:var(--muted);font-size:13px}
+
+/* ── SKELETON LOADER ─────────────────────────────────── */
+@keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.skeleton{background:linear-gradient(90deg,#eff1f5 25%,#e4e6ea 50%,#eff1f5 75%);background-size:1200px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px;display:block}
+.sk-block{margin-bottom:6px}
+
+/* ── SMART CARDS — Oportunidades ─────────────────────── */
+#crs-cards-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:16px}
+.smart-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);transition:var(--trans);display:flex;flex-direction:column;gap:12px}
+.smart-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.sc-header{display:flex;align-items:flex-start;gap:12px}
+.sc-header .crs-prioridad{flex-shrink:0;margin-top:3px}
+.sc-tags-row{display:flex;flex-wrap:wrap;gap:4px}
+.sc-section-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600;margin-bottom:4px}
+.sc-actions{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border-color)}
 </style>
 </head>
 <body>
@@ -533,7 +580,7 @@ textarea{resize:vertical;line-height:1.6}
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-secondary" id="btn-sync-drive" onclick="sincronizarDesdeDrive()" style="display:none">☁️ Sincronizar Drive</button>
      <button class="btn btn-secondary" onclick="abrirExcelCartera()">📂 Actualizar Excel</button>
-      <button class="btn btn-primary" onclick="analizarCartera()">🤖 Analizar con IA</button>
+      <button class="btn btn-ai" onclick="analizarCartera()">🤖 Analizar con IA</button>
     </div>
   </div>
   <div class="pb">
@@ -584,7 +631,7 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" onclick="cargarRenovaciones()">↻ Actualizar</button>
-      <button class="btn btn-primary" onclick="analizarRenovacionesIA()">🤖 Analizar con IA</button>
+      <button class="btn btn-ai" onclick="analizarRenovacionesIA()">🤖 Analizar con IA</button>
     </div>
   </div>
   <div class="pb">
@@ -663,7 +710,7 @@ textarea{resize:vertical;line-height:1.6}
       </div>
       <input type="file" id="cob-file-sancor" accept=".pdf" style="display:none" onchange="cobFileSelected(this,'sancor')">
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="analizarCobertura('sancor')">🤖 Analizar póliza</button>
+        <button class="btn btn-ai" onclick="analizarCobertura('sancor')">🤖 Analizar póliza</button>
         <button class="btn btn-secondary" onclick="limpiarCobertura('sancor')">🗑️ Limpiar</button>
       </div>
     </div>
@@ -677,7 +724,7 @@ textarea{resize:vertical;line-height:1.6}
       </div>
       <input type="file" id="cob-file-comp" accept=".pdf,image/*" style="display:none" onchange="cobFileSelected(this,'comp')">
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="analizarCobertura('competencia')">🤖 Comparar con Sancor</button>
+        <button class="btn btn-ai" onclick="analizarCobertura('competencia')">🤖 Comparar con Sancor</button>
         <button class="btn btn-secondary" onclick="limpiarCobertura('comp')">🗑️ Limpiar</button>
       </div>
     </div>
@@ -728,7 +775,7 @@ textarea{resize:vertical;line-height:1.6}
       <div class="fg"><label>Mi firma</label><input type="text" id="m-firma" placeholder="Martín Giménez — Productor Matriculado"></div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="genMail()">🤖 Generar</button>
+      <button class="btn btn-ai" onclick="genMail()">🤖 Generar</button>
       <button class="btn btn-secondary" onclick="limpiarMail()">🗑️ Limpiar</button>
     </div>
     <div class="loader" id="mail-loader"><div class="dots"><span></span><span></span><span></span></div><span>Redactando...</span></div>
@@ -777,7 +824,7 @@ textarea{resize:vertical;line-height:1.6}
       <div class="tpl-card" onclick="selTpl(this,'jubilacion')"><div class="chk">✓</div><div class="tpl-icon">👴</div><div class="tpl-title">Análisis de jubilación</div><div class="tpl-desc">ANSES vs retiro privado para un perfil.</div></div>
     </div>
     <div class="fg"><label>Contexto / datos del cliente</label><textarea id="inf-ctx" rows="4" placeholder="Ej: Varón, 52 años, autónomo, $800K/mes, sin cobertura de vida..."></textarea></div>
-    <div class="btn-row"><button class="btn btn-primary" onclick="genInforme()">🤖 Generar</button></div>
+    <div class="btn-row"><button class="btn btn-ai" onclick="genInforme()">🤖 Generar</button></div>
     <div class="loader" id="inf-loader"><div class="dots"><span></span><span></span><span></span></div><span>Generando...</span></div>
     <div class="output-box" id="inf-out"><button class="copy-btn" onclick="copiar('inf-out')">Copiar</button></div>
   </div>
@@ -833,7 +880,7 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
       <div style="font-weight:600;font-size:13px;margin-bottom:12px">Análisis IA</div>
-      <button class="btn btn-primary" onclick="analizarComisionesIA()" id="btn-analizar-com">🤖 Analizar con IA</button>
+      <button class="btn btn-ai" onclick="analizarComisionesIA()" id="btn-analizar-com">🤖 Analizar con IA</button>
       <div id="com-ia-out" style="margin-top:14px;font-size:13px;line-height:1.6"></div>
     </div>
   </div>
@@ -967,12 +1014,20 @@ textarea{resize:vertical;line-height:1.6}
       </label>
     </div>
 
-    <!-- Procesando -->
-    <div id="xsl-loading" style="display:none;text-align:center;padding:60px 28px">
-      <div class="dots" style="transform:scale(1.4);margin-bottom:20px"><span></span><span></span><span></span></div>
-      <div style="font-size:13px;color:var(--muted)" id="xsl-loading-txt">Leyendo archivo...</div>
-      <div style="margin-top:16px;max-width:300px;margin-left:auto;margin-right:auto">
-        <div class="xsl-prog"><span id="xsl-prog-txt">0%</span><div class="xsl-prog-bar"><div class="xsl-prog-fill" id="xsl-prog-fill" style="width:0%"></div></div></div>
+    <!-- Procesando (skeleton) -->
+    <div id="xsl-loading" style="display:none;padding:28px 24px">
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:500px;margin:0 auto">
+        <span class="skeleton sk-block" style="height:14px;width:60%;margin-bottom:4px"></span>
+        <span class="skeleton sk-block" style="height:12px;width:85%"></span>
+        <span class="skeleton sk-block" style="height:12px;width:70%"></span>
+        <span class="skeleton sk-block" style="height:12px;width:78%"></span>
+        <span class="skeleton sk-block" style="height:12px;width:55%"></span>
+      </div>
+      <div style="text-align:center;margin-top:20px">
+        <div style="font-size:13px;color:var(--text-muted)" id="xsl-loading-txt">Leyendo archivo...</div>
+        <div style="margin-top:12px;max-width:300px;margin-left:auto;margin-right:auto">
+          <div class="xsl-prog"><span id="xsl-prog-txt">0%</span><div class="xsl-prog-bar"><div class="xsl-prog-fill" id="xsl-prog-fill" style="width:0%"></div></div></div>
+        </div>
       </div>
     </div>
 
@@ -993,27 +1048,20 @@ textarea{resize:vertical;line-height:1.6}
         <input class="xsl-search" type="text" placeholder="🔍 Buscar cliente..." oninput="filtrarXSL()" id="xsl-search" style="margin-left:auto">
       </div>
 
-      <!-- Tabla v2 con OpportunityTable -->
-      <div id="crs-view" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-        <table class="crs-tabla">
-          <thead>
-            <tr>
-              <th style="width:28px">P.</th>
-              <th>Cliente</th>
-              <th>Tiene contratado</th>
-              <th>Oportunidad detectada</th>
-              <th>Acción IA</th>
-            </tr>
-          </thead>
-          <tbody id="xsl-tbody"></tbody>
-        </table>
+      <!-- Smart Cards — Oportunidades -->
+      <div id="crs-view" style="background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);overflow:hidden">
+        <div id="crs-cards-container"></div>
         <div id="xsl-empty" class="crs-empty" style="display:none">Sin resultados para este filtro.</div>
       </div>
 
-      <!-- Loader inline generación -->
+      <!-- Loader inline generación (skeleton) -->
       <div class="crs-loader-inline" id="crs-loader-inline">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <span id="crs-loader-txt">Generando mensaje personalizado...</span>
+        <div style="width:100%;display:flex;flex-direction:column;gap:7px;padding:6px 0">
+          <span class="skeleton sk-block" style="height:13px;width:72%"></span>
+          <span class="skeleton sk-block" style="height:11px;width:54%"></span>
+          <span class="skeleton sk-block" style="height:11px;width:38%"></span>
+        </div>
+        <span id="crs-loader-txt" style="display:none"></span>
       </div>
 
       <!-- Editor de mensaje (#crs-editor) -->
@@ -1109,7 +1157,7 @@ textarea{resize:vertical;line-height:1.6}
           <span id="anl-masked-preview" style="color:var(--green);font-weight:600"></span>
         </div>
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="analizarPoliza()">🤖 Analizar ahora</button>
+      <button class="btn btn-ai btn-sm" style="margin-left:auto" onclick="analizarPoliza()">🤖 Analizar ahora</button>
     </div>
 
     <!-- Loader con pasos -->
@@ -3174,21 +3222,22 @@ function setFiltroXSL(btn, filtro){
 
 function renderTablaXSL(){
   const clientes = getClientesFiltrados();
-  const tbody = document.getElementById('xsl-tbody');
+  const container = document.getElementById('crs-cards-container');
   const empty = document.getElementById('xsl-empty');
 
-  if(clientes.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  if(clientes.length===0){ container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
-  tbody.innerHTML = clientes.map(c=>{
+  container.innerHTML = clientes.map(c=>{
     const scoreClass = c.score>=3?'alta':c.score===2?'media':'baja';
     const scoreLabel = c.score>=3?'🔴':c.score===2?'🟡':'🟢';
+    const prioLabel = c.score>=3?'Alta':c.score===2?'Media':'Baja';
 
     const tieneTags = [
       c.tieneAuto             ? `<span class="crs-tag tiene">🚗 Auto/Moto</span>`:'',
       c.tieneCombinadoFamiliar? `<span class="crs-tag tiene">🏠 Combinado</span>`:'',
       c.tieneVida             ? `<span class="crs-tag tiene">❤️ Vida/Salud</span>`:'',
-    ].filter(Boolean).join('') || `<span style="font-size:11px;color:var(--muted)">Sin coberturas detectadas</span>`;
+    ].filter(Boolean).join('') || `<span style="font-size:11px;color:var(--text-muted)">Sin coberturas detectadas</span>`;
 
     const opTags = c.oportunidades.map(op=>
       `<span class="crs-tag oportunidad ${op.tipo}">${op.emoji} ${op.label}</span>`
@@ -3198,13 +3247,24 @@ function renderTablaXSL(){
       `<button class="crs-btn-gen" onclick="crsGenerarMensaje('${c.key}','${op.tipo}','${op.label}')">🤖 ${op.emoji} ${op.label}</button>`
     ).join('');
 
-    return `<tr>
-      <td><span class="crs-prioridad ${scoreClass}">${scoreLabel}</span></td>
-      <td><div class="crs-nombre">${c.nombre}</div><div class="crs-sub">Nro ${c.nroAsoc||'—'} · ${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div></td>
-      <td><div style="display:flex;flex-wrap:wrap;gap:3px">${tieneTags}</div></td>
-      <td><div style="display:flex;flex-wrap:wrap;gap:3px">${opTags}</div></td>
-      <td><div style="display:flex;flex-direction:column;gap:5px">${genBtns}</div></td>
-    </tr>`;
+    return `<div class="smart-card">
+      <div class="sc-header">
+        <span class="crs-prioridad ${scoreClass}" title="Prioridad ${prioLabel}">${scoreLabel}</span>
+        <div style="flex:1;min-width:0">
+          <div class="crs-nombre">${c.nombre}</div>
+          <div class="crs-sub">Nro ${c.nroAsoc||'—'} · ${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div>
+        </div>
+      </div>
+      <div>
+        <div class="sc-section-lbl">Tiene contratado</div>
+        <div class="sc-tags-row">${tieneTags}</div>
+      </div>
+      <div>
+        <div class="sc-section-lbl">Oportunidades</div>
+        <div class="sc-tags-row">${opTags||'<span style="font-size:11px;color:var(--text-muted)">Sin oportunidades detectadas</span>'}</div>
+      </div>
+      <div class="sc-actions">${genBtns}</div>
+    </div>`;
   }).join('');
 }
 
