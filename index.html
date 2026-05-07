@@ -1858,9 +1858,11 @@ async function sincronizarDesdeDrive(){
 
 function procesarRowsExcel(rows, fileName){
   let hi=-1;
-  for(let i=0;i<Math.min(15,rows.length);i++){
-    const j=(rows[i]||[]).join('|').toLowerCase();
-    if(j.includes('denominaci')||j.includes('poliza')||j.includes('póliza')){hi=i;break;}
+  for(let i=0;i<Math.min(20,rows.length);i++){
+    const vals=(rows[i]||[]).map(c=>String(c||'').trim());
+    if(vals.some(v=>v==='Ramo') && vals.some(v=>v.includes('liza')||v.includes('Denominaci'))){
+      hi=i; break;
+    }
   }
   if(hi<0){alert('No se encontró el encabezado del reporte.');return;}
   const headers=(rows[hi]||[]).map(h=>(h||'').toString());
