@@ -514,8 +514,7 @@ textarea{resize:vertical;line-height:1.6}
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-secondary" id="btn-sync-drive" onclick="sincronizarDesdeDrive()" style="display:none">☁️ Sincronizar Drive</button>
-      <label class="btn btn-secondary" style="cursor:pointer;margin:0" for="excel-inp">📂 Actualizar Excel</label>
-      <input type="file" id="excel-inp" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarExcel(this)">
+     <button class="btn btn-secondary" onclick="abrirExcelCartera()">📂 Actualizar Excel</button>
       <button class="btn btn-primary" onclick="analizarCartera()">🤖 Analizar con IA</button>
     </div>
   </div>
@@ -2081,19 +2080,29 @@ function filtrar(){
   renderTabla(filtered);
 }
 
-function cargarExcel(input){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
+function abrirExcelCartera(){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.xlsx,.xls,.csv';
+  inp.onchange = async function(){
+    const file = this.files[0];
+    if(!file) return;
     try{
-      const wb=XLSX.read(e.target.result,{type:'array',cellDates:false,raw:true});
-      const shName=wb.SheetNames.find(n=>/detalle|cartera/i.test(n))||wb.SheetNames[0];
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[shName],{header:1,defval:null,raw:true});
+      const arr = await file.arrayBuffer();
+      const wb = XLSX.read(arr, {type:'array', cellDates:false, raw:true});
+      const shName = wb.SheetNames.find(n=>/detalle|cartera/i.test(n))||wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[shName],{header:1,defval:null,raw:true});
       procesarRowsExcel(rows, file.name);
-      alert(`✅ Cartera actualizada desde ${file.name}`);
-    }catch(err){alert('Error al leer el archivo: '+err.message);}
+    } catch(err){ alert('Error al leer el archivo: '+err.message); }
   };
-  reader.readAsArrayBuffer(file);
+  document.body.appendChild(inp);
+  inp.click();
+  setTimeout(()=>inp.remove(), 60000);
+}
+
+function cargarExcel(input){
+  // legacy — redirigir a la nueva función
+  abrirExcelCartera();
 }
 
 async function analizarCartera(){
