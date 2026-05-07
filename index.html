@@ -1887,8 +1887,11 @@ function procesarRowsExcel(rows, fileName){
     const cli=iCli>=0?String(r[iCli]||'').trim():'';
     const nom=(denom&&denom!=='nan')?denom:cli;
     return{nombre:nom,cuit:(denom&&cli!==denom)?cli:'',ramo:iR>=0?(parseInt(r[iR])||0):0,poliza:iP>=0?String(r[iP]||''):'',cert:iC>=0?(parseInt(r[iC])||1):1,venc:exDate(iFin>=0?r[iFin]:null),premio:iPr>=0?(parseFloat(r[iPr])||0):0,prima:iPm>=0?(parseFloat(r[iPm])||0):0};
-  }).filter(r=>r.nombre&&r.nombre!=='nan');
-  if(!nuevos.length){alert('No se encontraron registros válidos.');return;}
+    }).filter(r=>r.nombre&&r.nombre!=='nan'&&r.ramo>0);
+  console.log('[DEBUG] Header fila:',hi,'Headers:',headers,'Cols → R:'+iR,'P:'+iP,'C:'+iC,'Fin:'+iFin,'Den:'+iDen);
+  console.log('[DEBUG] Primeras 3 filas de datos:',rows.slice(hi+1,hi+4));
+  console.log('[DEBUG] Después del map (antes de filter):',rows.slice(hi+1,hi+4).map(r=>{const denom=iDen>=0?String(r[iDen]||'').trim():'';const cli=iCli>=0?String(r[iCli]||'').trim():'';return{nombre:(denom&&denom!=='nan')?denom:cli,ramo:iR>=0?(parseInt(r[iR])||0):0};}));
+  if(!nuevos.length){alert('No se encontraron registros válidos. Mirá la consola (F12) para detalles.');return;}
   carteraActiva=nuevos.map(r=>({
   ...r,
   id: (r.cuit||'').replace(/\D/g,'')||r.nombre,
