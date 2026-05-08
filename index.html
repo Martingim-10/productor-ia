@@ -2786,7 +2786,7 @@ async function analizarComisionesIA(){
   const btn=document.getElementById('btn-analizar-com');btn.disabled=true;btn.textContent='⏳ Analizando...';
   const out=document.getElementById('com-ia-out');out.innerHTML='<span style="color:var(--muted)">Procesando...</span>';
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':getKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':getKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const txt=data.content?.[0]?.text||'Sin respuesta';
     out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   }catch(e){out.innerHTML='Error: '+e.message;}
@@ -2883,7 +2883,7 @@ async function sendMsg(){
   addBubble('user',txt);hist.push({role:'user',content:txt});
   document.getElementById('chat-loader').classList.add('show');
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:hist})});
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:hist})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
     document.getElementById('chat-loader').classList.remove('show');addBubble('ai',reply);
@@ -2906,7 +2906,7 @@ async function genMail(){
   const prompt=`Redactá un mail de ${tipos[tipo]||tipo} para ${dest}. Tono: ${tono}. Firma: ${firma}.\n${ctx?'Contexto: '+ctx:''}\n\nRespondé SOLO con el mail en este formato:\nASUNTO: [asunto]\n---\n[cuerpo]`;
   document.getElementById('mail-loader').classList.add('show');document.getElementById('mail-prev').classList.remove('show');
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'';
     document.getElementById('mail-loader').classList.remove('show');
     const lines=reply.split('\n');let asunto='',body='',inB=false;
@@ -3078,7 +3078,7 @@ function accionRetirex(nombre){
 async function callIA(prompt,outId){
   const key=getKey();const out=document.getElementById(outId);out.classList.add('show');
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     out.innerHTML=`<button class="copy-btn" onclick="copiar('${outId}')">Copiar</button>${reply.replace(/\n/g,'<br>')}`;
   }catch(e){out.innerHTML='Error al conectar con la IA.';}
