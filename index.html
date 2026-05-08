@@ -1784,6 +1784,7 @@ function procesarRowsExcel(rows, fileName){
   crossell: AUTO_SIN_COMBINADO.has((r.cuit||'').replace(/\D/g,''))
 })).sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
   renderStats(carteraActiva);renderTabla(carteraActiva);renderAgenda();
+  guardarCarteraLocal();
   driveSnapshotActual();
 }
 
@@ -2049,15 +2050,64 @@ let comisionesHistorial=[];
 
 function guardarComisionesLocal(){
   const resumen=comisionesHistorial.map(h=>({periodo:h.periodo,totalComision:h.registros.reduce((s,r)=>s+r.comision,0),totalPrima:h.registros.reduce((s,r)=>s+r.prima,0),porRamo:(()=>{const m={};h.registros.forEach(r=>{if(!m[r.ramo])m[r.ramo]={comision:0,prima:0};m[r.ramo].comision+=r.comision;m[r.ramo].prima+=r.prima;});return m;})()}));
-  localStorage.setItem('comisiones_resumen',JSON.stringify(resumen));
+  // Intentar guardar datos granulares completos; si excede la cuota, guardar solo resumen
+  try{
+    localStorage.setItem('comisiones_historial_v1',JSON.stringify(comisionesHistorial));
+  }catch(e){
+    localStorage.removeItem('comisiones_historial_v1');
+  }
+  try{localStorage.setItem('comisiones_resumen',JSON.stringify(resumen));}catch(e){}
 }
 
 function cargarComisionesLocal(){
   try{
+    // Preferir datos granulares completos
+    const full=JSON.parse(localStorage.getItem('comisiones_historial_v1')||'[]');
+    if(full.length>0){
+      comisionesHistorial=full;
+      if(comisionesHistorial.length>0)comisionesActuales=comisionesHistorial[comisionesHistorial.length-1];
+      return;
+    }
+    // Fallback: resumen por ramo (sin detalle de pólizas)
     const raw=JSON.parse(localStorage.getItem('comisiones_resumen')||'[]');
     comisionesHistorial=raw.map(s=>({periodo:s.periodo,registros:Object.entries(s.porRamo).flatMap(([ramo,v])=>[{periodo:s.periodo,ramo,comision:v.comision,prima:v.prima,cliente:'',codCli:'',poliza:'resumen',porcCom:0,foper:null}])}));
     if(comisionesHistorial.length>0)comisionesActuales=comisionesHistorial[comisionesHistorial.length-1];
   }catch(e){console.warn('Error cargando comisiones locales:',e);}
+}
+
+// ── PERSISTENCIA CARTERA SANCOR ──────────────────────────────
+function guardarCarteraLocal(){
+  try{
+    const compact=carteraActiva.map(r=>({n:r.nombre,c:r.cuit,id:r.id,r:r.ramo,p:r.poliza,cert:r.cert,v:r.venc,pm:r.premio||r.prima,pf:r.pf}));
+    localStorage.setItem('cartera_sancor_v1',JSON.stringify(compact));
+  }catch(e){console.warn('Error guardando cartera local:',e);}
+}
+
+function cargarCarteraLocal(){
+  try{
+    const raw=JSON.parse(localStorage.getItem('cartera_sancor_v1')||'[]');
+    if(raw.length>0) initCartera(raw);
+  }catch(e){console.warn('Error cargando cartera local:',e);}
+}
+
+// ── PERSISTENCIA CARTERA RETIRO ──────────────────────────────
+function guardarRetiroLocal(){
+  try{
+    localStorage.setItem('retiro_cartera_v1',JSON.stringify(retiroCartera));
+  }catch(e){console.warn('Error guardando retiro local:',e);}
+}
+
+function cargarRetiroLocal(){
+  try{
+    const raw=JSON.parse(localStorage.getItem('retiro_cartera_v1')||'[]');
+    if(!raw.length) return;
+    retiroCartera=raw;
+    document.getElementById('ret-inicial').style.display='none';
+    document.getElementById('ret-loading').style.display='none';
+    document.getElementById('ret-resultados').style.display='block';
+    renderRetiroStats();
+    renderRetiroCartera();
+  }catch(e){console.warn('Error cargando retiro local:',e);}
 }
 
 let comChart=null;let comRamoChart=null;
@@ -3052,6 +3102,7 @@ async function procesarRetiroXLS(input){
       document.getElementById('ret-resultados').style.display = 'block';
       renderRetiroStats();
       renderRetiroCartera();
+      guardarRetiroLocal();
 
     } catch(err){
       alert('Error procesando archivo de Retiro: '+err.message);
@@ -4039,6 +4090,8 @@ function nombreRamo(ramo) {
 cargarCfg();
 initCartera([]);
 cargarComisionesLocal();
+cargarCarteraLocal();
+cargarRetiroLocal();
 if(comisionesActuales)renderComisiones();
 enriquecerCarteraConComisiones();
 </script>
