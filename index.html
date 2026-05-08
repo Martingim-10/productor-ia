@@ -499,6 +499,38 @@ textarea{resize:vertical;line-height:1.6}
 .sc-tags-row{display:flex;flex-wrap:wrap;gap:4px}
 .sc-section-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600;margin-bottom:4px}
 .sc-actions{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border-color)}
+
+/* ── MOVIMIENTOS POR RAMO ──────────────────────────────── */
+.com-mov-card{background:var(--surface);border:1px solid var(--border-color);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.com-mov-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s}
+.com-mov-hdr:hover{background:var(--cream)}
+.com-mov-hdr-name{font-weight:600;font-size:13px;flex:1}
+.com-mov-hdr-delta{font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.com-mov-hdr-delta.pos{background:#ECFDF5;color:#059669}
+.com-mov-hdr-delta.neg{background:#FEF2F2;color:#DC2626}
+.com-mov-chevron{transition:transform .25s;font-size:11px;color:var(--text-muted);flex-shrink:0}
+.com-mov-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.com-mov-body.open{max-height:700px}
+.com-mov-body-inner{padding:0 18px 16px}
+.com-mov-section-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--text-muted);margin:12px 0 6px}
+.com-mov-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:12.5px}
+.com-mov-item:last-child{border-bottom:none}
+.com-mov-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.com-mov-dot.new{background:#10B981}
+.com-mov-dot.baja{background:#EF4444}
+.com-mov-dot.var{background:#F59E0B}
+.com-mov-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0}
+.com-mov-pill.new{background:#ECFDF5;color:#059669}
+.com-mov-pill.baja{background:#FEF2F2;color:#DC2626}
+.com-mov-pill.var{background:#FEF9C3;color:#B45309}
+.com-mov-info{flex:1;color:var(--text-body);line-height:1.3}
+.com-mov-monto{font-weight:600;font-size:12px;margin-left:auto;flex-shrink:0}
+.com-mov-monto.new{color:#059669}
+.com-mov-monto.baja{color:#DC2626}
+.com-mov-monto.var-pos{color:#059669}
+.com-mov-monto.var-neg{color:#DC2626}
+.com-mov-empty{font-size:12px;color:var(--text-muted);padding:10px 0;text-align:center}
+.com-mov-pills-row{display:flex;gap:5px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -855,6 +887,13 @@ textarea{resize:vertical;line-height:1.6}
     <div class="com-detail-card" style="margin-bottom:20px">
       <div class="com-chart-title">Detalle por Ramo</div>
       <div id="com-tabla-ramos-v2"></div>
+    </div>
+
+    <!-- Movimientos por Ramo -->
+    <div class="com-detail-card" id="com-movimientos-card" style="margin-bottom:20px;display:none">
+      <div class="com-chart-title">Análisis de Movimientos por Ramo</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Clic en un ramo para ver el detalle · compara el mes actual con el anterior</div>
+      <div id="com-movimientos"></div>
     </div>
 
     <!-- IA Analysis -->
@@ -2296,6 +2335,7 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
 
   document.getElementById('com-periodo').textContent = `${mesActual.mes} · real percibido: ${fmtM(flujoCaja.total_percibido)}`;
   document.getElementById('badge-comisiones').textContent = '';
+  renderMovimientosSeccion();
 }
 
 // ── FALLBACK — datos del Excel local ─────────────────────
@@ -2343,6 +2383,117 @@ function renderDashboardComisionesLocal() {
 // Compatibilidad con código existente
 function renderComisiones() { renderDashboardComisionesLocal(); }
 async function renderComEvolucion() { cargarDashboardComisiones(); }
+
+// ── MOVIMIENTOS POR RAMO ──────────────────────────────────────
+
+function buildMovimientosRamo(ramo, regsActual, regsAnterior) {
+  const keyAnt = {};
+  (regsAnterior || []).filter(r => String(r.ramo) === String(ramo) && r.poliza && r.poliza !== 'resumen')
+    .forEach(r => { keyAnt[String(r.poliza).trim()] = r; });
+
+  const keyAct = {};
+  regsActual.filter(r => String(r.ramo) === String(ramo) && r.poliza && r.poliza !== 'resumen')
+    .forEach(r => { keyAct[String(r.poliza).trim()] = r; });
+
+  const nuevas = [], bajas = [], variaciones = [];
+
+  Object.entries(keyAct).forEach(([k, r]) => {
+    if (!keyAnt[k]) {
+      nuevas.push(r);
+    } else {
+      const diff = r.comision - keyAnt[k].comision;
+      const pct = keyAnt[k].comision > 0 ? Math.abs(diff) / keyAnt[k].comision : 0;
+      if (Math.abs(diff) > 500 && pct > 0.15) variaciones.push({ ...r, diff, pct });
+    }
+  });
+
+  Object.entries(keyAnt).forEach(([k, r]) => {
+    if (!keyAct[k]) bajas.push(r);
+  });
+
+  return { nuevas, bajas, variaciones };
+}
+
+function renderMovimientosSeccion() {
+  if (comisionesHistorial.length < 2) return;
+  const actual = comisionesHistorial[comisionesHistorial.length - 1];
+  const anterior = comisionesHistorial[comisionesHistorial.length - 2];
+
+  const hasGranular = actual.registros.some(r => r.poliza && r.poliza !== 'resumen');
+  const card = document.getElementById('com-movimientos-card');
+  if (!card) return;
+  if (!hasGranular) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  const ramos = [...new Set(actual.registros.map(r => String(r.ramo)))];
+
+  const ramoDeltas = ramos.map(ramo => {
+    const sumAct = actual.registros.filter(r => String(r.ramo) === ramo).reduce((s, r) => s + r.comision, 0);
+    const sumAnt = anterior.registros.filter(r => String(r.ramo) === ramo).reduce((s, r) => s + r.comision, 0);
+    const mov = buildMovimientosRamo(ramo, actual.registros, anterior.registros);
+    return { ramo, sumAct, sumAnt, delta: sumAct - sumAnt, mov };
+  }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  const mkItems = (items, type) => {
+    if (!items.length) return '';
+    const labels = { new: 'Nuevas pólizas', baja: 'Pólizas que no figuraron', var: 'Variaciones significativas' };
+    const rows = items.map(r => {
+      const cli = r.cliente || r.codCli || `Póliza ${r.poliza}`;
+      const pol = (r.poliza && r.poliza !== 'resumen') ? ` · Pól. ${r.poliza}` : '';
+      let montoHtml;
+      if (type === 'new')  montoHtml = `<span class="com-mov-monto new">+${fmtM(r.comision)}</span>`;
+      else if (type === 'baja') montoHtml = `<span class="com-mov-monto baja">-${fmtM(r.comision)}</span>`;
+      else {
+        const cls = r.diff >= 0 ? 'var-pos' : 'var-neg';
+        montoHtml = `<span class="com-mov-monto ${cls}">${r.diff >= 0 ? '+' : ''}${fmtM(r.diff)}</span>`;
+      }
+      return `<div class="com-mov-item">
+        <span class="com-mov-dot ${type}"></span>
+        <span class="com-mov-info">${cli}${pol}</span>
+        ${montoHtml}
+      </div>`;
+    }).join('');
+    return `<div class="com-mov-section-lbl">${labels[type]}</div>${rows}`;
+  };
+
+  const container = document.getElementById('com-movimientos');
+  container.innerHTML = ramoDeltas.map(({ ramo, delta, mov }) => {
+    const nombre = RAMO_MAP[ramo] || `Ramo ${ramo}`;
+    const isPos = delta >= 0;
+    const deltaStr = (isPos ? '+' : '') + fmtM(delta);
+    const id = `mov-body-${ramo}`;
+    const total = mov.nuevas.length + mov.bajas.length + mov.variaciones.length;
+
+    const pills = [
+      mov.nuevas.length   ? `<span class="com-mov-pill new">+${mov.nuevas.length} nueva${mov.nuevas.length > 1 ? 's' : ''}</span>` : '',
+      mov.bajas.length    ? `<span class="com-mov-pill baja">-${mov.bajas.length} baja${mov.bajas.length > 1 ? 's' : ''}</span>` : '',
+      mov.variaciones.length ? `<span class="com-mov-pill var">~${mov.variaciones.length} var.</span>` : ''
+    ].filter(Boolean).join('');
+
+    const body = total === 0
+      ? `<div class="com-mov-empty">Sin cambios significativos respecto al mes anterior</div>`
+      : mkItems(mov.nuevas, 'new') + mkItems(mov.bajas, 'baja') + mkItems(mov.variaciones, 'var');
+
+    return `<div class="com-mov-card">
+      <div class="com-mov-hdr" onclick="comToggleMov('${id}',this)">
+        <span class="com-mov-hdr-name">${nombre}</span>
+        <div class="com-mov-pills-row">${pills}</div>
+        <span class="com-mov-hdr-delta ${isPos ? 'pos' : 'neg'}">${deltaStr}</span>
+        <span class="com-mov-chevron">▶</span>
+      </div>
+      <div class="com-mov-body" id="${id}">
+        <div class="com-mov-body-inner">${body}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function comToggleMov(id, hdr) {
+  const body = document.getElementById(id);
+  const chevron = hdr.querySelector('.com-mov-chevron');
+  const open = body.classList.toggle('open');
+  if (chevron) chevron.style.transform = open ? 'rotate(90deg)' : '';
+}
 
 async function analizarComisionesIA(){
   if(!comisionesActuales){alert('Cargá un reporte de comisiones primero.');return;}
