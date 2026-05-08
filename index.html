@@ -10,49 +10,49 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
-  /* === Design Tokens (Brief) === */
-  --primary-ink:#0F172A;
-  --secondary-ink:#1E293B;
-  --gold-accent:#D4AF37;
-  --gold-hover:#B8962E;
-  --bg-paper:#F8FAFC;
-  --surface:#FFFFFF;
-  --text-main:#1E293B;
-  --text-muted:#64748B;
-  --border-color:#E2E8F0;
-  --success-emerald:#10B981;
+  /* === Dark Cyber Theme === */
+  --primary-ink:#0A1628;
+  --secondary-ink:#122035;
+  --gold-accent:#00D4FF;
+  --gold-hover:#00AECF;
+  --bg-paper:#070D1A;
+  --surface:#0D1B2E;
+  --text-main:#E2F4FF;
+  --text-muted:rgba(168,212,232,0.55);
+  --border-color:rgba(0,212,255,0.15);
+  --success-emerald:#00D878;
   --radius-lg:16px;
-  --shadow-sm:0 4px 6px -1px rgb(0 0 0/.1);
-  --shadow-md:0 10px 15px -3px rgb(0 0 0/.05),0 4px 6px -2px rgb(0 0 0/.05);
+  --shadow-sm:0 4px 6px rgba(0,0,0,0.4),0 0 15px rgba(0,212,255,0.04);
+  --shadow-md:0 10px 25px rgba(0,0,0,0.5),0 0 30px rgba(0,212,255,0.08);
 
-  /* === Aliases para compatibilidad === */
-  --ink:var(--primary-ink);
-  --ink2:var(--secondary-ink);
-  --ink3:#234;
+  /* === Aliases === */
+  --ink:#E2F4FF;
+  --ink2:#1A3A55;
+  --ink3:#0F2840;
   --paper:var(--bg-paper);
-  --cream:#EEF2F7;
+  --cream:#0F2035;
   --white:var(--surface);
   --gold:var(--gold-accent);
-  --gold-l:#E8C94E;
+  --gold-l:#40E0FF;
   --gold-d:var(--gold-hover);
-  --gold-glow:rgba(212,175,55,.18);
-  --green:var(--success-emerald);
-  --rust:#E53E3E;
+  --gold-glow:rgba(0,212,255,0.18);
+  --green:#00D878;
+  --rust:#FF4D6A;
   --muted:var(--text-muted);
   --border:var(--border-color);
-  --border-light:#F1F5F9;
+  --border-light:rgba(0,212,255,0.08);
 
-  /* === Status === */
-  --red-bg:#FFF5F5; --red-fg:#C53030;
-  --yellow-bg:#FFFBEB; --yellow-fg:#92400E;
-  --green-bg:#F0FDF4; --green-fg:#065F46;
-  --blue-bg:#EFF6FF; --blue-fg:#1E40AF;
+  /* === Status (dark-adapted) === */
+  --red-bg:rgba(255,77,106,0.12);    --red-fg:#FF7090;
+  --yellow-bg:rgba(255,179,0,0.12);  --yellow-fg:#FFB300;
+  --green-bg:rgba(0,216,120,0.1);    --green-fg:#00D878;
+  --blue-bg:rgba(0,212,255,0.1);     --blue-fg:#00D4FF;
 
   /* === Extended === */
-  --shadow-xs:0 1px 2px rgb(0 0 0/.06);
-  --shadow-lg:0 20px 48px rgb(0 0 0/.12),0 8px 16px rgb(0 0 0/.06);
-  --shadow-gold:0 0 20px rgba(212,175,55,.3);
-  --glow-gold:0 0 0 3px rgba(212,175,55,.18);
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-lg:0 20px 48px rgba(0,0,0,0.5),0 0 40px rgba(0,212,255,0.06);
+  --shadow-gold:0 0 20px rgba(0,212,255,0.35);
+  --glow-gold:0 0 0 3px rgba(0,212,255,0.18);
   --radius:12px; --radius-xl:22px;
   --trans:all .25s cubic-bezier(.4,0,.2,1);
 }
@@ -62,7 +62,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-paper);color:v
 header{background:var(--primary-ink);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.07)}
 header::after{content:'';position:absolute;bottom:0;left:32px;right:32px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-accent) 30%,var(--gold-l) 50%,var(--gold-accent) 70%,transparent)}
 .logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-l) 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 3px 10px rgba(201,162,39,.4)}
+.logo-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;overflow:hidden;box-shadow:0 3px 10px rgba(0,212,255,.3)}
+.logo-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 .logo-text{font-family:'DM Serif Display',serif;font-size:20px;letter-spacing:-.2px}
 .logo-sub{font-size:10px;color:var(--gold-l);letter-spacing:.16em;text-transform:uppercase;margin-top:2px;font-weight:500;opacity:.8}
 .hdr-meta{font-size:11px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:20px}
@@ -535,14 +536,15 @@ textarea{resize:vertical;line-height:1.6}
 /* ── LOCK SCREEN ──────────────────────────────────────────── */
 #lock-screen{position:fixed;inset:0;z-index:99999;background:var(--primary-ink);display:flex;align-items:center;justify-content:center}
 #lock-screen.hidden{display:none}
-.lock-card{background:#1E293B;border:1px solid rgba(212,175,55,.2);border-radius:24px;padding:44px 40px;width:340px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.6)}
-.lock-logo{font-size:42px;margin-bottom:10px}
+.lock-card{background:#0D1B2E;border:1px solid rgba(0,212,255,.2);border-radius:24px;padding:44px 40px;width:340px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.7),0 0 40px rgba(0,212,255,.08)}
+.lock-logo{margin-bottom:10px;display:flex;justify-content:center}
+.lock-logo img{width:72px;height:72px;object-fit:cover;border-radius:18px;box-shadow:0 0 24px rgba(0,212,255,.35)}
 .lock-title{font-family:'DM Serif Display',serif;font-size:22px;color:#F5F0E8;margin-bottom:4px;letter-spacing:-.3px}
 .lock-subtitle{font-size:13px;color:rgba(245,240,232,.45);margin-bottom:30px;min-height:18px}
 .lock-pin-boxes{display:flex;gap:10px;justify-content:center;margin-bottom:10px;cursor:text}
 .lock-pin-box{width:44px;height:52px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gold-accent);transition:border-color .15s,background .15s}
-.lock-pin-box.filled{border-color:var(--gold-accent);background:rgba(212,175,55,.08)}
-.lock-pin-box.active{border-color:var(--gold-accent);box-shadow:0 0 0 3px rgba(212,175,55,.15)}
+.lock-pin-box.filled{border-color:var(--gold-accent);background:rgba(0,212,255,.08)}
+.lock-pin-box.active{border-color:var(--gold-accent);box-shadow:0 0 0 3px rgba(0,212,255,.18)}
 #lock-pin-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .lock-attempts{font-size:11px;color:#F59E0B;min-height:16px;margin-bottom:6px}
 .lock-error{font-size:12px;color:#F87171;min-height:18px;margin-bottom:14px}
@@ -553,8 +555,121 @@ textarea{resize:vertical;line-height:1.6}
 .lock-btn-sec:hover{color:rgba(245,240,232,.65)}
 @keyframes lock-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .lock-shake{animation:lock-shake .35s ease}
-.hdr-lock-btn{background:none;border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:5px 10px;font-size:12px;color:rgba(245,240,232,.6);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.hdr-lock-btn{background:none;border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:5px 10px;font-size:12px;color:rgba(226,244,255,.6);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
 .hdr-lock-btn:hover{border-color:var(--gold-accent);color:var(--gold-accent)}
+
+/* ══ DARK THEME OVERRIDES ════════════════════════════════════ */
+/* Panel header */
+.ph{background:var(--surface)!important;backdrop-filter:none;border-bottom:1px solid var(--border-color)}
+.ph-title{color:var(--text-main)!important}
+
+/* Stats */
+.stat-val{color:var(--text-main)!important}
+.com-kpi-val{color:var(--text-main)!important}
+.com-chart-title{color:var(--text-main)!important}
+
+/* Alert/info boxes */
+.alert{background:rgba(255,179,0,.1)!important;border-color:rgba(255,179,0,.3)!important;color:var(--yellow-fg)!important}
+
+/* Table rows */
+tr.odd td{background:rgba(255,255,255,.018)!important}
+tr:hover td{background:rgba(0,212,255,.055)!important}
+.ret-table tr:hover td{background:rgba(0,212,255,.055)!important}
+.xsl-table tr:hover td{background:rgba(0,212,255,.055)!important}
+.crs-tabla tr:hover td{background:rgba(0,212,255,.055)!important}
+
+/* Badges (ramo, priority, score, status) */
+.b-ramo{background:rgba(139,92,246,.18)!important;color:#c4b5fd!important}
+.ret-badge.tiene{background:rgba(0,216,120,.15)!important;color:#6ee7b7!important}
+.ret-badge.no{background:rgba(255,77,106,.15)!important;color:#fca5a5!important}
+.ret-badge.suspendido{background:rgba(255,179,0,.12)!important;color:#fcd34d!important}
+.crs-prioridad.alta{background:rgba(239,68,68,.18)!important;color:#fca5a5!important}
+.crs-prioridad.media{background:rgba(245,158,11,.15)!important;color:#fcd34d!important}
+.xsl-score.alta{background:rgba(239,68,68,.18)!important;color:#fca5a5!important}
+.xsl-score.media{background:rgba(245,158,11,.15)!important;color:#fcd34d!important}
+.xsl-tag.vid{background:rgba(139,92,246,.15)!important;color:#c4b5fd!important}
+.xsl-op{background:rgba(255,179,0,.1)!important;color:#fcd34d!important;border-color:rgba(255,179,0,.25)!important}
+.xsl-op:hover{background:rgba(255,179,0,.3)!important;color:#fff!important}
+
+/* Template card selected */
+.tpl-card.sel{background:rgba(0,212,255,.08)!important}
+
+/* Agenda & score */
+.agenda-card{background:var(--surface)!important}
+.agenda-nombre{color:var(--text-main)!important}
+.score-bar-wrap{background:rgba(255,255,255,.1)!important}
+.agenda-stat{background:var(--surface)!important}
+
+/* Seguimiento section */
+.seg-section{background:var(--surface)!important}
+.seg-fecha-chip.hoy{background:rgba(245,158,11,.15)!important;color:#fcd34d!important}
+
+/* Modal fields */
+.modal-field input,.modal-field select,.modal-field textarea{background:var(--secondary-ink)!important;color:var(--text-main)!important;border-color:var(--border-color)!important}
+.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{border-color:var(--gold-accent)!important}
+
+/* Renovaciones */
+.renov-row.en-gestion{background:rgba(245,158,11,.08)!important;border-left-color:#f59e0b}
+
+/* Coberturas */
+.cob-upload-zone:hover{border-color:var(--gold-accent)!important;background:rgba(0,212,255,.05)!important}
+.cob-alert{background:rgba(255,179,0,.1)!important;border-color:rgba(255,179,0,.35)!important;border-left-color:#fbbf24!important;color:#fcd34d!important}
+
+/* Retirex module */
+.ret-upload:hover{border-color:var(--gold-accent)!important;background:rgba(0,212,255,.05)!important}
+.ret-cruce-banner{background:rgba(0,212,255,.07)!important;border-color:rgba(0,212,255,.2)!important;color:var(--blue-fg)!important}
+
+/* Analizador drop zone */
+.anl-drop:hover,.anl-drop.drag{border-color:var(--gold-accent)!important;background:rgba(0,212,255,.04)!important}
+
+/* Analizador card headers */
+.anl-card-hdr.datos{background:rgba(59,130,246,.15)!important;color:#93c5fd!important}
+.anl-card-hdr.brechas{background:rgba(245,158,11,.12)!important;color:#fcd34d!important}
+.anl-card-hdr.crossell{background:rgba(139,92,246,.15)!important;color:#c4b5fd!important}
+.anl-card-hdr.email{background:rgba(14,165,233,.12)!important;color:#7dd3fc!important}
+
+/* Analizador result boxes */
+.anl-brecha{background:rgba(245,158,11,.1)!important;border-left-color:#f59e0b!important;color:var(--yellow-fg)!important}
+.anl-cross-card{background:rgba(139,92,246,.08)!important;border-color:rgba(139,92,246,.3)!important}
+.anl-cross-prod{color:#c4b5fd!important}
+.anl-cross-arg{color:var(--text-main)!important}
+.anl-email-box{background:rgba(14,165,233,.08)!important;border-color:rgba(14,165,233,.2)!important;color:var(--text-main)!important}
+.anl-email-editable{background:rgba(14,165,233,.07)!important;border-color:rgba(14,165,233,.2)!important;color:var(--text-main)!important}
+.anl-email-editable:focus{border-color:var(--gold-accent)!important;background:rgba(0,212,255,.07)!important}
+.anl-progress span.active{background:rgba(245,158,11,.15)!important;color:#fcd34d!important}
+.anl-meta-badge{background:var(--secondary-ink)!important}
+.anl-privacy-note{background:rgba(0,216,120,.07)!important;border-color:rgba(0,216,120,.2)!important}
+.anl-privacy-note p{color:var(--text-muted)!important}
+.anl-privacy-note strong{color:var(--green-fg)!important}
+
+/* Cross-selling tags & editor */
+.crs-tag.oportunidad{background:rgba(255,179,0,.1)!important;color:#fcd34d!important;border-color:rgba(255,179,0,.3)!important}
+.crs-tag.oportunidad.hogar{background:rgba(0,216,120,.1)!important;color:#6ee7b7!important;border-color:rgba(0,216,120,.3)!important}
+.crs-tag.oportunidad.vida{background:rgba(139,92,246,.12)!important;color:#c4b5fd!important;border-color:rgba(139,92,246,.3)!important}
+.crs-textarea{background:var(--secondary-ink)!important;color:var(--text-main)!important}
+.crs-textarea:focus{background:var(--surface)!important}
+.crs-editor-hdr,.crs-editor-foot{background:var(--primary-ink)!important}
+
+/* XSL msg box */
+.xsl-msg-box{background:rgba(14,165,233,.08)!important;border-color:rgba(14,165,233,.2)!important;color:var(--text-main)!important}
+
+/* Movimientos delta pills */
+.com-mov-hdr-delta.pos{background:rgba(5,150,105,.2)!important;color:#34d399!important}
+.com-mov-hdr-delta.neg{background:rgba(220,38,38,.2)!important;color:#f87171!important}
+.com-mov-pill.new{background:rgba(5,150,105,.2)!important;color:#34d399!important}
+.com-mov-pill.baja{background:rgba(220,38,38,.2)!important;color:#f87171!important}
+.com-mov-pill.var{background:rgba(245,158,11,.15)!important;color:#fcd34d!important}
+
+/* Skeleton loader */
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(0,212,255,.06) 50%,rgba(255,255,255,.04) 75%)!important}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.25)!important}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,.45)!important}
+
+/* Retab tabs */
+.ret-tab.active{color:var(--gold-accent)!important;border-bottom-color:var(--gold-accent)!important}
+.ret-tab:hover{color:var(--text-main)!important}
 </style>
 </head>
 <body>
@@ -562,7 +677,7 @@ textarea{resize:vertical;line-height:1.6}
 <!-- ══ LOCK SCREEN ═══════════════════════════════════════════ -->
 <div id="lock-screen">
   <div class="lock-card">
-    <div class="lock-logo">🛡️</div>
+    <div class="lock-logo"><img src="logo.png" alt="Productor IA"></div>
     <div class="lock-title">Productor IA</div>
     <div class="lock-subtitle" id="lock-subtitle">Ingresá tu PIN para continuar</div>
     <input id="lock-pin-input" type="tel" maxlength="6" autocomplete="off" inputmode="numeric">
@@ -583,7 +698,7 @@ textarea{resize:vertical;line-height:1.6}
 
 <header>
   <div class="logo">
-    <div class="logo-icon">🛡️</div>
+    <div class="logo-icon"><img src="logo.png" alt="Productor IA"></div>
     <div>
       <div class="logo-text">Productor IA</div>
       <div class="logo-sub">Sancor Seguros · Chubut</div>
@@ -1908,7 +2023,7 @@ function renderAgenda(rotar){
         <div class="${rankCls}">🔔</div>
         <div class="agenda-info"><div class="agenda-nombre">${g.clienteNombre}</div><div class="agenda-motivo">${TIPO_ICON[g.tipo]||'📋'} Últ: ${RES_LABEL[g.resultado]||g.resultado} · ${g.fechaGestion}</div>${g.nota?`<div style="font-size:11px;font-style:italic;color:var(--muted)">"${g.nota}"</div>`:''}</div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:${chipBg};color:${chipFg}">${chipTxt}</span>
-        <button class="btn btn-secondary btn-sm" style="background:#f3f0ff;color:#5b21b6" onclick="abrirModalGestion('${g.clienteId}','${ne}','${g.ramo}','${g.poliza}')">📋 Nueva gestión</button></div></div>`;
+        <button class="btn btn-secondary btn-sm" style="background:rgba(139,92,246,.15);color:#c4b5fd" onclick="abrirModalGestion('${g.clienteId}','${ne}','${g.ramo}','${g.poliza}')">📋 Nueva gestión</button></div></div>`;
     }
     const c=item;
     const motivos=[];
@@ -1923,9 +2038,9 @@ function renderAgenda(rotar){
       <div class="agenda-premio">${fmtMx(c.pmTotal)}<span style="font-size:10px;font-weight:400;color:var(--muted)">/mes</span></div>
       <div class="agenda-score"><div class="score-bar-wrap"><div class="score-bar" style="width:${c.score}%"></div></div><div class="score-label">Score ${c.score}</div></div>
       <div class="agenda-btns">
-        <button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIAById('combinado','${c.id}','Automotores')">🏠 Combinado</button>
-        <button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirexAgenda('${ne}')">🔵 Retirex</button>
-        <button class="btn btn-secondary btn-sm" style="background:#f3f0ff;color:#5b21b6" onclick="abrirModalGestion('${c.id}','${ne}','Cross-sell Combinado','')">📋 Gestión</button>
+        <button class="btn btn-secondary btn-sm" style="background:rgba(245,158,11,.15);color:#fcd34d" onclick="accionIAById('combinado','${c.id}','Automotores')">🏠 Combinado</button>
+        <button class="btn btn-secondary btn-sm" style="background:rgba(0,212,255,.1);color:var(--blue-fg)" onclick="accionRetirexAgenda('${ne}')">🔵 Retirex</button>
+        <button class="btn btn-secondary btn-sm" style="background:rgba(139,92,246,.15);color:#c4b5fd" onclick="abrirModalGestion('${c.id}','${ne}','Cross-sell Combinado','')">📋 Gestión</button>
       </div></div>`;
   }).join('');
   const paginaInfo=totalPags>1?`<div style="text-align:center;padding:14px 0;font-size:12px;color:var(--muted)">Página ${agendaPagina+1} de ${totalPags} — presioná <strong>↻ Actualizar</strong> para ver los siguientes</div>`:'';
@@ -2025,11 +2140,11 @@ function renderTabla(data){
     const ramoNombre=RAMO_MAP[r.ramo]||'Ramo '+r.ramo;
     const ramoRenovaAuto=[200,3100,1720].includes(r.ramo);
     let accion='';
-    if(!estaRenovada&&dias!==null&&dias>=-7&&dias<=7)accion+=`<button class="btn btn-secondary btn-sm" style="background:#e8f0fe;font-size:11px" onclick="marcarRenovada('${r.id}','${ne}')">✅ Renovada</button> `;
+    if(!estaRenovada&&dias!==null&&dias>=-7&&dias<=7)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(0,212,255,.1);color:var(--blue-fg);font-size:11px" onclick="marcarRenovada('${r.id}','${ne}')">✅ Renovada</button> `;
     if(!ramoRenovaAuto&&!estaRenovada&&dias!==null&&dias>=0&&dias<=30)accion+=`<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
-    if(r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:#e8f4e8" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
-    if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
-    if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:#fce4ec" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
+    if(r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(0,212,255,.1);color:var(--blue-fg)" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
+    if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(245,158,11,.15);color:#fcd34d" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
+    if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(255,77,106,.12);color:#ff7090" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
     if(!accion)accion=`<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
     return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${esc(r.nombre)}</strong>${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
   }).join('');
@@ -2371,8 +2486,8 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
           type: 'bar',
           label: `${new Date().getFullYear()}`,
           data: evolucion12m.map(m => m.comision_actual),
-          backgroundColor: 'rgba(212,175,55,.7)',
-          borderColor: 'var(--gold-hover)',
+          backgroundColor: 'rgba(0,212,255,.45)',
+          borderColor: '#00D4FF',
           borderWidth: 1,
           borderRadius: 6,
           order: 2
@@ -2381,11 +2496,11 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
           type: 'line',
           label: `${new Date().getFullYear() - 1}`,
           data: evolucion12m.map(m => m.comision_anterior),
-          borderColor: 'rgba(15,23,42,.55)',
+          borderColor: 'rgba(0,174,207,.55)',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: 'var(--primary-ink)',
+          pointBackgroundColor: '#00AECF',
           tension: 0.4,
           order: 1
         }
@@ -2395,12 +2510,12 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 12, usePointStyle: true } },
+        legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 12, usePointStyle: true, color: '#a8d4e8' } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtM(ctx.raw)}` } }
       },
       scales: {
-        y: { ticks: { callback: v => fmtM(v), font: { size: 10 } }, grid: { color: 'rgba(0,0,0,.04)' } },
-        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+        y: { ticks: { callback: v => fmtM(v), font: { size: 10 }, color: '#a8d4e8' }, grid: { color: 'rgba(0,212,255,.07)' } },
+        x: { ticks: { font: { size: 10 }, color: '#a8d4e8' }, grid: { display: false } }
       }
     }
   });
@@ -2417,14 +2532,14 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
       labels: distribucion.map(r => RAMO_MAP[r.ramo] || 'Ramo ' + r.ramo),
       datasets: [{
         data: distribucion.map(r => r.comision_estimada),
-        backgroundColor: ['#D4AF37','#0F172A','#10B981','#1E293B','#B8962E','#64748B','#E8C94E','#334155','#34d399'],
-        borderWidth: 2, borderColor: '#fff', hoverOffset: 10
+        backgroundColor: ['#00D4FF','#00878A','#10B981','#1E4D7B','#40E0FF','#7C3AED','#00AECF','#059669','#34d399'],
+        borderWidth: 2, borderColor: '#070D1A', hoverOffset: 10
       }]
     },
     options: {
       responsive: true, cutout: '62%',
       plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Inter' }, padding: 8, usePointStyle: true } },
+        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Inter' }, padding: 8, usePointStyle: true, color: '#a8d4e8' } },
         tooltip: { callbacks: {
           label: ctx => ` ${ctx.label}: ${fmtM(ctx.raw)} (${totalDist > 0 ? (ctx.raw / totalDist * 100).toFixed(1) : 0}%)`
         }}
