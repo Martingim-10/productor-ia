@@ -470,6 +470,9 @@ textarea{resize:vertical;line-height:1.6}
 .skeleton{background:linear-gradient(90deg,#eff1f5 25%,#e4e6ea 50%,#eff1f5 75%);background-size:1200px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px;display:block}
 .sk-block{margin-bottom:6px}
 
+/* ── ANALIZADOR — layout por modo ───────────────────── */
+.anl-sections.modo-comp{grid-template-columns:1fr}
+
 /* ── SMART CARDS — Oportunidades ─────────────────────── */
 #crs-cards-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:16px}
 .smart-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);transition:var(--trans);display:flex;flex-direction:column;gap:12px}
@@ -528,9 +531,6 @@ textarea{resize:vertical;line-height:1.6}
   <div class="nav-item" data-panel="retiro">
     <span class="ic">🏦</span>Retiro
     <span style="font-size:9px;background:#0369a1;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
-  </div>
-  <div class="nav-item" data-panel="cobertura">
-    <span class="ic">🔍</span>Análisis Cobertura
   </div>
   <div class="nav-item" data-panel="mail">
     <span class="ic">📧</span>Redactar Mail
@@ -686,59 +686,6 @@ textarea{resize:vertical;line-height:1.6}
       <textarea class="chat-inp" id="chat-inp" placeholder="Consultá sobre coberturas, pedí argumentos de venta..." rows="1" onkeydown="hkey(event)" oninput="aresize(this)"></textarea>
       <button class="send" id="send-btn" onclick="sendMsg()">➤</button>
     </div>
-  </div>
-</div>
-
-<!-- ══ ANÁLISIS COBERTURA ═══════════════════════════════════════════════ -->
-<div id="cobertura-panel" class="panel">
-  <div class="ph">
-    <div><div class="ph-title">🔍 Análisis de Cobertura</div><div class="ph-sub">Analizá pólizas propias o de la competencia con IA</div></div>
-  </div>
-  <div class="pb">
-
-    <div class="cob-modo-tabs">
-      <div class="cob-modo-tab active" id="tab-sancor" onclick="setCobModo('sancor')">🛡️ Póliza Sancor — Qué cubre y qué no</div>
-      <div class="cob-modo-tab" id="tab-competencia" onclick="setCobModo('competencia')">⚔️ Póliza Competencia — Comparar y argumentar</div>
-    </div>
-
-    <div id="cob-modo-sancor">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Subí el PDF de la póliza Sancor del cliente. Claude va a extraer coberturas, exclusiones críticas, deducibles y alertas en lenguaje simple.</p>
-      <div class="cob-upload-zone" id="cob-drop-sancor" onclick="document.getElementById('cob-file-sancor').click()">
-        <div style="font-size:36px;margin-bottom:10px">📄</div>
-        <div style="font-weight:600;font-size:14px" id="cob-file-label-sancor">Hacé clic para subir el PDF de la póliza</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px">PDF · hasta 20MB</div>
-      </div>
-      <input type="file" id="cob-file-sancor" accept=".pdf" style="display:none" onchange="cobFileSelected(this,'sancor')">
-      <div class="btn-row">
-        <button class="btn btn-ai" onclick="analizarCobertura('sancor')">🤖 Analizar póliza</button>
-        <button class="btn btn-secondary" onclick="limpiarCobertura('sancor')">🗑️ Limpiar</button>
-      </div>
-    </div>
-
-    <div id="cob-modo-competencia" style="display:none">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Subí el PDF o foto de la póliza de otra compañía. Claude identifica coberturas, las compara con Sancor y genera el argumento de venta.</p>
-      <div class="cob-upload-zone" id="cob-drop-comp" onclick="document.getElementById('cob-file-comp').click()">
-        <div style="font-size:36px;margin-bottom:10px">📋</div>
-        <div style="font-weight:600;font-size:14px" id="cob-file-label-comp">Hacé clic para subir la póliza de la competencia</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px">PDF o imagen · hasta 20MB</div>
-      </div>
-      <input type="file" id="cob-file-comp" accept=".pdf,image/*" style="display:none" onchange="cobFileSelected(this,'comp')">
-      <div class="btn-row">
-        <button class="btn btn-ai" onclick="analizarCobertura('competencia')">🤖 Comparar con Sancor</button>
-        <button class="btn btn-secondary" onclick="limpiarCobertura('comp')">🗑️ Limpiar</button>
-      </div>
-    </div>
-
-    <div class="loader" id="cob-loader"><div class="dots"><span></span><span></span><span></span></div><span>Analizando póliza...</span></div>
-
-    <div class="cob-result" id="cob-result">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-family:'DM Serif Display',serif;font-size:18px" id="cob-result-title">Análisis de cobertura</div>
-        <button class="btn btn-secondary btn-sm" onclick="copiarCobResultado()">📋 Copiar todo</button>
-      </div>
-      <div id="cob-result-body"></div>
-    </div>
-
   </div>
 </div>
 
@@ -1120,16 +1067,22 @@ textarea{resize:vertical;line-height:1.6}
   </div>
 </div>
 
-<!-- ══ ANALIZADOR DE PÓLIZAS v2 ════════════════════════════════════════════ -->
+<!-- ══ ANALIZADOR DE PÓLIZAS ════════════════════════════════════════════ -->
 <div id="analizador-panel" class="panel">
   <div class="ph">
     <div>
       <div class="ph-title">📑 Analizador de Pólizas</div>
-      <div class="ph-sub">Subí cualquier póliza PDF — la IA la convierte en resumen claro + oportunidades comerciales</div>
+      <div class="ph-sub">Póliza propia: resumen + borrador de mail · Póliza de competencia: brechas + argumento de migración</div>
     </div>
     <button class="btn btn-secondary" onclick="resetAnalizador()">🗑️ Nueva póliza</button>
   </div>
   <div class="pb">
+
+    <!-- Tabs de modo -->
+    <div class="cob-modo-tabs" style="margin-bottom:20px">
+      <div class="cob-modo-tab active" id="anl-tab-sancor" onclick="setAnlModo('sancor')">🛡️ Póliza Sancor — Resumen + Mail al socio</div>
+      <div class="cob-modo-tab" id="anl-tab-comp" onclick="setAnlModo('competencia')">⚔️ Póliza Competencia — Brechas y argumento</div>
+    </div>
 
     <!-- Drop zone -->
     <div class="anl-drop" id="anl-drop"
@@ -1139,11 +1092,11 @@ textarea{resize:vertical;line-height:1.6}
          onclick="document.getElementById('anl-file-input').click()">
       <div class="anl-drop-icon">📄</div>
       <div class="anl-drop-title">Arrastrá o hacé clic para subir la póliza</div>
-      <div class="anl-drop-sub">Formatos: PDF · Sancor y cualquier aseguradora · Hasta 20MB</div>
+      <div class="anl-drop-sub">Formato PDF · Sancor y cualquier aseguradora · Hasta 20MB</div>
       <input type="file" id="anl-file-input" accept=".pdf" style="display:none" onchange="analizadorFileSelected(this)">
       <div class="anl-privacy-note">
         <span class="icon">🔒</span>
-        <p><strong>Privacidad garantizada:</strong> Nombre, DNI, CUIT, teléfono y dirección son reemplazados por <code>[REDACTED]</code> en tu navegador antes de enviarse a la IA. Ningún dato personal sale de tu equipo.</p>
+        <p><strong>Privacidad garantizada:</strong> Nombre, DNI, CUIT, teléfono y dirección son reemplazados por <code>[REDACTED]</code> en tu navegador antes de enviarse a la IA.</p>
       </div>
     </div>
 
@@ -1167,7 +1120,7 @@ textarea{resize:vertical;line-height:1.6}
         <li class="anl-loader-step" id="anl-step-1"><span class="step-dot"></span>Cargando archivo...</li>
         <li class="anl-loader-step" id="anl-step-2"><span class="step-dot"></span>Extrayendo texto y protegiendo datos sensibles...</li>
         <li class="anl-loader-step" id="anl-step-3"><span class="step-dot"></span>La IA está analizando coberturas y exclusiones...</li>
-        <li class="anl-loader-step" id="anl-step-4"><span class="step-dot"></span>Generando borrador de comunicación...</li>
+        <li class="anl-loader-step" id="anl-step-4"><span class="step-dot"></span><span id="anl-step-4-txt">Generando borrador de comunicación...</span></li>
       </ul>
       <div class="anl-progress-bar-wrap" style="width:260px">
         <div class="anl-progress-bar" id="anl-progress-bar"></div>
@@ -1195,29 +1148,22 @@ textarea{resize:vertical;line-height:1.6}
         <div class="anl-card-body" id="anl-body-exclusiones"></div>
       </div>
 
-      <!-- Brechas -->
+      <!-- Brechas (visible en ambos modos con distintos títulos) -->
       <div class="anl-card" id="anl-card-brechas">
-        <div class="anl-card-hdr brechas">⚠️ Gaps de Cobertura</div>
+        <div class="anl-card-hdr brechas" id="anl-hdr-brechas">⚠️ Gaps de Cobertura</div>
         <div class="anl-card-body" id="anl-body-brechas"></div>
       </div>
 
-      <!-- Cross-selling -->
-      <div class="anl-card" id="anl-card-crossell">
-        <div class="anl-card-hdr crossell">🎯 Oportunidades Complementarias</div>
-        <div class="anl-card-body" id="anl-body-crossell"></div>
-      </div>
-
-      <!-- Email editable -->
-      <div class="anl-card" id="anl-card-email">
-        <div class="anl-card-hdr email">✉️ Borrador Comercial</div>
+      <!-- Email / Argumento de migración (span full width) -->
+      <div class="anl-card" id="anl-card-email" style="grid-column:1/-1">
+        <div class="anl-card-hdr email" id="anl-hdr-email">✉️ Borrador de Mail al Socio</div>
         <div class="anl-card-body">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Editá el texto directamente antes de copiar.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="anl-email-hint">Editá el texto directamente. Podés adjuntar la póliza al enviar.</div>
           <div class="anl-email-editable" id="anl-body-email" contenteditable="true"></div>
           <div class="anl-email-toolbar">
-            <button class="anl-copy-btn" onclick="copiarAnalizador('email')">📋 Copiar email</button>
+            <button class="anl-copy-btn" onclick="copiarAnalizador('email')" id="anl-btn-email">📋 Copiar email</button>
             <button class="anl-copy-btn wsp" onclick="copiarAnalizador('wsp')">💬 WhatsApp</button>
           </div>
-          <!-- Meta row: tokens + tiempo + datos protegidos -->
           <div class="anl-meta-row" id="anl-meta-row" style="display:none;margin-top:10px;border-radius:0 0 8px 8px">
             <div class="anl-meta-badge"><span class="dot" style="background:var(--green)"></span><span id="anl-token-info">—</span></div>
             <div class="anl-meta-badge"><span class="dot" style="background:var(--gold)"></span><span id="anl-time-info">—</span></div>
@@ -1686,203 +1632,6 @@ Dame:
   out.classList.add('show');
   out.innerHTML='<div class="loader show" style="display:flex"><div class="dots"><span></span><span></span><span></span></div><span>Analizando...</span></div>';
   await callIA(prompt,'renov-ia-out');
-}
-
-// ═══════════════════════════════════════════════════════════
-// ANÁLISIS DE COBERTURA
-// ═══════════════════════════════════════════════════════════
-let cobModo = 'sancor';
-let cobFileDataSancor = null;
-let cobFileDataComp = null;
-let cobFileTypeSancor = '';
-let cobFileTypeComp = '';
-
-function setCobModo(modo){
-  cobModo = modo;
-  document.getElementById('tab-sancor').classList.toggle('active', modo==='sancor');
-  document.getElementById('tab-competencia').classList.toggle('active', modo==='competencia');
-  document.getElementById('cob-modo-sancor').style.display = modo==='sancor'?'block':'none';
-  document.getElementById('cob-modo-competencia').style.display = modo==='competencia'?'block':'none';
-  document.getElementById('cob-result').classList.remove('show');
-}
-
-function cobFileSelected(input, tipo){
-  const file = input.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const b64 = e.target.result.split(',')[1];
-    if(tipo==='sancor'){
-      cobFileDataSancor = b64;
-      cobFileTypeSancor = file.type||'application/pdf';
-      document.getElementById('cob-file-label-sancor').textContent = '✅ '+file.name;
-      document.getElementById('cob-drop-sancor').classList.add('has-file');
-    } else {
-      cobFileDataComp = b64;
-      cobFileTypeComp = file.type||'application/pdf';
-      document.getElementById('cob-file-label-comp').textContent = '✅ '+file.name;
-      document.getElementById('cob-drop-comp').classList.add('has-file');
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function limpiarCobertura(tipo){
-  if(tipo==='sancor'){
-    cobFileDataSancor=null;
-    document.getElementById('cob-file-label-sancor').textContent='Hacé clic para subir el PDF de la póliza';
-    document.getElementById('cob-drop-sancor').classList.remove('has-file');
-    document.getElementById('cob-file-sancor').value='';
-  } else {
-    cobFileDataComp=null;
-    document.getElementById('cob-file-label-comp').textContent='Hacé clic para subir la póliza de la competencia';
-    document.getElementById('cob-drop-comp').classList.remove('has-file');
-    document.getElementById('cob-file-comp').value='';
-  }
-  document.getElementById('cob-result').classList.remove('show');
-}
-
-async function analizarCobertura(modo){
-  const key=getKey(); if(!key){alert('Configurá tu API Key.');return;}
-  const fileData = modo==='sancor' ? cobFileDataSancor : cobFileDataComp;
-  const fileType = modo==='sancor' ? cobFileTypeSancor : cobFileTypeComp;
-  if(!fileData){alert('Primero subí el archivo de la póliza.');return;}
-
-  const loader=document.getElementById('cob-loader');
-  const result=document.getElementById('cob-result');
-  loader.classList.add('show');
-  result.classList.remove('show');
-
-  const promptSancor = `Analizá esta póliza de Sancor Seguros y respondé en formato JSON con esta estructura exacta:
-{
-  "compania": "Sancor Seguros",
-  "producto": "nombre del producto",
-  "asegurado": "nombre",
-  "vigencia": "fechas",
-  "coberturas": [{"icono":"✅","texto":"descripción de cobertura con suma si aplica"}],
-  "exclusiones": [{"icono":"❌","texto":"descripción de exclusión"}],
-  "deducibles": [{"icono":"💰","texto":"descripción del deducible"}],
-  "alertas": [{"tipo":"warning|danger","texto":"alerta importante para el cliente"}],
-  "resumen_simple": "explicación en 2-3 oraciones en lenguaje simple para el cliente"
-}
-Sé específico con sumas aseguradas y porcentajes. Incluí las exclusiones más frecuentes que generan conflictos en siniestros. Respondé SOLO con el JSON, sin texto adicional.`;
-
-  const promptComp = `Analizá esta póliza de seguro de una compañía competidora y respondé en formato JSON:
-{
-  "compania": "nombre de la compañía",
-  "producto": "nombre del producto",
-  "coberturas_detectadas": [{"icono":"📋","texto":"cobertura identificada"}],
-  "exclusiones_detectadas": [{"icono":"❌","texto":"exclusión identificada"}],
-  "comparacion_sancor": [{"aspecto":"nombre","competencia":"lo que tiene","sancor":"lo que ofrece Sancor","ventaja":"sancor|competencia|similar"}],
-  "argumento_venta": "párrafo de 3-4 oraciones con el argumento comercial para migrar al cliente a Sancor, basado en las diferencias encontradas",
-  "puntos_clave": ["punto 1 a destacar en la conversación","punto 2","punto 3"]
-}
-Respondé SOLO con el JSON, sin texto adicional.`;
-
-  try {
-    const mediaType = fileType.includes('pdf') ? 'application/pdf' : fileType;
-    const contentType = fileType.includes('pdf') ? 'document' : 'image';
-
-    const body = {
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      system: getSistema(),
-      messages: [{
-        role: 'user',
-        content: [
-          contentType==='document'
-            ? {type:'document',source:{type:'base64',media_type:mediaType,data:fileData}}
-            : {type:'image',source:{type:'base64',media_type:mediaType,data:fileData}},
-          {type:'text',text: modo==='sancor' ? promptSancor : promptComp}
-        ]
-      }]
-    };
-
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key},
-      body:JSON.stringify(body)
-    });
-    const data = await res.json();
-    const txt = data.content?.[0]?.text||'{}';
-    const clean = txt.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
-    renderCobResultado(parsed, modo);
-  } catch(e){
-    document.getElementById('cob-result-body').innerHTML = '<div class="cob-alert danger">Error al analizar: '+e.message+'</div>';
-    result.classList.add('show');
-  }
-  loader.classList.remove('show');
-}
-
-function renderCobResultado(data, modo){
-  const result = document.getElementById('cob-result');
-  const body = document.getElementById('cob-result-body');
-  document.getElementById('cob-result-title').textContent = modo==='sancor'
-    ? `${data.producto||'Póliza'} — ${data.asegurado||''}`
-    : `Análisis comparativo — ${data.compania||'Competencia'}`;
-
-  let html = '';
-
-  if(modo==='sancor'){
-    if(data.resumen_simple){
-      html += `<div style="background:var(--blue-bg);border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--blue-fg);line-height:1.6">💬 <strong>Resumen para el cliente:</strong> ${data.resumen_simple}</div>`;
-    }
-    if(data.alertas?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">⚠️ Alertas críticas</div>';
-      data.alertas.forEach(a=>{html+=`<div class="cob-alert ${a.tipo==='danger'?'danger':''}">${a.texto}</div>`;});
-      html += '</div>';
-    }
-    if(data.coberturas?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">✅ Coberturas incluidas</div>';
-      data.coberturas.forEach(c=>{html+=`<div class="cob-item"><span class="cob-icon">${c.icono||'✅'}</span><span class="cob-texto">${c.texto}</span></div>`;});
-      html += '</div>';
-    }
-    if(data.exclusiones?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">❌ Exclusiones importantes</div>';
-      data.exclusiones.forEach(e=>{html+=`<div class="cob-item"><span class="cob-icon">${e.icono||'❌'}</span><span class="cob-texto">${e.texto}</span></div>`;});
-      html += '</div>';
-    }
-    if(data.deducibles?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">💰 Deducibles</div>';
-      data.deducibles.forEach(d=>{html+=`<div class="cob-item"><span class="cob-icon">${d.icono||'💰'}</span><span class="cob-texto">${d.texto}</span></div>`;});
-      html += '</div>';
-    }
-  } else {
-    if(data.argumento_venta){
-      html += `<div class="cob-arg">🎯 <strong>Argumento de venta:</strong><br><br>${data.argumento_venta}</div>`;
-      if(data.puntos_clave?.length){
-        html += '<div style="margin-top:10px;margin-bottom:18px">';
-        data.puntos_clave.forEach(p=>{html+=`<div style="display:flex;gap:8px;padding:5px 0;font-size:13px"><span>→</span><span>${p}</span></div>`;});
-        html += '</div>';
-      }
-    }
-    if(data.comparacion_sancor?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">⚔️ Comparativo aspecto por aspecto</div>';
-      html += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--ink)"><th style="padding:8px;color:var(--gold-l);text-align:left">Aspecto</th><th style="padding:8px;color:var(--gold-l);text-align:left">Competencia</th><th style="padding:8px;color:var(--gold-l);text-align:left">Sancor</th><th style="padding:8px;color:var(--gold-l);text-align:center">Ventaja</th></tr></thead><tbody>';
-      data.comparacion_sancor.forEach((c,i)=>{
-        const ven = c.ventaja==='sancor'?'🟢':c.ventaja==='competencia'?'🔴':'🟡';
-        html+=`<tr style="background:${i%2?'var(--paper)':'#fff'}"><td style="padding:7px 8px">${c.aspecto}</td><td style="padding:7px 8px">${c.competencia}</td><td style="padding:7px 8px">${c.sancor}</td><td style="padding:7px 8px;text-align:center">${ven}</td></tr>`;
-      });
-      html += '</tbody></table></div>';
-    }
-    if(data.coberturas_detectadas?.length){
-      html += '<div class="cob-section"><div class="cob-section-title">📋 Coberturas detectadas en la póliza</div>';
-      data.coberturas_detectadas.forEach(c=>{html+=`<div class="cob-item"><span class="cob-icon">${c.icono||'📋'}</span><span class="cob-texto">${c.texto}</span></div>`;});
-      html += '</div>';
-    }
-  }
-
-  body.innerHTML = html;
-  result.classList.add('show');
-  result.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-function copiarCobResultado(){
-  const txt = document.getElementById('cob-result-body').innerText;
-  navigator.clipboard.writeText(txt);
-  const btn = document.querySelector('#cob-result .btn-secondary');
-  if(btn){btn.textContent='✓ Copiado';setTimeout(()=>btn.textContent='📋 Copiar todo',2000);}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3455,7 +3204,21 @@ function maskSensitiveData(text) {
 }
 
 // ── 2. ESTADO ──────────────────────────────────────────────────────────
-let analizadorRawText = null;   // texto plano extraído del PDF
+let analizadorRawText = null;
+let anlModo = 'sancor'; // 'sancor' | 'competencia'
+
+function setAnlModo(modo) {
+  anlModo = modo;
+  document.getElementById('anl-tab-sancor').classList.toggle('active', modo === 'sancor');
+  document.getElementById('anl-tab-comp').classList.toggle('active', modo === 'competencia');
+  // Resetear resultados al cambiar de modo
+  ['datos','coberturas','exclusiones','brechas','email'].forEach(s => {
+    const el = document.getElementById('anl-card-' + s);
+    if (el) el.classList.remove('show');
+  });
+  const sec = document.getElementById('anl-sections');
+  sec.classList.toggle('modo-comp', modo === 'competencia');
+}
 
 // ── 3. DROP / FILE SELECT ──────────────────────────────────────────────
 function analizadorDrop(e) {
@@ -3506,58 +3269,75 @@ async function analizarPoliza() {
   document.getElementById('anl-file-info').style.display = 'none';
   document.getElementById('anl-loader').classList.add('show');
   document.getElementById('anl-meta-row').style.display = 'none';
-  ['datos','coberturas','exclusiones','brechas','crossell','email'].forEach(s =>
-    document.getElementById('anl-card-' + s).classList.remove('show')
-  );
+  ['datos','coberturas','exclusiones','brechas','email'].forEach(s => {
+    const el = document.getElementById('anl-card-' + s);
+    if (el) el.classList.remove('show');
+  });
+
+  // Actualizar texto del loader paso 4 según modo
+  document.getElementById('anl-step-4-txt').textContent = anlModo === 'sancor'
+    ? 'Generando borrador de mail al socio...'
+    : 'Generando argumento de migración...';
 
   const nombreProductor = localStorage.getItem('cfg_nombre') || 'Martín';
   const ciudad = localStorage.getItem('cfg_ciudad') || 'Trelew';
 
   try {
-    // PASO 1 — carga
     setAnlStep(1, 15);
     await new Promise(r => setTimeout(r, 300));
 
-    // PASO 2 — el texto ya está en base64 (PDF enviado directo a Claude)
-    // El masking se aplica sobre el texto plano si el Worker lo devuelve,
-    // pero aquí enviamos el PDF como documento: Claude extrae el texto internamente.
-    // Para cumplir el briefing de privacidad, aplicamos masking sobre los
-    // metadatos del PDF antes de enviar (el contenido binario no se puede maskear
-    // en cliente sin pdf.js). Se loguea la acción.
     setAnlStep(2, 35);
-    _anlMaskedCount = 0; // Claude recibe PDF directo; masking aplica en resultados
+    _anlMaskedCount = 0;
     await new Promise(r => setTimeout(r, 400));
 
-    const prompt = `Analizá esta póliza de seguros argentina. Devolvé ÚNICAMENTE un JSON válido sin markdown, con esta estructura exacta:
+    // ── PROMPT SANCOR ─────────────────────────────────────────────────
+    const promptSancor = `Analizá esta póliza de Sancor Seguros (Argentina).
+Devolvé ÚNICAMENTE un JSON válido sin markdown:
 
 {
   "datos": {
-    "asegurado": "nombre del asegurado (escribí [PROTEGIDO] en vez del nombre real)",
-    "producto": "tipo de producto/cobertura",
+    "asegurado": "[PROTEGIDO]",
+    "producto": "nombre del producto/ramo",
     "poliza": "número de póliza",
     "vigencia_desde": "fecha inicio",
     "vigencia_hasta": "fecha fin",
-    "premio_total": "monto total",
+    "premio_total": "monto total con moneda",
     "forma_pago": "modalidad de pago",
-    "domicilio": "dirección asegurada (solo calle y número, sin datos personales)"
+    "domicilio": "solo calle y número del riesgo asegurado"
   },
   "coberturas": [
-    {"texto": "descripción clara en lenguaje simple para el cliente", "suma": "suma asegurada si aplica o vacío"}
+    {"texto": "descripción clara en lenguaje simple", "suma": "suma asegurada si aplica, vacío si no"}
   ],
   "exclusiones": [
-    {"texto": "exclusión importante explicada en lenguaje simple"}
+    {"texto": "exclusión importante en lenguaje simple — las que más generan conflictos en siniestros"}
   ],
-  "brechas": [
-    {"riesgo": "nombre del riesgo no cubierto", "impacto": "consecuencia concreta para el asegurado"}
-  ],
-  "crossell": [
-    {"producto": "nombre de cobertura complementaria de Sancor", "argumento": "por qué la necesita este cliente, 2 líneas, tono consultivo sin presión"}
-  ],
-  "email_asunto": "asunto claro para el email",
-  "email_cuerpo": "email completo listo para enviar, primera persona como productor, tono cálido y directo, máximo 180 palabras, explica qué cubre la póliza y menciona sutilmente 1 gap importante. NO incluyas datos personales del asegurado. Firmá como ${nombreProductor} de ${ciudad}."
+  "email_asunto": "Resumen de tu póliza [producto] — vigente hasta [fecha_hasta]",
+  "email_cuerpo": "Email para enviar al socio junto con la póliza adjunta. Tono cálido, lenguaje simple. Presenta qué cubre la póliza y destaca las exclusiones más relevantes. Máximo 200 palabras. Sin datos personales. Firmá como ${nombreProductor} de ${ciudad}."
 }
 
-IMPORTANTE: No incluyas datos personales (nombre completo, DNI, domicilio exacto, teléfono) en el JSON. Solo devolvé el JSON, sin texto extra ni backticks.`;
+Solo devolvé el JSON, sin texto extra ni backticks.`;
+
+    // ── PROMPT COMPETENCIA ────────────────────────────────────────────
+    const promptComp = `Analizá esta póliza de una aseguradora competidora de Sancor (Argentina).
+Devolvé ÚNICAMENTE un JSON válido sin markdown:
+
+{
+  "compania": "nombre de la compañía",
+  "producto": "nombre del producto/ramo",
+  "brechas": [
+    {
+      "riesgo": "aspecto de cobertura que falta, es inferior o tiene condiciones más restrictivas",
+      "impacto": "consecuencia concreta para el asegurado si ocurre el siniestro",
+      "sancor_ventaja": "cómo Sancor lo resuelve mejor (1 línea)"
+    }
+  ],
+  "email_asunto": "asunto del mensaje para el cliente (ej: 'Una consulta sobre tu seguro de hogar')",
+  "email_cuerpo": "Mensaje WhatsApp o mail para motivar al cliente a analizar un cambio a Sancor. Tono consultivo y amigable, nunca agresivo. Mencioná 2-3 brechas concretas. Máximo 180 palabras. Sin datos personales. Firmá como ${nombreProductor} de ${ciudad}."
+}
+
+Solo devolvé el JSON, sin texto extra ni backticks.`;
+
+    const prompt = anlModo === 'sancor' ? promptSancor : promptComp;
 
     // PASO 3 — llamada a la API
     setAnlStep(3, 65);
@@ -3595,9 +3375,10 @@ IMPORTANTE: No incluyas datos personales (nombre completo, DNI, domicilio exacto
     try { parsed = JSON.parse(clean); }
     catch (e) { throw new Error('La IA devolvió un formato inesperado. Intentá de nuevo.'); }
 
-    // Aplicar masking sobre campos de texto libre en el resultado
+    // Masking sobre campos de texto libre
     if (parsed.datos?.asegurado) parsed.datos.asegurado = maskSensitiveData(parsed.datos.asegurado);
     if (parsed.email_cuerpo)     parsed.email_cuerpo    = maskSensitiveData(parsed.email_cuerpo);
+    parsed._modo = anlModo;
 
     analizadorResultado = parsed;
     setAnlStep(4, 100);
@@ -3653,66 +3434,80 @@ function resetAnalizador() {
   document.getElementById('anl-loader').classList.remove('show');
   document.getElementById('anl-file-input').value = '';
   document.getElementById('anl-meta-row').style.display = 'none';
-  ['datos','coberturas','exclusiones','brechas','crossell','email'].forEach(s =>
-    document.getElementById('anl-card-' + s).classList.remove('show')
-  );
+  ['datos','coberturas','exclusiones','brechas','email'].forEach(s => {
+    const el = document.getElementById('anl-card-' + s);
+    if (el) el.classList.remove('show');
+  });
 }
 
 function renderAnalizador(d) {
-  // DATOS GENERALES
-  if (d.datos) {
-    const dat = d.datos;
-    document.getElementById('anl-body-datos').innerHTML = `
-      <div class="anl-item"><span class="anl-item-icon">👤</span><span class="anl-item-txt"><strong>Asegurado:</strong> ${dat.asegurado || '—'}</span></div>
-      <div class="anl-item"><span class="anl-item-icon">📄</span><span class="anl-item-txt"><strong>Producto:</strong> ${dat.producto || '—'}</span><span class="anl-item-val">Nro ${dat.poliza || '—'}</span></div>
-      <div class="anl-item"><span class="anl-item-icon">📅</span><span class="anl-item-txt"><strong>Vigencia:</strong> ${dat.vigencia_desde || '—'} → ${dat.vigencia_hasta || '—'}</span></div>
-      <div class="anl-item"><span class="anl-item-icon">💰</span><span class="anl-item-txt"><strong>Premio:</strong> ${dat.premio_total || '—'}</span><span class="anl-item-val">${dat.forma_pago || ''}</span></div>
-      <div class="anl-item"><span class="anl-item-icon">🏠</span><span class="anl-item-txt"><strong>Riesgo:</strong> ${dat.domicilio || '—'}</span></div>`;
-    document.getElementById('anl-card-datos').classList.add('show');
+  const modo = d._modo || 'sancor';
+  const sec  = document.getElementById('anl-sections');
+  sec.classList.toggle('modo-comp', modo === 'competencia');
+
+  if (modo === 'sancor') {
+    // ── MODO SANCOR ───────────────────────────────────────────────────
+
+    // Datos generales
+    if (d.datos) {
+      const dat = d.datos;
+      document.getElementById('anl-body-datos').innerHTML = `
+        <div class="anl-item"><span class="anl-item-icon">👤</span><span class="anl-item-txt"><strong>Asegurado:</strong> ${dat.asegurado || '—'}</span></div>
+        <div class="anl-item"><span class="anl-item-icon">📄</span><span class="anl-item-txt"><strong>Producto:</strong> ${dat.producto || '—'}</span><span class="anl-item-val">Nro ${dat.poliza || '—'}</span></div>
+        <div class="anl-item"><span class="anl-item-icon">📅</span><span class="anl-item-txt"><strong>Vigencia:</strong> ${dat.vigencia_desde || '—'} → ${dat.vigencia_hasta || '—'}</span></div>
+        <div class="anl-item"><span class="anl-item-icon">💰</span><span class="anl-item-txt"><strong>Premio:</strong> ${dat.premio_total || '—'}</span><span class="anl-item-val">${dat.forma_pago || ''}</span></div>
+        <div class="anl-item"><span class="anl-item-icon">🏠</span><span class="anl-item-txt"><strong>Riesgo:</strong> ${dat.domicilio || '—'}</span></div>`;
+      document.getElementById('anl-card-datos').classList.add('show');
+    }
+
+    // Coberturas
+    if (d.coberturas?.length) {
+      document.getElementById('anl-body-coberturas').innerHTML = d.coberturas.map(c => `
+        <div class="anl-item">
+          <span class="anl-item-icon">✅</span>
+          <span class="anl-item-txt">${c.texto}</span>
+          ${c.suma ? `<span class="anl-item-val">${c.suma}</span>` : ''}
+        </div>`).join('');
+      document.getElementById('anl-card-coberturas').classList.add('show');
+    }
+
+    // Exclusiones
+    if (d.exclusiones?.length) {
+      document.getElementById('anl-body-exclusiones').innerHTML = d.exclusiones.map(e => `
+        <div class="anl-item">
+          <span class="anl-item-icon">❌</span>
+          <span class="anl-item-txt">${e.texto}</span>
+        </div>`).join('');
+      document.getElementById('anl-card-exclusiones').classList.add('show');
+    }
+
+    // Email (etiquetas para modo sancor)
+    document.getElementById('anl-hdr-email').textContent = '✉️ Borrador de Mail al Socio';
+    document.getElementById('anl-email-hint').textContent = 'Editá el texto y adjuntá la póliza al enviar.';
+    document.getElementById('anl-btn-email').textContent = '📋 Copiar email';
+
+  } else {
+    // ── MODO COMPETENCIA ──────────────────────────────────────────────
+
+    // Brechas con ventaja Sancor
+    if (d.brechas?.length) {
+      document.getElementById('anl-hdr-brechas').textContent = '⚔️ Brechas vs Sancor';
+      document.getElementById('anl-body-brechas').innerHTML = d.brechas.map(b => `
+        <div class="anl-brecha">
+          <strong>${b.riesgo}</strong>
+          <div style="margin-top:3px;font-size:12px;color:#92400e">${b.impacto}</div>
+          ${b.sancor_ventaja ? `<div style="margin-top:4px;font-size:12px;color:var(--green-fg);font-weight:600">✅ Sancor: ${b.sancor_ventaja}</div>` : ''}
+        </div>`).join('');
+      document.getElementById('anl-card-brechas').classList.add('show');
+    }
+
+    // Email → argumento de migración
+    document.getElementById('anl-hdr-email').textContent = '💬 Argumento de Migración';
+    document.getElementById('anl-email-hint').textContent = 'Editá el mensaje antes de enviarlo al cliente.';
+    document.getElementById('anl-btn-email').textContent = '📋 Copiar mensaje';
   }
 
-  // COBERTURAS
-  if (d.coberturas?.length) {
-    document.getElementById('anl-body-coberturas').innerHTML = d.coberturas.map(c => `
-      <div class="anl-item">
-        <span class="anl-item-icon">✅</span>
-        <span class="anl-item-txt">${c.texto}</span>
-        ${c.suma ? `<span class="anl-item-val">${c.suma}</span>` : ''}
-      </div>`).join('');
-    document.getElementById('anl-card-coberturas').classList.add('show');
-  }
-
-  // EXCLUSIONES
-  if (d.exclusiones?.length) {
-    document.getElementById('anl-body-exclusiones').innerHTML = d.exclusiones.map(e => `
-      <div class="anl-item">
-        <span class="anl-item-icon">❌</span>
-        <span class="anl-item-txt">${e.texto}</span>
-      </div>`).join('');
-    document.getElementById('anl-card-exclusiones').classList.add('show');
-  }
-
-  // BRECHAS / GAPS
-  if (d.brechas?.length) {
-    document.getElementById('anl-body-brechas').innerHTML = d.brechas.map(b => `
-      <div class="anl-brecha">
-        <strong>${b.riesgo}</strong>
-        <div style="margin-top:3px;font-size:12px;color:#92400e">${b.impacto}</div>
-      </div>`).join('');
-    document.getElementById('anl-card-brechas').classList.add('show');
-  }
-
-  // CROSS-SELLING
-  if (d.crossell?.length) {
-    document.getElementById('anl-body-crossell').innerHTML = d.crossell.map(x => `
-      <div class="anl-cross-card">
-        <div class="anl-cross-prod">🎯 ${x.producto}</div>
-        <div class="anl-cross-arg">${x.argumento}</div>
-      </div>`).join('');
-    document.getElementById('anl-card-crossell').classList.add('show');
-  }
-
-  // EMAIL EDITABLE
+  // Email / argumento (común a ambos modos)
   if (d.email_cuerpo) {
     document.getElementById('anl-body-email').textContent = d.email_cuerpo;
     document.getElementById('anl-meta-row').style.display = 'flex';
@@ -3720,7 +3515,10 @@ function renderAnalizador(d) {
   }
 
   setTimeout(() => {
-    document.getElementById('anl-card-datos').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const first = modo === 'sancor'
+      ? document.getElementById('anl-card-datos')
+      : document.getElementById('anl-card-brechas');
+    if (first?.classList.contains('show')) first.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 100);
 }
 
