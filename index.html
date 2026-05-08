@@ -1578,17 +1578,17 @@ function renderRenovacionesFiltradas(){
     const enGestion = estado==='en_gestion';
     const primaFmt = r.prima>0?'$'+Math.round(r.prima).toLocaleString('es-AR'):'—';
     const vtoFmt = r.vto?new Date(r.vto).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
-    const ne = r.nombre.replace(/'/g,"\\'");
-    const ra = (r.ramo||'').replace(/'/g,"\\'");
-    const pol = (r.poliza||'').replace(/'/g,"\\'");
+    const ne = escOncl(r.nombre);
+    const ra = escOncl(r.ramo||'');
+    const pol = escOncl(r.poliza||'');
 
     const rowClass = enGestion ? ' en-gestion' : '';
 
     return `<div class="renov-row${rowClass}">
       <div class="renov-dot ${color}"></div>
       <div class="renov-info">
-        <div class="renov-nombre">${r.nombre}</div>
-        <div class="renov-ramo">${r.ramo||'—'} · Póliza ${r.poliza||'—'} · ${vtoFmt}${r.formaPago?' · '+r.formaPago:''}</div>
+        <div class="renov-nombre">${esc(r.nombre)}</div>
+        <div class="renov-ramo">${esc(r.ramo||'—')} · Póliza ${esc(r.poliza||'—')} · ${vtoFmt}${r.formaPago?' · '+esc(r.formaPago):''}</div>
         ${enGestion?'<span style="font-size:10px;color:#92400e;font-weight:600">⏳ EN GESTIÓN</span>':''}
       </div>
       <div class="renov-prima">${primaFmt}</div>
@@ -1776,9 +1776,6 @@ function procesarRowsExcel(rows, fileName){
     const nom=(denom&&denom!=='nan')?denom:cli;
     return{nombre:nom,cuit:(denom&&cli!==denom)?cli:'',ramo:iR>=0?(parseInt(r[iR])||0):0,poliza:iP>=0?String(r[iP]||''):'',cert:iC>=0?(parseInt(r[iC])||1):1,venc:exDate(iFin>=0?r[iFin]:null),premio:iPr>=0?(parseFloat(r[iPr])||0):0,prima:iPm>=0?(parseFloat(r[iPm])||0):0};
     }).filter(r=>r.nombre&&r.nombre!=='nan'&&r.ramo>0);
-  console.log('[DEBUG] Header fila:',hi,'Headers:',headers,'Cols → R:'+iR,'P:'+iP,'C:'+iC,'Fin:'+iFin,'Den:'+iDen);
-  console.log('[DEBUG] Primeras 3 filas de datos:',rows.slice(hi+1,hi+4));
-  console.log('[DEBUG] Después del map (antes de filter):',rows.slice(hi+1,hi+4).map(r=>{const denom=iDen>=0?String(r[iDen]||'').trim():'';const cli=iCli>=0?String(r[iCli]||'').trim():'';return{nombre:(denom&&denom!=='nan')?denom:cli,ramo:iR>=0?(parseInt(r[iR])||0):0};}));
   if(!nuevos.length){alert('No se encontraron registros válidos. Mirá la consola (F12) para detalles.');return;}
   carteraActiva=nuevos.map(r=>({
   ...r,
@@ -1901,6 +1898,10 @@ function diasA(isoStr){
 }
 function fmtF(isoStr){if(!isoStr)return'—';const d=new Date(isoStr);return isNaN(d)?'—':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function fmtM(n){if(!n)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'$'+Math.round(n/1000)+'K';return'$'+Math.round(n).toLocaleString('es-AR');}
+// Escapa entidades HTML para evitar XSS al inyectar datos de clientes en innerHTML
+function esc(s){return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Escapa valor para usar dentro de un atributo onclick="func('${val}')"
+function escOncl(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,"\\'")}
 // Convierte cualquier formato de período a número YYYYMM para ordenamiento cronológico
 function parsePeriodoNum(str){
   if(!str)return 0;
@@ -1956,7 +1957,7 @@ function renderTabla(data){
     else{rowCls=i%2?'odd':'even';badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`;}
     const diasNum=dias!==null?`<span style="font-weight:700;color:${dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)'}">${dias}</span>`:'—';
     const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'—';
-    const ne=r.nombre.replace(/'/g,"\\'");
+    const ne=escOncl(r.nombre);
     const ramoNombre=RAMO_MAP[r.ramo]||'Ramo '+r.ramo;
     const ramoRenovaAuto=[200,3100,1720].includes(r.ramo);
     let accion='';
@@ -1966,7 +1967,7 @@ function renderTabla(data){
     if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:#fff3e0" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
     if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:#fce4ec" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
     if(!accion)accion=`<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
-    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${r.nombre}</strong>${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${r.cuit}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${r.poliza}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
+    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${esc(r.nombre)}</strong>${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
   }).join('');
 }
 
@@ -2467,7 +2468,7 @@ function renderMovimientosSeccion() {
           if (type==='new') monto=`<span class="com-mov-monto new">+${fmtM(r.comision)}</span>`;
           else if (type==='baja') monto=`<span class="com-mov-monto baja">-${fmtM(r.comision)}</span>`;
           else { const cls=r.diff>=0?'var-pos':'var-neg'; monto=`<span class="com-mov-monto ${cls}">${r.diff>=0?'+':''}${fmtM(r.diff)}</span>`; }
-          return `<div class="com-mov-item"><span class="com-mov-dot ${type}"></span><span class="com-mov-info">${cli}${pol}</span>${monto}</div>`;
+          return `<div class="com-mov-item"><span class="com-mov-dot ${type}"></span><span class="com-mov-info">${esc(cli)}${esc(pol)}</span>${monto}</div>`;
         }).join('');
   };
 
@@ -2892,7 +2893,7 @@ async function gestionesGuardarDrive(){
 function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   gestionModalCtx={clienteId,clienteNombre,ramo,poliza};
   document.getElementById('modal-gestion-sub').textContent='Nueva gestión comercial';
-  document.getElementById('modal-cliente-info').innerHTML=`<strong>${clienteNombre}</strong><br><span style="font-size:11px;color:var(--muted)">${ramo}${poliza?' · Póliza '+poliza:''}</span>`;
+  document.getElementById('modal-cliente-info').innerHTML=`<strong>${esc(clienteNombre)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(ramo)}${poliza?' · Póliza '+esc(poliza):''}</span>`;
   const d=new Date();d.setDate(d.getDate()+7);document.getElementById('mg-fecha-seg').value=d.toISOString().slice(0,10);
   document.getElementById('mg-tipo').value='llamado';document.getElementById('mg-resultado').value='contactado';document.getElementById('mg-nota').value='';
   document.getElementById('modal-gestion').classList.add('open');
@@ -2923,7 +2924,7 @@ function renderSeguimientosAgenda(){
     const dotCls=esVencido?'vencido':esHoy?'hoy':'proximo';
     const chipCls=esVencido?'vencido':esHoy?'hoy':'proximo';
     const chipTxt=esVencido?'⚠️ Vencido':esHoy?'📅 Hoy':`📅 ${g.fechaSeg}`;
-    return`<div class="seg-card"><div class="seg-dot ${dotCls}"></div><div class="seg-info"><div class="seg-nombre">${g.clienteNombre}</div><div class="seg-meta">${TIPO_ICON[g.tipo]||'📋'} ${g.tipo} · ${RES_LABEL[g.resultado]||g.resultado} · ${g.fechaGestion}</div>${g.nota?`<div class="seg-nota">"${g.nota}"</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="seg-fecha-chip ${chipCls}">${chipTxt}</span><button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="abrirModalGestion('${g.clienteId}','${g.clienteNombre.replace(/'/g,"\\'")}','${g.ramo}','${g.poliza}')">📋 Nueva</button></div></div>`;
+    return`<div class="seg-card"><div class="seg-dot ${dotCls}"></div><div class="seg-info"><div class="seg-nombre">${esc(g.clienteNombre)}</div><div class="seg-meta">${TIPO_ICON[g.tipo]||'📋'} ${esc(g.tipo)} · ${esc(RES_LABEL[g.resultado]||g.resultado)} · ${esc(g.fechaGestion)}</div>${g.nota?`<div class="seg-nota">"${esc(g.nota)}"</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="seg-fecha-chip ${chipCls}">${chipTxt}</span><button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="abrirModalGestion('${g.clienteId}','${escOncl(g.clienteNombre)}','${escOncl(g.ramo)}','${escOncl(g.poliza)}')">📋 Nueva</button></div></div>`;
   }).join('');
   el.innerHTML=`<div class="seg-section"><div class="seg-section-title">🔔 Seguimientos pendientes <span style="background:var(--rust);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px">${pendientes.length}</span></div>${items}</div>`;
 }
@@ -3121,13 +3122,13 @@ function renderRetiroCartera(){
 
     return `<tr>
       <td>
-        <div style="font-weight:600">${c.razon}</div>
-        <div style="font-size:11px;color:var(--muted)">${c.ciudad||''}</div>
+        <div style="font-weight:600">${esc(c.razon)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(c.ciudad||'')}</div>
         ${suspBadge}
       </td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.docRaw||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.poliza||'—'}</td>
-      <td style="font-size:12px">${c.plan||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${esc(c.docRaw||'—')}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${esc(c.poliza||'—')}</td>
+      <td style="font-size:12px">${esc(c.plan||'—')}</td>
       <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${fmt(c.premio)}</td>
       <td>${sancorBadge}</td>
       <td><button class="ret-msg-btn" onclick="generarMsgRetiro('${c.docNorm}','retiro')">✉️ Mensaje</button></td>
@@ -3172,12 +3173,12 @@ function renderRetiroSinRetiro(){
 
     return `<tr>
       <td>
-        <div style="font-weight:600">${c.nombre}</div>
+        <div style="font-weight:600">${esc(c.nombre)}</div>
         <div style="font-size:11px;color:var(--muted)">${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div>
       </td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${c.nroAsoc||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${esc(c.nroAsoc||'—')}</td>
       <td><div style="display:flex;flex-wrap:wrap;gap:4px">${tieneTags}</div></td>
-      <td><button class="ret-msg-btn" onclick="generarMsgRetiro('${c.key}','sancor')">✉️ Ofrecer Retiro</button></td>
+      <td><button class="ret-msg-btn" onclick="generarMsgRetiro('${escOncl(c.key)}','sancor')">✉️ Ofrecer Retiro</button></td>
     </tr>`;
   }).join('');
 }
@@ -3449,8 +3450,8 @@ function renderTablaXSL(){
       <div class="sc-header">
         <span class="crs-prioridad ${scoreClass}" title="Prioridad ${prioLabel}">${scoreLabel}</span>
         <div style="flex:1;min-width:0">
-          <div class="crs-nombre">${c.nombre}</div>
-          <div class="crs-sub">Nro ${c.nroAsoc||'—'} · ${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div>
+          <div class="crs-nombre">${esc(c.nombre)}</div>
+          <div class="crs-sub">Nro ${esc(c.nroAsoc||'—')} · ${c.polizas.length} póliza${c.polizas.length!==1?'s':''}</div>
         </div>
       </div>
       <div>
