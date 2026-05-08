@@ -892,7 +892,7 @@ textarea{resize:vertical;line-height:1.6}
     <!-- Movimientos por Ramo -->
     <div class="com-detail-card" id="com-movimientos-card" style="margin-bottom:20px;display:none">
       <div class="com-chart-title">Análisis de Movimientos por Ramo</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Clic en un ramo para ver el detalle · compara el mes actual con el anterior</div>
+      <div id="com-mov-subtitle" style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Clic en un ramo para ver el detalle</div>
       <div id="com-movimientos"></div>
     </div>
 
@@ -2432,70 +2432,84 @@ function renderMovimientosSeccion() {
   const actual = hist[hist.length - 1];
   const anterior = hist[hist.length - 2];
 
-  const hasGranular = actual.registros.some(r => r.poliza && r.poliza !== 'resumen');
   const card = document.getElementById('com-movimientos-card');
   if (!card) return;
-  if (!hasGranular) { card.style.display = 'none'; return; }
   card.style.display = '';
 
-  const ramos = [...new Set(actual.registros.map(r => String(r.ramo)))];
+  // Actualizar subtítulo con los períodos reales
+  const sub = document.getElementById('com-mov-subtitle');
+  if (sub) sub.textContent = `${anterior.periodo} → ${actual.periodo} · clic en un ramo para ver el detalle`;
 
-  const ramoDeltas = ramos.map(ramo => {
-    const sumAct = actual.registros.filter(r => String(r.ramo) === ramo).reduce((s, r) => s + r.comision, 0);
-    const sumAnt = anterior.registros.filter(r => String(r.ramo) === ramo).reduce((s, r) => s + r.comision, 0);
-    const mov = buildMovimientosRamo(ramo, actual.registros, anterior.registros);
-    return { ramo, sumAct, sumAnt, delta: sumAct - sumAnt, mov };
-  }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  // Totales por ramo en ambos períodos
+  const ramoAct = {}, ramoAnt = {};
+  actual.registros.forEach(r => { const k=String(r.ramo); ramoAct[k]=(ramoAct[k]||0)+r.comision; });
+  anterior.registros.forEach(r => { const k=String(r.ramo); ramoAnt[k]=(ramoAnt[k]||0)+r.comision; });
+
+  const allRamos = [...new Set([...Object.keys(ramoAct),...Object.keys(ramoAnt)])];
+  const ramoDeltas = allRamos
+    .map(ramo => ({ ramo, sumAct:ramoAct[ramo]||0, sumAnt:ramoAnt[ramo]||0, delta:(ramoAct[ramo]||0)-(ramoAnt[ramo]||0) }))
+    .filter(r => r.sumAct > 0 || r.sumAnt > 0)
+    .sort((a,b) => Math.abs(b.delta)-Math.abs(a.delta));
+
+  // ¿Hay datos granulares por póliza en ambos períodos?
+  const actGranular = actual.registros.some(r=>r.poliza&&r.poliza!=='resumen');
+  const antGranular = anterior.registros.some(r=>r.poliza&&r.poliza!=='resumen');
+  const canBreakdown = actGranular && antGranular;
 
   const mkItems = (items, type) => {
     if (!items.length) return '';
-    const labels = { new: 'Nuevas pólizas', baja: 'Pólizas que no figuraron', var: 'Variaciones significativas' };
-    const rows = items.map(r => {
-      const cli = r.cliente || r.codCli || `Póliza ${r.poliza}`;
-      const pol = (r.poliza && r.poliza !== 'resumen') ? ` · Pól. ${r.poliza}` : '';
-      let montoHtml;
-      if (type === 'new')  montoHtml = `<span class="com-mov-monto new">+${fmtM(r.comision)}</span>`;
-      else if (type === 'baja') montoHtml = `<span class="com-mov-monto baja">-${fmtM(r.comision)}</span>`;
-      else {
-        const cls = r.diff >= 0 ? 'var-pos' : 'var-neg';
-        montoHtml = `<span class="com-mov-monto ${cls}">${r.diff >= 0 ? '+' : ''}${fmtM(r.diff)}</span>`;
-      }
-      return `<div class="com-mov-item">
-        <span class="com-mov-dot ${type}"></span>
-        <span class="com-mov-info">${cli}${pol}</span>
-        ${montoHtml}
-      </div>`;
-    }).join('');
-    return `<div class="com-mov-section-lbl">${labels[type]}</div>${rows}`;
+    const labels = { new:'Altas del período', baja:'Bajas del período', var:'Variaciones significativas' };
+    return `<div class="com-mov-section-lbl">${labels[type]}</div>`
+      + items.map(r => {
+          const cli = r.cliente||r.codCli||`Póliza ${r.poliza}`;
+          const pol = (r.poliza&&r.poliza!=='resumen') ? ` · Pól. ${r.poliza}` : '';
+          let monto;
+          if (type==='new') monto=`<span class="com-mov-monto new">+${fmtM(r.comision)}</span>`;
+          else if (type==='baja') monto=`<span class="com-mov-monto baja">-${fmtM(r.comision)}</span>`;
+          else { const cls=r.diff>=0?'var-pos':'var-neg'; monto=`<span class="com-mov-monto ${cls}">${r.diff>=0?'+':''}${fmtM(r.diff)}</span>`; }
+          return `<div class="com-mov-item"><span class="com-mov-dot ${type}"></span><span class="com-mov-info">${cli}${pol}</span>${monto}</div>`;
+        }).join('');
   };
 
   const container = document.getElementById('com-movimientos');
-  container.innerHTML = ramoDeltas.map(({ ramo, delta, mov }) => {
-    const nombre = RAMO_MAP[ramo] || `Ramo ${ramo}`;
+  container.innerHTML = ramoDeltas.map(({ramo, sumAct, sumAnt, delta}) => {
+    const nombre = RAMO_MAP[ramo]||`Ramo ${ramo}`;
     const isPos = delta >= 0;
-    const deltaStr = (isPos ? '+' : '') + fmtM(delta);
+    const pctStr = sumAnt>0 ? ` (${isPos?'+':''}${(delta/sumAnt*100).toFixed(1)}%)` : '';
+    const deltaStr = (isPos?'+':'')+fmtM(delta)+pctStr;
     const id = `mov-body-${ramo}`;
-    const total = mov.nuevas.length + mov.bajas.length + mov.variaciones.length;
 
-    const pills = [
-      mov.nuevas.length   ? `<span class="com-mov-pill new">+${mov.nuevas.length} nueva${mov.nuevas.length > 1 ? 's' : ''}</span>` : '',
-      mov.bajas.length    ? `<span class="com-mov-pill baja">-${mov.bajas.length} baja${mov.bajas.length > 1 ? 's' : ''}</span>` : '',
-      mov.variaciones.length ? `<span class="com-mov-pill var">~${mov.variaciones.length} var.</span>` : ''
-    ].filter(Boolean).join('');
-
-    const body = total === 0
-      ? `<div class="com-mov-empty">Sin cambios significativos respecto al mes anterior</div>`
-      : mkItems(mov.nuevas, 'new') + mkItems(mov.bajas, 'baja') + mkItems(mov.variaciones, 'var');
+    let pills = '', bodyContent;
+    if (canBreakdown) {
+      const mov = buildMovimientosRamo(ramo, actual.registros, anterior.registros);
+      pills = [
+        mov.nuevas.length    ? `<span class="com-mov-pill new">+${mov.nuevas.length} alta${mov.nuevas.length>1?'s':''}</span>` : '',
+        mov.bajas.length     ? `<span class="com-mov-pill baja">-${mov.bajas.length} baja${mov.bajas.length>1?'s':''}</span>` : '',
+        mov.variaciones.length ? `<span class="com-mov-pill var">~${mov.variaciones.length} var.</span>` : ''
+      ].filter(Boolean).join('');
+      const total = mov.nuevas.length+mov.bajas.length+mov.variaciones.length;
+      bodyContent = total===0
+        ? `<div class="com-mov-empty">Sin altas ni bajas — el cambio se debe a ajustes de cuota o diferencia de cambio</div>`
+        : mkItems(mov.nuevas,'new')+mkItems(mov.bajas,'baja')+mkItems(mov.variaciones,'var');
+    } else {
+      bodyContent = `<div class="com-mov-empty">Cargá dos períodos con detalle completo (no resumido) para ver el desglose por cliente/póliza</div>`;
+    }
 
     return `<div class="com-mov-card">
       <div class="com-mov-hdr" onclick="comToggleMov('${id}',this)">
         <span class="com-mov-hdr-name">${nombre}</span>
         <div class="com-mov-pills-row">${pills}</div>
-        <span class="com-mov-hdr-delta ${isPos ? 'pos' : 'neg'}">${deltaStr}</span>
+        <span class="com-mov-hdr-delta ${isPos?'pos':'neg'}">${deltaStr}</span>
         <span class="com-mov-chevron">▶</span>
       </div>
       <div class="com-mov-body" id="${id}">
-        <div class="com-mov-body-inner">${body}</div>
+        <div class="com-mov-body-inner">
+          <div style="display:flex;gap:20px;margin-bottom:10px;font-size:12px;padding-bottom:8px;border-bottom:1px solid var(--border-color)">
+            <span style="color:var(--text-muted)"><strong style="color:var(--text-body)">${actual.periodo}:</strong> ${fmtM(sumAct)}</span>
+            <span style="color:var(--text-muted)"><strong style="color:var(--text-body)">${anterior.periodo}:</strong> ${fmtM(sumAnt)}</span>
+          </div>
+          ${bodyContent}
+        </div>
       </div>
     </div>`;
   }).join('');
