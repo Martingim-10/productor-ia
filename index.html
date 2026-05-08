@@ -470,6 +470,23 @@ textarea{resize:vertical;line-height:1.6}
 .skeleton{background:linear-gradient(90deg,#eff1f5 25%,#e4e6ea 50%,#eff1f5 75%);background-size:1200px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px;display:block}
 .sk-block{margin-bottom:6px}
 
+/* ── COMISIONES DASHBOARD ────────────────────────────── */
+.com-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.com-kpi-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:20px 22px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--trans)}
+.com-kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.com-kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold-hover),var(--gold-accent),var(--gold-l))}
+.com-kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);font-weight:700;margin-bottom:8px}
+.com-kpi-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--primary-ink);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.com-kpi-delta{font-size:11px;font-weight:600;margin-top:6px}
+.com-kpi-delta.pos{color:var(--success-emerald)}
+.com-kpi-delta.neg{color:#E53E3E}
+.com-sparkline{position:absolute;bottom:0;right:0;opacity:.22;pointer-events:none}
+.com-charts-row{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:24px}
+.com-chart-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm)}
+.com-chart-title{font-family:'DM Serif Display',serif;font-size:15px;color:var(--primary-ink);margin-bottom:18px;font-weight:700;letter-spacing:-.2px}
+.com-chart-skeleton{height:220px;border-radius:8px}
+.com-detail-card{background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-sm)}
+
 /* ── ANALIZADOR — layout por modo ───────────────────── */
 .anl-sections.modo-comp{grid-template-columns:1fr}
 
@@ -800,36 +817,53 @@ textarea{resize:vertical;line-height:1.6}
   <div class="ph">
     <div>
       <div class="ph-title">💰 Comisiones</div>
-      <div class="ph-sub" id="com-periodo">Cargá un reporte de comisiones para comenzar</div>
+      <div class="ph-sub" id="com-periodo">Conectando con el backend...</div>
     </div>
-    <label class="btn btn-primary" style="cursor:pointer">
-      📂 Cargar Comisiones
-      <input type="file" accept=".xls,.xlsx" style="display:none" onchange="cargarComisiones(this)">
-    </label>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" onclick="cargarDashboardComisiones()" id="btn-refrescar-com">↻ Actualizar</button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        📂 Cargar Excel
+        <input type="file" accept=".xls,.xlsx" style="display:none" onchange="cargarComisiones(this)">
+      </label>
+    </div>
   </div>
   <div class="pb">
-    <div id="com-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
-      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:12px">Evolución de comisiones</div>
-        <canvas id="com-chart" height="200"></canvas>
-        <div id="com-chart-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:40px 0">Cargá al menos 2 períodos para ver la evolución</div>
+
+    <!-- KPI Row (4 tarjetas con sparklines) -->
+    <div id="com-kpi-row" class="com-kpi-grid"></div>
+
+    <!-- Gráficos principales -->
+    <div class="com-charts-row">
+
+      <!-- Gráfico mixto evolución 12 meses -->
+      <div class="com-chart-card">
+        <div class="com-chart-title">Evolución últimos 12 meses</div>
+        <div class="skeleton com-chart-skeleton" id="com-evol-skeleton"></div>
+        <canvas id="com-evol-chart" style="display:none"></canvas>
       </div>
-      <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:12px">Comisión por ramo</div>
-        <canvas id="com-ramo-chart" height="200"></canvas>
-        <div id="com-ramo-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:40px 0">Sin datos cargados</div>
+
+      <!-- Donut distribución por ramo -->
+      <div class="com-chart-card">
+        <div class="com-chart-title">Distribución por Ramo</div>
+        <div class="skeleton com-chart-skeleton" id="com-donut-skeleton"></div>
+        <canvas id="com-donut-chart" style="display:none"></canvas>
       </div>
+
     </div>
-    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px">
-      <div style="font-weight:600;font-size:13px;margin-bottom:12px">Detalle por ramo</div>
-      <div id="com-tabla-ramos"></div>
+
+    <!-- Tabla detalle por ramo -->
+    <div class="com-detail-card" style="margin-bottom:20px">
+      <div class="com-chart-title">Detalle por Ramo</div>
+      <div id="com-tabla-ramos-v2"></div>
     </div>
-    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px">
-      <div style="font-weight:600;font-size:13px;margin-bottom:12px">Análisis IA</div>
+
+    <!-- IA Analysis -->
+    <div style="background:var(--surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-sm)">
+      <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--primary-ink)">Análisis IA</div>
       <button class="btn btn-ai" onclick="analizarComisionesIA()" id="btn-analizar-com">🤖 Analizar con IA</button>
       <div id="com-ia-out" style="margin-top:14px;font-size:13px;line-height:1.6"></div>
     </div>
+
   </div>
 </div>
 
@@ -1287,7 +1321,7 @@ document.querySelectorAll('.nav-item').forEach(el=>{
     const id=el.dataset.panel+'-panel';
     document.getElementById(id).classList.add('active');
     if(el.dataset.panel==='agenda') renderAgenda();
-    if(el.dataset.panel==='comisiones') renderComEvolucion();
+    if(el.dataset.panel==='comisiones') cargarDashboardComisiones();
     if(el.dataset.panel==='renovaciones') cargarRenovaciones();
   });
 });
@@ -2007,7 +2041,7 @@ async function cargarComisiones(input){
   enriquecerCarteraConComisiones();
   document.getElementById('com-periodo').textContent=comisionesHistorial.length>1?comisionesHistorial.map(h=>h.periodo).join(' · '):'Período: '+periodoStr;
   if(driveToken)await driveSnapshotComisiones(periodoStr,registros);
-  renderComisiones();
+  renderDashboardComisionesLocal();
 }
 
 function enriquecerCarteraConComisiones(){
@@ -2019,59 +2053,296 @@ function enriquecerCarteraConComisiones(){
   renderStats(carteraActiva);renderTabla(carteraActiva);
 }
 
-function renderComisiones(){
-  if(!comisionesActuales)return;
-  const{registros}=comisionesActuales;
-  const periodoActual=comisionesHistorial.length>0?comisionesHistorial[comisionesHistorial.length-1]:{registros};
-  const periodoAnterior=comisionesHistorial.length>1?comisionesHistorial[comisionesHistorial.length-2]:null;
-  const totalCom=periodoActual.registros.reduce((s,r)=>s+r.comision,0);
-  const totalPrima=periodoActual.registros.reduce((s,r)=>s+r.prima,0);
-  const pctEfect=totalPrima>0?(totalCom/totalPrima*100):0;
-  const nPolizas=new Set(periodoActual.registros.map(r=>r.poliza)).size;
-  const delta=periodoAnterior?(()=>{const comAnt=periodoAnterior.registros.reduce((s,r)=>s+r.comision,0);const primaAnt=periodoAnterior.registros.reduce((s,r)=>s+r.prima,0);const pctAnt=primaAnt>0?comAnt/primaAnt*100:0;const dCom=totalCom-comAnt;const dPrim=totalPrima-primaAnt;const dPct=pctEfect-pctAnt;const arrow=v=>v>=0?'▲':'▼';const color=v=>v>=0?'color:#2a5c45':'color:#c0392b';return{com:`<div style="font-size:11px;${color(dCom)}">${arrow(dCom)} ${fmtM(Math.abs(dCom))} vs ${periodoAnterior.periodo}</div>`,prem:`<div style="font-size:11px;${color(dPrim)}">${arrow(dPrim)} ${fmtM(Math.abs(dPrim))} vs ${periodoAnterior.periodo}</div>`,pct:`<div style="font-size:11px;${color(dPct)}">${arrow(dPct)} ${Math.abs(dPct).toFixed(1)}pp vs ${periodoAnterior.periodo}</div>`};})():{com:'',prem:'',pct:''};
-  document.getElementById('com-kpis').innerHTML=`<div class="agenda-stat"><div class="val">${fmtM(totalCom)}</div><div class="lbl">Comisión ${periodoActual.periodo}</div>${delta.com}</div><div class="agenda-stat"><div class="val">${fmtM(totalPrima)}</div><div class="lbl">Prima liquidada</div>${delta.prem}</div><div class="agenda-stat"><div class="val">${pctEfect.toFixed(1)}%</div><div class="lbl">% comisión efectiva</div>${delta.pct}</div><div class="agenda-stat"><div class="val">${nPolizas}</div><div class="lbl">Pólizas liquidadas</div></div>`;
-  document.getElementById('badge-comisiones').textContent='';
-  const agrupar=regs=>{const map={};regs.forEach(r=>{if(!map[r.ramo])map[r.ramo]={comision:0,prima:0,n:0};map[r.ramo].comision+=r.comision;map[r.ramo].prima+=r.prima;map[r.ramo].n++;});return map;};
-  const porRamo=agrupar(periodoActual.registros);
-  const porRamoAnt=periodoAnterior?agrupar(periodoAnterior.registros):null;
-  const ramosSorted=Object.entries(porRamo).sort((a,b)=>b[1].comision-a[1].comision);
-  const hayComp=!!porRamoAnt;
-  const filas=ramosSorted.map(([ramo,v])=>{
-    const nombre=RAMO_MAP[parseInt(ramo)]||RAMO_MAP[ramo]||'Ramo '+ramo;
-    const pct=v.prima>0?(v.comision/v.prima*100).toFixed(1):'—';
-    const barW=totalCom>0?Math.round(v.comision/totalCom*100):0;
-    const vAnt=porRamoAnt?.[ramo];
-    const dCom=vAnt?v.comision-vAnt.comision:null;
-    const dPct=(vAnt&&vAnt.prima>0&&v.prima>0)?(v.comision/v.prima*100)-(vAnt.comision/vAnt.prima*100):null;
-    const arrow=x=>x>=0?'▲':'▼';const clr=x=>x>=0?'#2a5c45':'#c0392b';
-    const deltaComStr=dCom!==null?`<div style="font-size:10px;color:${clr(dCom)}">${arrow(dCom)} ${fmtM(Math.abs(dCom))}</div>`:'';
-    const deltaPctStr=dPct!==null?`<div style="font-size:10px;color:${clr(dPct)}">${arrow(dPct)} ${Math.abs(dPct).toFixed(1)}pp</div>`:'';
-    return`<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:6px 0"><span class="badge b-ramo">${nombre}</span></td><td style="text-align:right;font-weight:600;padding:6px 8px">${fmtM(v.comision)}${deltaComStr}</td><td style="text-align:right;color:var(--muted);padding:6px 8px">${fmtM(v.prima)}</td><td style="text-align:center;font-weight:600;color:var(--green);padding:6px 8px">${pct}%${deltaPctStr}</td><td style="width:120px;padding:6px 8px"><div style="background:#eee;border-radius:4px;height:8px"><div style="background:var(--green);border-radius:4px;height:8px;width:${barW}%"></div></div></td></tr>`;
-  }).join('');
-  document.getElementById('com-tabla-ramos').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:2px solid var(--border)"><th style="text-align:left;padding:6px 0">Ramo</th><th style="text-align:right;padding:6px 8px">Comisión</th><th style="text-align:right;padding:6px 8px">Prima</th><th style="text-align:center;padding:6px 8px">%</th><th style="padding:6px 8px">Participación</th></tr></thead><tbody>${filas}</tbody></table>`;
-  document.getElementById('com-ramo-empty').style.display='none';
-  if(comRamoChart)comRamoChart.destroy();
-  const ctx2=document.getElementById('com-ramo-chart').getContext('2d');
-  const labels=ramosSorted.map(([r])=>RAMO_MAP[parseInt(r)]||RAMO_MAP[r]||'R'+r);
-  const vals=ramosSorted.map(([,v])=>Math.round(v.comision));
-  const colors=['#2a5c45','#c8953a','#4a7fb5','#8b4a6e','#5a8a5a','#c87a3a','#3a7ab5','#a0522d','#6a9a6a'];
-  comRamoChart=new Chart(ctx2,{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
-  renderComEvolucion();
+// ── COMISIONES DASHBOARD v2 ────────────────────────────────────────────
+
+const COM_API = '/api/comisiones';
+let comEvolChart = null;
+let comDonutChart = null;
+
+// ── API FETCHERS ────────────────────────────────────────
+
+async function fetchEvolucionComparativa() {
+  const res = await fetch(`${COM_API}/evolucion`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+  // Espera: { mesActual:{mes,comision,comision_anterior}, evolucion12m:[{mes,comision_actual,comision_anterior}] }
 }
 
-async function renderComEvolucion(){
-  const canvas=document.getElementById('com-chart');const empty=document.getElementById('com-chart-empty');
-  let snapshots=comisionesHistorial.map(h=>({periodo:h.periodo,totalComision:h.registros.reduce((s,r)=>s+r.comision,0),totalPremio:h.registros.reduce((s,r)=>s+r.prima,0)}));
-  if(snapshots.length<2&&driveToken){const driveSnaps=await driveCargarSnapshotsComisiones();driveSnaps.forEach(ds=>{if(!snapshots.find(s=>s.periodo===ds.periodo))snapshots.push(ds);});snapshots.sort((a,b)=>a.periodo.localeCompare(b.periodo));}
-  if(snapshots.length<2){empty.style.display='block';canvas.style.display='none';return;}
-  empty.style.display='none';canvas.style.display='block';
-  if(comChart)comChart.destroy();
-  const ctx=canvas.getContext('2d');
-  const labelsCom=snapshots.map(s=>s.periodo);
-  const coms=snapshots.map(s=>Math.round(s.totalComision/1000));
-  const prims=snapshots.map(s=>Math.round(s.totalPremio/1000));
-  comChart=new Chart(ctx,{type:'bar',data:{labels:labelsCom,datasets:[{label:'Comisión ($K)',data:coms,backgroundColor:'#2a5c45cc',borderColor:'#2a5c45',borderWidth:1,borderRadius:6,yAxisID:'y'},{label:'% Comisión',data:snapshots.map((s,i)=>prims[i]>0?+(coms[i]/prims[i]*100).toFixed(1):0),type:'line',borderColor:'#c8953a',backgroundColor:'transparent',borderWidth:2,pointRadius:4,yAxisID:'y2'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>'$'+v+'K'}},y2:{position:'right',ticks:{callback:v=>v+'%'},grid:{drawOnChartArea:false}}}}});
+async function fetchDistribucionRamo() {
+  const res = await fetch(`${COM_API}/distribucion-ramo`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+  // Espera: [{ ramo:200, nombre:'Automotores', comision_estimada:80000 }]
 }
+
+async function fetchFlujoCaja() {
+  const res = await fetch(`${COM_API}/flujo-caja`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+  // Espera: { total_percibido:145000, movimientos:[{fecha,monto}] }
+}
+
+// ── LOADER PRINCIPAL ────────────────────────────────────
+
+async function cargarDashboardComisiones() {
+  comShowSkeletons();
+  try {
+    const [evolucion, distribucion, flujoCaja] = await Promise.all([
+      fetchEvolucionComparativa(),
+      fetchDistribucionRamo(),
+      fetchFlujoCaja()
+    ]);
+    renderDashboardComisiones({ evolucion, distribucion, flujoCaja });
+  } catch (e) {
+    console.warn('[COM] Backend no disponible, usando datos locales:', e.message);
+    if (comisionesActuales) {
+      renderDashboardComisionesLocal();
+    } else {
+      document.getElementById('com-periodo').textContent = 'Cargá un Excel para comenzar';
+      document.getElementById('com-kpi-row').innerHTML = '';
+    }
+  }
+}
+
+// ── SKELETONS ───────────────────────────────────────────
+
+function comShowSkeletons() {
+  document.getElementById('com-kpi-row').innerHTML = Array(4).fill(0).map(() => `
+    <div class="com-kpi-card">
+      <span class="skeleton" style="height:10px;width:55%;display:block;margin-bottom:12px;border-radius:4px"></span>
+      <span class="skeleton" style="height:24px;width:70%;display:block;margin-bottom:10px;border-radius:4px"></span>
+      <span class="skeleton" style="height:10px;width:40%;display:block;border-radius:4px"></span>
+    </div>`).join('');
+  document.getElementById('com-evol-chart').style.display = 'none';
+  document.getElementById('com-donut-chart').style.display = 'none';
+  document.getElementById('com-evol-skeleton').style.display = 'block';
+  document.getElementById('com-donut-skeleton').style.display = 'block';
+  document.getElementById('com-tabla-ramos-v2').innerHTML = Array(5).fill(0).map(() => `
+    <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color);align-items:center">
+      <span class="skeleton" style="height:20px;width:100px;display:inline-block;border-radius:10px"></span>
+      <span class="skeleton" style="height:12px;width:80px;display:inline-block;border-radius:4px;margin-left:auto"></span>
+      <span class="skeleton" style="height:12px;width:50px;display:inline-block;border-radius:4px"></span>
+      <span class="skeleton" style="height:6px;width:100px;display:inline-block;border-radius:4px"></span>
+    </div>`).join('');
+}
+
+// ── SPARKLINE SVG ────────────────────────────────────────
+
+function buildSparklinePath(values, color) {
+  if (!values || values.length < 2) return '';
+  const w = 120, h = 48, pad = 3;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+// ── RENDER PRINCIPAL ─────────────────────────────────────
+
+function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
+  const { mesActual, evolucion12m } = evolucion;
+
+  // Métricas derivadas
+  const crec = mesActual.comision_anterior > 0
+    ? (mesActual.comision - mesActual.comision_anterior) / mesActual.comision_anterior * 100
+    : 0;
+  const topRamo = distribucion.reduce((mx, r) => r.comision_estimada > (mx?.comision_estimada || 0) ? r : mx, null);
+  const sparkVals = evolucion12m.slice(-6).map(m => m.comision_actual);
+  const hoy = new Date();
+  const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+  const proyeccion = hoy.getDate() > 0 ? (mesActual.comision / hoy.getDate()) * diasMes : mesActual.comision;
+
+  // ── 4 KPI CARDS ─────────────────────────────────────────
+  const kpis = [
+    {
+      label: 'Total Comisiones Mes',
+      val: fmtM(mesActual.comision),
+      delta: `${crec >= 0 ? '▲' : '▼'} ${Math.abs(crec).toFixed(1)}% vs año anterior`,
+      pos: crec >= 0, spark: sparkVals, sparkColor: 'var(--gold-accent)'
+    },
+    {
+      label: '% Crecimiento',
+      val: `${crec >= 0 ? '+' : ''}${crec.toFixed(1)}%`,
+      delta: `Comparado con ${mesActual.mes} año anterior`,
+      pos: crec >= 0, spark: null
+    },
+    {
+      label: 'Ramo más Rentable',
+      val: topRamo ? (RAMO_MAP[topRamo.ramo] || 'Ramo ' + topRamo.ramo) : '—',
+      delta: topRamo ? fmtM(topRamo.comision_estimada) : '—',
+      pos: true, spark: null, isText: true
+    },
+    {
+      label: 'Proyección de Cierre',
+      val: fmtM(proyeccion),
+      delta: `Real percibido: ${fmtM(flujoCaja.total_percibido)}`,
+      pos: proyeccion >= (mesActual.comision_anterior || 0),
+      spark: sparkVals, sparkColor: 'var(--success-emerald)'
+    }
+  ];
+
+  document.getElementById('com-kpi-row').innerHTML = kpis.map(k => `
+    <div class="com-kpi-card">
+      <div class="com-kpi-label">${k.label}</div>
+      <div class="com-kpi-val" style="${k.isText ? 'font-size:17px;font-family:Inter,sans-serif;margin-top:4px' : ''}">${k.val}</div>
+      <div class="com-kpi-delta ${k.pos ? 'pos' : 'neg'}">${k.delta}</div>
+      ${k.spark ? `<svg class="com-sparkline" width="120" height="48" viewBox="0 0 120 48">${buildSparklinePath(k.spark, k.sparkColor)}</svg>` : ''}
+    </div>`).join('');
+
+  // ── GRÁFICO MIXTO: BARRAS (año actual) + LÍNEA (año anterior) ───────
+  if (comEvolChart) comEvolChart.destroy();
+  document.getElementById('com-evol-skeleton').style.display = 'none';
+  const evolCanvas = document.getElementById('com-evol-chart');
+  evolCanvas.style.display = 'block';
+  comEvolChart = new Chart(evolCanvas.getContext('2d'), {
+    data: {
+      labels: evolucion12m.map(m => m.mes),
+      datasets: [
+        {
+          type: 'bar',
+          label: `${new Date().getFullYear()}`,
+          data: evolucion12m.map(m => m.comision_actual),
+          backgroundColor: 'rgba(212,175,55,.7)',
+          borderColor: 'var(--gold-hover)',
+          borderWidth: 1,
+          borderRadius: 6,
+          order: 2
+        },
+        {
+          type: 'line',
+          label: `${new Date().getFullYear() - 1}`,
+          data: evolucion12m.map(m => m.comision_anterior),
+          borderColor: 'rgba(15,23,42,.55)',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: 'var(--primary-ink)',
+          tension: 0.4,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 12, usePointStyle: true } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtM(ctx.raw)}` } }
+      },
+      scales: {
+        y: { ticks: { callback: v => fmtM(v), font: { size: 10 } }, grid: { color: 'rgba(0,0,0,.04)' } },
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ── GRÁFICO DONUT ────────────────────────────────────────
+  if (comDonutChart) comDonutChart.destroy();
+  document.getElementById('com-donut-skeleton').style.display = 'none';
+  const donutCanvas = document.getElementById('com-donut-chart');
+  donutCanvas.style.display = 'block';
+  const totalDist = distribucion.reduce((s, r) => s + r.comision_estimada, 0);
+  comDonutChart = new Chart(donutCanvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: distribucion.map(r => RAMO_MAP[r.ramo] || 'Ramo ' + r.ramo),
+      datasets: [{
+        data: distribucion.map(r => r.comision_estimada),
+        backgroundColor: ['#D4AF37','#0F172A','#10B981','#1E293B','#B8962E','#64748B','#E8C94E','#334155','#34d399'],
+        borderWidth: 2, borderColor: '#fff', hoverOffset: 10
+      }]
+    },
+    options: {
+      responsive: true, cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Inter' }, padding: 8, usePointStyle: true } },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.label}: ${fmtM(ctx.raw)} (${totalDist > 0 ? (ctx.raw / totalDist * 100).toFixed(1) : 0}%)`
+        }}
+      }
+    }
+  });
+
+  // ── TABLA DETALLE ────────────────────────────────────────
+  const sorted = [...distribucion].sort((a, b) => b.comision_estimada - a.comision_estimada);
+  document.getElementById('com-tabla-ramos-v2').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="border-bottom:2px solid var(--border-color)">
+        <th style="text-align:left;padding:8px 0;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:700">Ramo</th>
+        <th style="text-align:right;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:700">Comisión estimada</th>
+        <th style="text-align:right;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:700">% total</th>
+        <th style="padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:700">Participación</th>
+      </tr></thead>
+      <tbody>${sorted.map(r => {
+        const nom = RAMO_MAP[r.ramo] || RAMO_MAP[parseInt(r.ramo)] || 'Ramo ' + r.ramo;
+        const pct = totalDist > 0 ? (r.comision_estimada / totalDist * 100) : 0;
+        return `<tr style="border-bottom:1px solid var(--border-color)">
+          <td style="padding:10px 0"><span class="badge b-ramo">${nom}</span></td>
+          <td style="text-align:right;font-weight:600;padding:10px 8px">${fmtM(r.comision_estimada)}</td>
+          <td style="text-align:right;font-weight:600;color:var(--gold-hover);padding:10px 8px">${pct.toFixed(1)}%</td>
+          <td style="width:140px;padding:10px 8px">
+            <div style="background:var(--bg-paper);border-radius:4px;height:6px">
+              <div style="background:linear-gradient(90deg,var(--gold-hover),var(--gold-accent));border-radius:4px;height:6px;width:${Math.round(pct)}%"></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+  document.getElementById('com-periodo').textContent = `${mesActual.mes} · real percibido: ${fmtM(flujoCaja.total_percibido)}`;
+  document.getElementById('badge-comisiones').textContent = '';
+}
+
+// ── FALLBACK — datos del Excel local ─────────────────────
+
+function renderDashboardComisionesLocal() {
+  if (!comisionesHistorial.length) return;
+  const actual = comisionesHistorial[comisionesHistorial.length - 1];
+  const anterior = comisionesHistorial.length > 1 ? comisionesHistorial[comisionesHistorial.length - 2] : null;
+
+  // Construir evolucion12m desde historial
+  const evo12 = comisionesHistorial.slice(-12).map(h => ({
+    mes: h.periodo,
+    comision_actual: h.registros.reduce((s, r) => s + r.comision, 0),
+    comision_anterior: 0
+  }));
+  // Asignar año anterior donde exista
+  comisionesHistorial.forEach(h => {
+    const m = h.periodo.match(/(\d{4})-(\d{2})/);
+    if (!m) return;
+    const yearAgo = `${parseInt(m[1]) + 1}-${m[2]}`;
+    const tgt = evo12.find(e => e.mes === yearAgo);
+    if (tgt) tgt.comision_anterior = h.registros.reduce((s, r) => s + r.comision, 0);
+  });
+
+  // Distribución por ramo
+  const ramoMap = {};
+  actual.registros.forEach(r => {
+    if (!ramoMap[r.ramo]) ramoMap[r.ramo] = { ramo: r.ramo, comision_estimada: 0 };
+    ramoMap[r.ramo].comision_estimada += r.comision;
+  });
+
+  const totalCom = actual.registros.reduce((s, r) => s + r.comision, 0);
+  const totalAnt = anterior ? anterior.registros.reduce((s, r) => s + r.comision, 0) : 0;
+
+  renderDashboardComisiones({
+    evolucion: {
+      mesActual: { mes: actual.periodo, comision: totalCom, comision_anterior: totalAnt },
+      evolucion12m: evo12
+    },
+    distribucion: Object.values(ramoMap).sort((a, b) => b.comision_estimada - a.comision_estimada),
+    flujoCaja: { total_percibido: totalCom, movimientos: [] }
+  });
+}
+
+// Compatibilidad con código existente
+function renderComisiones() { renderDashboardComisionesLocal(); }
+async function renderComEvolucion() { cargarDashboardComisiones(); }
 
 async function analizarComisionesIA(){
   if(!comisionesActuales){alert('Cargá un reporte de comisiones primero.');return;}
