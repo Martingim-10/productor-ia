@@ -1632,11 +1632,11 @@ async function generarEmailRenovacion(poliza, nombre, ramo, dias){
   }
 
   const prompt = `Sos ${nombreProductor}, productor asesor de seguros de Sancor en ${ciudad}.
-Redactá un email de aviso de renovación para el cliente ${nombre}.
+Redactá un email de aviso de renovación para el cliente ${maskNombrePrompt(nombre)}.
 
 Datos:
 - Producto: ${ramo}
-- Póliza nro: ${poliza}
+- Póliza nro: ${maskPolizaPrompt(poliza)}
 - Situación: ${contextoVto}
 
 Instrucciones:
@@ -1693,8 +1693,8 @@ async function analizarRenovacionesIA(){
   });
   const prompt=`Analizá estas renovaciones de cartera y dame un plan de acción para esta semana.
 
-VENCIDAS (${vencidas.length}): ${vencidas.slice(0,5).map(r=>r.nombre+' ('+r.ramo+')').join(', ')}
-CRÍTICAS ≤7 días (${criticas.length}): ${criticas.slice(0,8).map(r=>r.nombre+' ('+r.ramo+', '+Math.round((new Date(r.vto)-hoy)/86400000)+'d)').join(', ')}
+VENCIDAS (${vencidas.length}): ${vencidas.slice(0,5).map(r=>maskNombrePrompt(r.nombre)+' ('+r.ramo+')').join(', ')}
+CRÍTICAS ≤7 días (${criticas.length}): ${criticas.slice(0,8).map(r=>maskNombrePrompt(r.nombre)+' ('+r.ramo+', '+Math.round((new Date(r.vto)-hoy)/86400000)+'d)').join(', ')}
 TOTAL CARTERA: ${renovData.length} pólizas
 
 Dame:
@@ -1902,6 +1902,22 @@ function fmtM(n){if(!n)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1
 function esc(s){return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // Escapa valor para usar dentro de un atributo onclick="func('${val}')"
 function escOncl(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,"\\'")}
+// Devuelve solo el primer nombre de pila para usar en prompts de IA
+// Sancor exporta "APELLIDO NOMBRE" en mayúsculas — detecta ese patrón y toma el último token
+function maskNombrePrompt(nombre){
+  if(!nombre)return'el cliente';
+  const partes=String(nombre).trim().split(/\s+/).filter(Boolean);
+  if(!partes.length)return'el cliente';
+  const todoMayus=partes.length>1&&partes.every(p=>p===p.toUpperCase()&&/^[A-ZÁÉÍÓÚÜÑ]+$/.test(p));
+  const nombrePila=todoMayus?partes[partes.length-1]:partes[0];
+  return nombrePila.charAt(0).toUpperCase()+nombrePila.slice(1).toLowerCase();
+}
+// Enmascara póliza dejando solo los últimos 4 dígitos: "12345678" → "***5678"
+function maskPolizaPrompt(poliza){
+  if(!poliza)return'—';
+  const s=String(poliza).trim();
+  return s.length<=4?'***'+s:'***'+s.slice(-4);
+}
 // Convierte cualquier formato de período a número YYYYMM para ordenamiento cronológico
 function parsePeriodoNum(str){
   if(!str)return 0;
@@ -2599,7 +2615,8 @@ async function accionIAById(tipo,id,ramo){
 async function accionIA(tipo,nombre,ramo){
   const key=getKey();if(!key){alert('Configurá tu API Key.');return;}
   const r=carteraActiva.find(x=>x.nombre===nombre);
-  const ctx=r?`Cliente: ${nombre} | Ramo: ${ramo} | Póliza: ${r.poliza} | Premio/mes: ${fmtM(r.premio||r.prima)} | Vencimiento: ${fmtF(r.venc)} | Días: ${diasA(r.venc)}`:`Cliente: ${nombre} | Ramo: ${ramo}`;
+  const primerNomCli=maskNombrePrompt(nombre);
+  const ctx=r?`Cliente: ${primerNomCli} | Ramo: ${ramo} | Póliza: ${maskPolizaPrompt(r.poliza)} | Premio/mes: ${fmtM(r.premio||r.prima)} | Vencimiento: ${fmtF(r.venc)} | Días: ${diasA(r.venc)}`:`Cliente: ${primerNomCli} | Ramo: ${ramo}`;
   const prompts={
     renovacion:`Redactame un WhatsApp de renovación de póliza. Cordial, muy breve (máx 3 líneas), que proponga coordinar antes del vencimiento.\n${ctx}`,
     upsell:`Este cliente tiene ${ramo} en Sancor. Sugerí por WhatsApp una cobertura complementaria. Sin presión, plantando la idea. Muy breve.\n${ctx}`,
@@ -3219,7 +3236,7 @@ async function generarMsgRetiro(key, origen){
 
   const prompt = `Sos ${nombreProductor}, productor asesor de seguros en Argentina.
 ${contexto}
-Redactá un mensaje corto y cálido (máximo 100 palabras) para ${nombre}.
+Redactá un mensaje corto y cálido (máximo 100 palabras) para ${maskNombrePrompt(nombre)}.
 Tono amigable, de igual a igual. Sin markdown. Terminá con una pregunta abierta.
 Firmá como ${nombreProductor}.`;
 
