@@ -1901,6 +1901,17 @@ function diasA(isoStr){
 }
 function fmtF(isoStr){if(!isoStr)return'—';const d=new Date(isoStr);return isNaN(d)?'—':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function fmtM(n){if(!n)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'$'+Math.round(n/1000)+'K';return'$'+Math.round(n).toLocaleString('es-AR');}
+// Convierte cualquier formato de período a número YYYYMM para ordenamiento cronológico
+function parsePeriodoNum(str){
+  if(!str)return 0;
+  // YYYY-MM
+  let m=str.match(/(\d{4})[\/\-](\d{2})$/);if(m)return parseInt(m[1])*100+parseInt(m[2]);
+  // MM/YYYY o MM-YYYY
+  m=str.match(/^(\d{2})[\/\-](\d{4})/);if(m)return parseInt(m[2])*100+parseInt(m[1]);
+  // Cualquier YYYY + MM en el string
+  m=str.match(/(\d{4}).*?(\d{1,2})/);if(m)return parseInt(m[1])*100+parseInt(m[2]);
+  return 0;
+}
 
 function initCartera(data){
   carteraActiva=data.map(r=>({nombre:r.n||'',cuit:r.c||'',id:r.id||r.c||'',ramo:r.r||0,poliza:r.p||'',cert:r.cert||1,venc:r.v||null,premio:r.pm||0,prima:r.pm||0,pf:r.pf!==undefined?r.pf:true,crossell:AUTO_SIN_COMBINADO.has(r.id||r.c||'')})).filter(r=>r.nombre);
@@ -2074,7 +2085,7 @@ async function cargarComisiones(input){
   const periodoStr=registros[0].periodo||file.name.match(/\d{4}-\d{2}/)?.[0]||'Desconocido';
   const nuevoData={periodo:periodoStr,registros};
   comisionesActuales=nuevoData;
-  if(!comisionesHistorial.find(h=>h.periodo===periodoStr)){comisionesHistorial.push(nuevoData);comisionesHistorial.sort((a,b)=>a.periodo.localeCompare(b.periodo));}
+  if(!comisionesHistorial.find(h=>h.periodo===periodoStr)){comisionesHistorial.push(nuevoData);comisionesHistorial.sort((a,b)=>parsePeriodoNum(a.periodo)-parsePeriodoNum(b.periodo));}
   else{const idx=comisionesHistorial.findIndex(h=>h.periodo===periodoStr);comisionesHistorial[idx]=nuevoData;}
   guardarComisionesLocal();
   enriquecerCarteraConComisiones();
@@ -2342,8 +2353,9 @@ function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
 
 function renderDashboardComisionesLocal() {
   if (!comisionesHistorial.length) return;
-  const actual = comisionesHistorial[comisionesHistorial.length - 1];
-  const anterior = comisionesHistorial.length > 1 ? comisionesHistorial[comisionesHistorial.length - 2] : null;
+  const hist = [...comisionesHistorial].sort((a,b)=>parsePeriodoNum(a.periodo)-parsePeriodoNum(b.periodo));
+  const actual = hist[hist.length - 1];
+  const anterior = hist.length > 1 ? hist[hist.length - 2] : null;
 
   // Construir evolucion12m desde historial
   const evo12 = comisionesHistorial.slice(-12).map(h => ({
@@ -2416,8 +2428,9 @@ function buildMovimientosRamo(ramo, regsActual, regsAnterior) {
 
 function renderMovimientosSeccion() {
   if (comisionesHistorial.length < 2) return;
-  const actual = comisionesHistorial[comisionesHistorial.length - 1];
-  const anterior = comisionesHistorial[comisionesHistorial.length - 2];
+  const hist = [...comisionesHistorial].sort((a,b)=>parsePeriodoNum(a.periodo)-parsePeriodoNum(b.periodo));
+  const actual = hist[hist.length - 1];
+  const anterior = hist[hist.length - 2];
 
   const hasGranular = actual.registros.some(r => r.poliza && r.poliza !== 'resumen');
   const card = document.getElementById('com-movimientos-card');
