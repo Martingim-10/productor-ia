@@ -232,6 +232,12 @@ textarea{resize:vertical;line-height:1.6}
 .seg-fecha-chip.proximo{background:var(--green-bg);color:var(--green-fg)}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
 .modal-overlay.open{display:flex;animation:fu .2s ease}
+.modal-perfil-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-perfil-overlay.open{display:flex;animation:fu .2s ease}
+.modal-perfil-box{background:var(--white);border-radius:16px;padding:28px;width:660px;max-width:96vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.perfil-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.perfil-poliza-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.perfil-op-row{padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
 .modal-box{background:var(--white);border-radius:var(--radius-xl);padding:32px;width:470px;max-width:95vw;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
 .modal-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:4px}
 .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
@@ -1462,6 +1468,15 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 </div>
 
 <!-- ══ MODAL GESTIÓN ══════════════════════════════════════════════════════ -->
+<div class="modal-perfil-overlay" id="modal-perfil" onclick="if(event.target===this)cerrarPerfil()">
+  <div class="modal-perfil-box">
+    <div id="perfil-content"></div>
+    <div style="text-align:right;margin-top:20px">
+      <button class="btn btn-secondary" onclick="cerrarPerfil()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-gestion">
   <div class="modal-box">
     <div class="modal-title">📋 Registrar Gestión</div>
@@ -2198,7 +2213,7 @@ function renderTabla(data){
     if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(245,158,11,.15);color:#fcd34d" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
     if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(255,77,106,.12);color:#ff7090" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
     if(!accion)accion=`<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
-    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${esc(r.nombre)}</strong>${apiChip}${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
+    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" onclick="abrirPerfilCliente('${r.id}')">${esc(r.nombre)}</strong>${apiChip}${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
   }).join('');
 }
 
@@ -3180,6 +3195,59 @@ function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   document.getElementById('modal-gestion').classList.add('open');
 }
 function cerrarModalGestion(){document.getElementById('modal-gestion').classList.remove('open');}
+
+function cerrarPerfil(){document.getElementById('modal-perfil').classList.remove('open');}
+
+function abrirPerfilCliente(id){
+  const pols=carteraActiva.filter(r=>r.id===id);
+  if(!pols.length)return;
+  const nombre=pols[0].nombre;
+  const cuit=pols[0].cuit;
+  const pf=pols[0].pf;
+  const ramos=new Set(pols.map(r=>r.ramo));
+  const totalPremio=pols.reduce((s,r)=>s+(r.premio||r.prima||0),0);
+  const retiro=typeof retiroCartera!=='undefined'?retiroCartera.find(c=>c.docNorm===id):null;
+
+  const polsHtml=pols.map(r=>{
+    const dias=diasA(r.venc);
+    const dColor=dias===null?'var(--muted)':dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)';
+    const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'';
+    return`<div class="perfil-poliza-row"><span class="badge b-ramo" style="min-width:130px;text-align:center">${RAMO_MAP[r.ramo]||'Ramo '+r.ramo}</span><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);flex:1">${esc(r.poliza)}</span><span style="font-size:12px;color:${dColor};margin-right:8px">${dias!==null?dias+'d':'—'}</span>${monto?`<span style="font-size:12px;font-weight:600">${monto}</span>`:''}</div>`;
+  }).join('');
+
+  const retiroHtml=retiro
+    ?`<div style="color:var(--green);font-size:13px">✅ ${esc(retiro.plan||'Activo')}${retiro.premio?' · '+fmtM(retiro.premio)+'/mes':''}</div>`
+    :`<div style="color:var(--muted);font-size:13px">Sin cobertura de retiro</div>`;
+
+  const ops=[];
+  if(pf&&ramos.has(200)&&!ramos.has(1800))ops.push('🏠 <strong>Combinado Familiar</strong> — tiene auto, sin hogar asegurado');
+  if(pf&&!retiro)ops.push('🔵 <strong>Retirex</strong> — sin seguro de retiro');
+  if(pf&&!ramos.has(600))ops.push('🛡️ <strong>Acc. Personales</strong> — sin cobertura personal');
+  if(!pf&&!ramos.has(2100))ops.push('🏢 <strong>Integral Comercios</strong> — empresa sin cobertura integral');
+  const opsHtml=ops.length
+    ?ops.map(o=>`<div class="perfil-op-row">${o}</div>`).join('')
+    :`<div style="color:var(--muted);font-size:13px">Sin oportunidades detectadas</div>`;
+
+  document.getElementById('perfil-content').innerHTML=`
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px">${esc(nombre)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${pf?'Persona Física':'Empresa'} · ${esc(cuit||id)}${totalPremio>0?' · '+fmtM(totalPremio)+'/mes':''}</div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="perfil-section-title">Coberturas Sancor (${pols.length})</div>
+      ${polsHtml}
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="perfil-section-title">Prevención Retiro</div>
+      ${retiroHtml}
+    </div>
+    <div>
+      <div class="perfil-section-title">Oportunidades</div>
+      ${opsHtml}
+    </div>`;
+
+  document.getElementById('modal-perfil').classList.add('open');
+}
 
 async function guardarGestion(){
   const{clienteId,clienteNombre,ramo,poliza}=gestionModalCtx;
