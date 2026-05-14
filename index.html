@@ -1997,13 +1997,13 @@ async function enrichCarteraConAPI(){
   carteraActiva.forEach(r=>{
     if(r.ramo!==200)return;
     const pols=sancorData[r.id];
-    if(!pols)return;
-    const match=pols.find(p=>String(p.officialNumber)===String(r.poliza));
-    r._sancorVigente=!!match;
-    if(match)enriched++;
+    if(pols===undefined)return;
+    r._sancorVigente=pols.length>0;
+    r._sancorCount=pols.length;
+    if(r._sancorVigente)enriched++;
   });
   renderTabla(carteraActiva);
-  toast(enriched>0?`✅ ${enriched} pólizas verificadas en Sancor`:'Sancor consultado — revisá los IDs');
+  toast(enriched>0?`✅ ${enriched} pólizas Automotores verificadas en Sancor`:'Sancor consultado — sin datos para estos clientes');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2187,7 +2187,7 @@ function renderTabla(data){
     else{rowCls=i%2?'odd':'even';badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`;}
     const diasNum=dias!==null?`<span style="font-weight:700;color:${dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)'}">${dias}</span>`:'—';
     const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'—';
-    const apiChip=r.ramo===200&&r._sancorVigente!==undefined?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;background:${r._sancorVigente?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)'};color:${r._sancorVigente?'#4ade80':'#f87171'}">${r._sancorVigente?'● API':'○ API'}</span>`:'';
+    const apiChip=r.ramo===200&&r._sancorVigente!==undefined?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;background:${r._sancorVigente?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)'};color:${r._sancorVigente?'#4ade80':'#f87171'}">${r._sancorVigente?`● ${r._sancorCount}p`:'○'}</span>`:'';
     const ne=escOncl(r.nombre);
     const ramoNombre=RAMO_MAP[r.ramo]||'Ramo '+r.ramo;
     const ramoRenovaAuto=[200,3100,1720].includes(r.ramo);
