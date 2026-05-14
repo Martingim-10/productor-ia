@@ -1988,8 +1988,9 @@ async function enrichCarteraConAPI(){
       const param=id.length===11?`cuit=${id}`:`dni=${id}`;
       try{
         const res=await fetch(`${WORKER}/policies?${param}`);
-        if(res.ok){const d=await res.json();sancorData[id]=d.vigentes||[];}
-      }catch(_){}
+        if(res.ok){const d=await res.json();sancorData[id]=d.vigentes||[];console.log('[Sancor]',param,d);}
+        else{console.warn('[Sancor error]',param,res.status);}
+      }catch(e){console.warn('[Sancor catch]',param,e);}
     }));
   }
   let enriched=0;
