@@ -2149,6 +2149,7 @@ function initCartera(data){
   const sel=document.getElementById('f-ramo');
   sel.innerHTML='<option value="">Todos los ramos</option>'+ramos.map(r=>`<option value="${r}">Ramo ${r}</option>`).join('');
   renderStats(carteraActiva);renderTabla(carteraActiva);
+  enrichCarteraConAPI();
 }
 
 function renderStats(data){
