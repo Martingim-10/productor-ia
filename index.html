@@ -1967,12 +1967,42 @@ function procesarRowsExcel(rows, fileName){
   renderStats(carteraActiva);renderTabla(carteraActiva);renderAgenda();
   guardarCarteraLocal();
   driveSnapshotActual();
+  enrichCarteraConAPI();
 }
 
 function toast(msg){
   const t=document.createElement('div');
   t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#f5f0e8;padding:12px 24px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
   t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
+async function enrichCarteraConAPI(){
+  const WORKER='https://sancor-api.mgmg050382.workers.dev';
+  const autos=carteraActiva.filter(r=>r.ramo===200&&/^\d{7,11}$/.test(r.id));
+  if(!autos.length)return;
+  const uniqueIds=[...new Set(autos.map(r=>r.id))];
+  toast(`Consultando Sancor — ${uniqueIds.length} clientes Automotores...`);
+  const sancorData={};
+  for(let i=0;i<uniqueIds.length;i+=5){
+    await Promise.all(uniqueIds.slice(i,i+5).map(async id=>{
+      const param=id.length===11?`cuit=${id}`:`dni=${id}`;
+      try{
+        const res=await fetch(`${WORKER}/policies?${param}`);
+        if(res.ok){const d=await res.json();sancorData[id]=d.vigentes||[];}
+      }catch(_){}
+    }));
+  }
+  let enriched=0;
+  carteraActiva.forEach(r=>{
+    if(r.ramo!==200)return;
+    const pols=sancorData[r.id];
+    if(!pols)return;
+    const match=pols.find(p=>String(p.referenceNumber)===String(r.poliza));
+    r._sancorVigente=!!match;
+    if(match)enriched++;
+  });
+  renderTabla(carteraActiva);
+  toast(enriched>0?`✅ ${enriched} pólizas verificadas en Sancor`:'Sancor consultado — revisá los IDs');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2155,6 +2185,7 @@ function renderTabla(data){
     else{rowCls=i%2?'odd':'even';badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`;}
     const diasNum=dias!==null?`<span style="font-weight:700;color:${dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)'}">${dias}</span>`:'—';
     const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'—';
+    const apiChip=r.ramo===200&&r._sancorVigente!==undefined?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;background:${r._sancorVigente?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)'};color:${r._sancorVigente?'#4ade80':'#f87171'}">${r._sancorVigente?'● API':'○ API'}</span>`:'';
     const ne=escOncl(r.nombre);
     const ramoNombre=RAMO_MAP[r.ramo]||'Ramo '+r.ramo;
     const ramoRenovaAuto=[200,3100,1720].includes(r.ramo);
@@ -2165,7 +2196,7 @@ function renderTabla(data){
     if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(245,158,11,.15);color:#fcd34d" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
     if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(255,77,106,.12);color:#ff7090" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
     if(!accion)accion=`<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
-    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${esc(r.nombre)}</strong>${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
+    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong>${esc(r.nombre)}</strong>${apiChip}${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
   }).join('');
 }
 
