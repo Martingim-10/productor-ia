@@ -1998,7 +1998,7 @@ async function enrichCarteraConAPI(){
     if(r.ramo!==200)return;
     const pols=sancorData[r.id];
     if(!pols)return;
-    const match=pols.find(p=>String(p.referenceNumber)===String(r.poliza));
+    const match=pols.find(p=>String(p.officialNumber)===String(r.poliza));
     r._sancorVigente=!!match;
     if(match)enriched++;
   });
