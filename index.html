@@ -918,33 +918,64 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     <button class="qa" onclick="qs('¿Cuál es la diferencia entre ART y Accidentes Personales en Argentina?')">⚖️ ART vs Acc. Personales</button>
   </div>
 
-  <!-- Modal consulta de cobertura por póliza real -->
+  <!-- Modal póliza Sancor: consultar cobertura u obtener documento -->
   <div id="modal-cobertura" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:16px;padding:24px;width:min(440px,92vw);display:flex;flex-direction:column;gap:14px">
+    <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:16px;padding:24px;width:min(480px,94vw);display:flex;flex-direction:column;gap:14px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-weight:700;font-size:15px">📋 Consultar póliza real</span>
+        <span style="font-weight:700;font-size:15px">📋 Póliza Sancor</span>
         <button onclick="cerrarConsultaCobertura()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">×</button>
       </div>
-      <div style="font-size:12px;color:var(--text-muted)">Busca la póliza en Sancor y le pregunta a la IA sobre coberturas reales.</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <input id="cob-dni" type="text" placeholder="DNI del cliente (ej: 29269803)" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
-        <select id="cob-ramo" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
+
+      <!-- DNI + Ramo -->
+      <div style="display:flex;gap:8px">
+        <input id="cob-dni" type="text" placeholder="DNI del cliente" style="flex:1;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
+        <select id="cob-ramo" style="flex:1;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
           <option value="1800">Combinado Familiar</option>
           <option value="200">Automotores</option>
           <option value="600">Acc. Personales</option>
           <option value="3100">Motovehículo</option>
+          <option value="quick">Todos los ramos</option>
         </select>
-        <textarea id="cob-pregunta" rows="2" placeholder="¿Qué querés saber? (ej: ¿cubre el iPhone?)" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;resize:none;outline:none;font-family:inherit"></textarea>
       </div>
-      <button id="cob-btn" onclick="ejecutarConsultaCobertura()" style="background:var(--blue-fg);border:none;border-radius:8px;padding:11px;color:#000;font-weight:700;font-size:14px;cursor:pointer">Consultar póliza</button>
+
+      <!-- Tabs: Consulta / Documento -->
+      <div style="display:flex;gap:0;border:1px solid var(--border-color);border-radius:8px;overflow:hidden">
+        <button id="cob-tab-consulta" onclick="setCobTab('consulta')" style="flex:1;padding:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--blue-fg);color:#000">🤖 Consultar cobertura</button>
+        <button id="cob-tab-doc" onclick="setCobTab('doc')" style="flex:1;padding:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--input-bg);color:var(--text-muted)">📄 Obtener documento</button>
+      </div>
+
+      <!-- Panel: consulta -->
+      <div id="cob-panel-consulta">
+        <textarea id="cob-pregunta" rows="2" placeholder="¿Qué querés saber? (ej: ¿cubre el iPhone? ¿tiene cristales?)" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;resize:none;outline:none;font-family:inherit"></textarea>
+        <button id="cob-btn" onclick="ejecutarConsultaCobertura()" style="margin-top:8px;width:100%;background:var(--blue-fg);border:none;border-radius:8px;padding:11px;color:#000;font-weight:700;font-size:14px;cursor:pointer">Consultar con IA</button>
+      </div>
+
+      <!-- Panel: documento -->
+      <div id="cob-panel-doc" style="display:none;display:flex;flex-direction:column;gap:8px">
+        <select id="cob-doc-tipo" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
+          <option value="Caratula">Carátula</option>
+          <option value="TarjetaAutomotorPolizaElectronica">Tarjeta Verde (Auto)</option>
+          <option value="MercosurPolizaElectronica">Mercosur</option>
+          <option value="CertificadoSOA">Certificado SOA</option>
+          <option value="ConstanciaDeCoberturaPE">Constancia de Cobertura</option>
+          <option value="ConstanciaPolizaArgentina">Constancia Póliza Argentina</option>
+          <option value="DocumentoUnificadoAPF">Póliza Unificada (APF)</option>
+          <option value="NuevaFactura">Factura</option>
+          <option value="CertificadoPago">Certificado de Pago</option>
+        </select>
+        <button onclick="ejecutarObtenerDoc()" style="background:var(--blue-fg);border:none;border-radius:8px;padding:11px;color:#000;font-weight:700;font-size:14px;cursor:pointer">Obtener documento</button>
+      </div>
+
       <div id="cob-status" style="font-size:12px;color:var(--text-muted);min-height:16px;text-align:center"></div>
     </div>
   </div>
+
   <div class="chat-foot">
     <div class="loader" id="chat-loader"><div class="dots"><span></span><span></span><span></span></div><span>Redactando...</span></div>
     <div class="inp-row">
       <textarea class="chat-inp" id="chat-inp" placeholder="Consultá sobre coberturas, pedí argumentos de venta..." rows="1" onkeydown="hkey(event)" oninput="aresize(this)"></textarea>
       <button class="send" id="send-btn" onclick="sendMsg()">➤</button>
+      <button onclick="resetChat()" title="Nuevo chat" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:0 6px;line-height:1" >↺</button>
     </div>
   </div>
 </div>
@@ -3005,13 +3036,60 @@ async function accionIA(tipo,nombre,ramo){
 const SANCOR_WORKER = 'https://sancor-api.mgmg050382.workers.dev';
 
 function abrirConsultaCobertura() {
-  const m = document.getElementById('modal-cobertura');
-  m.style.display = 'flex';
+  document.getElementById('modal-cobertura').style.display = 'flex';
   document.getElementById('cob-dni').focus();
+  setCobTab('consulta');
 }
 function cerrarConsultaCobertura() {
   document.getElementById('modal-cobertura').style.display = 'none';
   document.getElementById('cob-status').textContent = '';
+}
+function setCobTab(tab) {
+  const isConsulta = tab === 'consulta';
+  document.getElementById('cob-panel-consulta').style.display = isConsulta ? 'block' : 'none';
+  document.getElementById('cob-panel-doc').style.display     = isConsulta ? 'none' : 'flex';
+  document.getElementById('cob-tab-consulta').style.background = isConsulta ? 'var(--blue-fg)' : 'var(--input-bg)';
+  document.getElementById('cob-tab-consulta').style.color      = isConsulta ? '#000' : 'var(--text-muted)';
+  document.getElementById('cob-tab-doc').style.background      = isConsulta ? 'var(--input-bg)' : 'var(--blue-fg)';
+  document.getElementById('cob-tab-doc').style.color           = isConsulta ? 'var(--text-muted)' : '#000';
+}
+function resetChat() {
+  hist = [];
+  const body = document.getElementById('chat-body');
+  body.innerHTML = `<div class="msg ai"><div class="av">IA</div><div><div class="bubble">Buen día. Soy tu asistente especializado en producción de seguros.<br><br>Puedo ayudarte con consultas sobre coberturas, redactar comunicaciones, generar argumentos de venta, o analizar tu cartera. ¿Con qué empezamos?</div><div class="msg-meta">Productor IA · ahora</div></div></div>`;
+  document.getElementById('qa-wrap').style.display = 'flex';
+}
+async function ejecutarObtenerDoc() {
+  const dni      = document.getElementById('cob-dni').value.trim();
+  const ramo     = document.getElementById('cob-ramo').value;
+  const docTipo  = document.getElementById('cob-doc-tipo').value;
+  const status   = document.getElementById('cob-status');
+  if (!dni) { status.textContent = 'Ingresá el DNI.'; return; }
+
+  status.textContent = '🔍 Buscando póliza...';
+  try {
+    const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`);
+    const polData = await polRes.json();
+    const vigentes = polData.vigentes || [];
+    if (vigentes.length === 0) { status.textContent = 'No hay pólizas vigentes para ese DNI y ramo.'; return; }
+
+    status.textContent = '📄 Obteniendo documento...';
+    const p = vigentes[0];
+    const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docTipo })
+    });
+    const doc = await docRes.json();
+    const urlFile = doc.files?.[0]?.urlFile;
+    if (!urlFile) { status.textContent = `No disponible: ${doc.error||'sin URL'}`; return; }
+
+    cerrarConsultaCobertura();
+    const label = document.getElementById('cob-doc-tipo').selectedOptions[0].text;
+    addDocBubble(label, p.referenceNumber, urlFile);
+    document.getElementById('qa-wrap').style.display = 'none';
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+  }
 }
 
 async function ejecutarConsultaCobertura() {
