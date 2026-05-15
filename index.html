@@ -1225,9 +1225,9 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <div class="ph-sub">Detección automática de gaps · Mensajes personalizados con IA</div>
     </div>
     <div style="display:flex;gap:10px">
-      <button class="btn btn-secondary" onclick="resetCrosselling()">🗑️ Limpiar</button>
-      <label class="btn btn-primary" style="cursor:pointer">
-        📂 Cargar Cartera Excel
+      <button class="btn btn-secondary" onclick="procesarCarteraActiva()">↻ Recargar</button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        📂 Cargar Excel
         <input type="file" id="xsl-file-input" accept=".xlsx,.xls" style="display:none" onchange="procesarCarteraXLS(this)">
       </label>
     </div>
@@ -1648,6 +1648,7 @@ document.querySelectorAll('.nav-item').forEach(el=>{
     if(el.dataset.panel==='agenda') renderAgenda();
     if(el.dataset.panel==='comisiones') cargarDashboardComisiones();
     if(el.dataset.panel==='renovaciones') cargarRenovaciones();
+    if(el.dataset.panel==='crosselling' && xslCartera.length===0) procesarCarteraActiva();
   });
 });
 
@@ -3795,6 +3796,62 @@ function resetCrosselling(){
   document.getElementById('xsl-resultados').style.display = 'none';
   document.getElementById('crs-editor').classList.remove('show');
   document.getElementById('xsl-file-input').value = '';
+}
+
+function procesarCarteraActiva() {
+  if (!carteraActiva || carteraActiva.length === 0) return;
+
+  const mapaClientes = new Map();
+  for (const r of carteraActiva) {
+    const key = r.id || r.nombre;
+    if (!mapaClientes.has(key)) {
+      mapaClientes.set(key, {
+        nombre: r.nombre, nroAsoc: r.id, polizas: [],
+        tieneAuto: false, tieneCombinadoFamiliar: false, tieneVida: false,
+        productos: [], key
+      });
+    }
+    const cli  = mapaClientes.get(key);
+    const tipo = clasificarRamo(String(r.ramo), '');
+    const prod = RAMO_MAP[r.ramo] || 'Ramo ' + r.ramo;
+    cli.polizas.push({ ramo: String(r.ramo), ramoNombre: prod, producto: prod, poliza: r.poliza || '' });
+    if (!cli.productos.includes(prod)) cli.productos.push(prod);
+    if (tipo === 'auto')      cli.tieneAuto = true;
+    if (tipo === 'combinado') cli.tieneCombinadoFamiliar = true;
+    if (tipo === 'vida')      cli.tieneVida = true;
+  }
+
+  xslCartera = [];
+  mapaClientes.forEach((cli, key) => {
+    const ops = [];
+    if (cli.tieneAuto && !cli.tieneCombinadoFamiliar)  ops.push({ tipo: 'hogar', label: 'Combinado Familiar', emoji: '🏠' });
+    if (cli.tieneCombinadoFamiliar && !cli.tieneAuto)  ops.push({ tipo: 'auto',  label: 'Automotores',        emoji: '🚗' });
+    if (!cli.tieneVida)                                 ops.push({ tipo: 'vida',  label: 'Seguro de Vida',     emoji: '❤️' });
+    if (cli.polizas.length === 1) {
+      if (!cli.tieneAuto && !ops.find(o => o.tipo === 'auto'))
+        ops.push({ tipo: 'auto',  label: 'Automotores',        emoji: '🚗' });
+      if (!cli.tieneCombinadoFamiliar && !ops.find(o => o.tipo === 'hogar'))
+        ops.push({ tipo: 'hogar', label: 'Combinado Familiar', emoji: '🏠' });
+    }
+    if (ops.length === 0) return;
+    xslCartera.push({
+      ...cli,
+      oportunidades: ops,
+      score: ops.length,
+      key,
+      sanitized: {
+        nombreDisplay: cli.nombre,
+        productoActual: cli.productos.slice(0, 2).join(' + ') || 'Seguros Sancor'
+      }
+    });
+  });
+
+  xslCartera.sort((a, b) => b.score - a.score);
+  document.getElementById('xsl-inicial').style.display = 'none';
+  document.getElementById('xsl-loading').style.display = 'none';
+  document.getElementById('xsl-resultados').style.display = 'block';
+  renderStatsXSL();
+  renderTablaXSL();
 }
 
 async function procesarCarteraXLS(input){
