@@ -3130,10 +3130,8 @@ async function sendMsg(){
       if(/combinado|hogar|casa|electroni|electrodom|heladera|televisor|notebook|tablet|celular|bicicleta|robo|incendio|contenido/i.test(txtLow)) ramoParam = '1800';
       else if(/auto|moto|vehiculo|vehículo|patente|tarjeta verde|mercosur/i.test(txtLow)) ramoParam = '200';
       else if(/accidente|personal|ap\b/i.test(txtLow)) ramoParam = '600';
-      // Sin match claro: buscar solo los 2 ramos más comunes
-      const url = ramoParam
-        ? `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`
-        : `${SANCOR_WORKER}/policies?dni=${dni}&ramo=200,1800`;
+      // Sin match claro: fan-out rápido (4 ramos principales)
+      const url = `${SANCOR_WORKER}/policies?dni=${dni}${ramoParam ? '&ramo='+ramoParam : '&ramo=quick'}`;
 
       addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
       const polRes  = await fetch(url);
