@@ -3124,33 +3124,38 @@ async function sendMsg(){
     let userContent = txt;
 
     if(dni){
-      // Buscar pólizas de todos los ramos para ese DNI
-      document.getElementById('chat-loader').classList.add('show');
-      addBubble('ai', `🔍 Buscando pólizas del DNI ${dni}...`);
-      const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}`);
+      // Inferir ramo desde el texto para evitar el fan-out completo
+      const txtLow = txt.toLowerCase();
+      let ramoParam = '';
+      if(/combinado|hogar|casa|electroni|electrodom|heladera|televisor|notebook|tablet|celular|bicicleta|robo|incendio|contenido/i.test(txtLow)) ramoParam = '1800';
+      else if(/auto|moto|vehiculo|vehículo|patente|tarjeta verde|mercosur/i.test(txtLow)) ramoParam = '200';
+      else if(/accidente|personal|ap\b/i.test(txtLow)) ramoParam = '600';
+      // Sin match claro: buscar solo los 2 ramos más comunes
+      const url = ramoParam
+        ? `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`
+        : `${SANCOR_WORKER}/policies?dni=${dni}&ramo=200,1800`;
+
+      addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
+      const polRes  = await fetch(url);
       const polData = await polRes.json();
       const vigentes = polData.vigentes || [];
 
-      // Quitar burbuja de estado
       const chatBody = document.getElementById('chat-body');
       chatBody.removeChild(chatBody.lastChild);
 
       if(vigentes.length > 0){
-        // Descargar PDFs de las primeras 3 pólizas vigentes (para no exceder límite)
-        const toFetch = vigentes.slice(0, 3);
-        const docs = await Promise.allSettled(toFetch.map(p =>
-          fetch(`${SANCOR_WORKER}/document`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula', format:'base64' })
-          }).then(r=>r.json())
-        ));
-        const pdfs = docs.filter(d=>d.status==='fulfilled'&&d.value.base64).map((d,i)=>({
-          type:'document',
-          source:{ type:'base64', media_type:'application/pdf', data: d.value.base64 },
-          title: `Póliza ${toFetch[i].referenceNumber} — ${toFetch[i].branchName}`
-        }));
-        if(pdfs.length > 0){
-          userContent = [...pdfs, { type:'text', text: txt }];
+        // Solo la primera póliza vigente relevante — suficiente para responder
+        const p = vigentes[0];
+        const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula', format:'base64' })
+        });
+        const doc = await docRes.json();
+        if(doc.base64){
+          userContent = [
+            { type:'document', source:{ type:'base64', media_type:'application/pdf', data: doc.base64 }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
+            { type:'text', text: txt }
+          ];
         }
       }
     }
