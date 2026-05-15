@@ -951,7 +951,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       </div>
 
       <!-- Panel: documento -->
-      <div id="cob-panel-doc" style="display:none;display:flex;flex-direction:column;gap:8px">
+      <div id="cob-panel-doc" style="display:none;flex-direction:column;gap:8px">
         <select id="cob-doc-tipo" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
           <option value="Caratula">Carátula</option>
           <option value="TarjetaAutomotorPolizaElectronica">Tarjeta Verde (Auto)</option>
@@ -3047,7 +3047,7 @@ function cerrarConsultaCobertura() {
 function setCobTab(tab) {
   const isConsulta = tab === 'consulta';
   document.getElementById('cob-panel-consulta').style.display = isConsulta ? 'block' : 'none';
-  document.getElementById('cob-panel-doc').style.display     = isConsulta ? 'none' : 'flex';
+  document.getElementById('cob-panel-doc').style.display      = isConsulta ? 'none'  : 'flex';
   document.getElementById('cob-tab-consulta').style.background = isConsulta ? 'var(--blue-fg)' : 'var(--input-bg)';
   document.getElementById('cob-tab-consulta').style.color      = isConsulta ? '#000' : 'var(--text-muted)';
   document.getElementById('cob-tab-doc').style.background      = isConsulta ? 'var(--input-bg)' : 'var(--blue-fg)';
