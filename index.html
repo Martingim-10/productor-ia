@@ -3106,6 +3106,31 @@ function addBubble(role,txt){
   d.innerHTML=`<div class="av">${role==='ai'?'IA':'M'}</div><div><div class="bubble">${txt.replace(/\n/g,'<br>')}</div><div class="msg-meta">${role==='ai'?'Productor IA':'Vos'} · ${h}</div></div>`;
   body.appendChild(d);body.scrollTop=body.scrollHeight;
 }
+// Mapa de palabras clave → documento a buscar
+const DOC_REQUEST_MAP = [
+  { re: /tarjeta\s*verde|tarjeta\s+del?\s*auto/i,  reportName:'TarjetaAutomotorPolizaElectronica', ramo:'200', label:'Tarjeta Verde' },
+  { re: /\btarjeta\b/i,                             reportName:'TarjetaAutomotorPolizaElectronica', ramo:'200', label:'Tarjeta del Auto' },
+  { re: /mercosur/i,                                reportName:'MercosurPolizaElectronica',         ramo:'200', label:'Mercosur' },
+  { re: /\bsoa\b/i,                                 reportName:'CertificadoSOA',                    ramo:'200', label:'Certificado SOA' },
+  { re: /constancia\s+de\s+cobertura/i,             reportName:'ConstanciaDeCoberturaPE',           ramo:'200', label:'Constancia de Cobertura' },
+  { re: /constancia/i,                              reportName:'ConstanciaPolizaArgentina',         ramo:'1800', label:'Constancia Póliza' },
+  { re: /caratula|carátula/i,                       reportName:'Caratula',                          ramo:null,  label:'Carátula' },
+  { re: /\bfactura\b/i,                             reportName:'NuevaFactura',                      ramo:null,  label:'Factura' },
+];
+
+function addDocBubble(label, ref, urlFile) {
+  const body = document.getElementById('chat-body');
+  const h = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const d = document.createElement('div');
+  d.className = 'msg ai';
+  d.innerHTML = `<div class="av">IA</div><div><div class="bubble" style="display:flex;align-items:center;gap:12px">
+    <span>📄 <strong>${label}</strong> — Ref ${ref}</span>
+    <a href="${urlFile}" target="_blank" rel="noopener" style="background:var(--blue-fg);color:#000;font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px;text-decoration:none;white-space:nowrap">Abrir PDF</a>
+  </div><div class="msg-meta">Productor IA · ${h}</div></div>`;
+  body.appendChild(d);
+  body.scrollTop = body.scrollHeight;
+}
+
 async function sendMsg(){
   const inp=document.getElementById('chat-inp');const txt=inp.value.trim();if(!txt)return;
   const key=getKey();if(!key){alert('Configurá tu API Key.');return;}
@@ -3116,32 +3141,58 @@ async function sendMsg(){
   document.getElementById('chat-loader').classList.add('show');
 
   try{
-    // Detectar DNI en el mensaje (7-8 dígitos solos o precedidos por "dni")
     const dniMatch = txt.match(/\b(?:dni\s*[:\-]?\s*)?(\d{7,8})\b/i);
     const dni = dniMatch ? dniMatch[1] : null;
 
-    let userContent = txt;
-
+    // ── FLUJO DOCUMENTO: "pasame la tarjeta", "mercosur", "soa", etc. ──
     if(dni){
-      // Inferir ramo desde el texto para evitar el fan-out completo
+      const docReq = DOC_REQUEST_MAP.find(d => d.re.test(txt));
+      if(docReq){
+        addBubble('ai', `🔍 Buscando ${docReq.label}...`);
+        const ramoParam = docReq.ramo || 'quick';
+        const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`);
+        const polData = await polRes.json();
+        const vigentes = polData.vigentes || [];
+        const chatBody = document.getElementById('chat-body');
+        chatBody.removeChild(chatBody.lastChild);
+
+        if(vigentes.length === 0){
+          addBubble('ai', `No encontré pólizas vigentes de ${docReq.label} para ese DNI.`);
+        } else {
+          const p = vigentes[0];
+          const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docReq.reportName })
+          });
+          const doc = await docRes.json();
+          const urlFile = doc.files?.[0]?.urlFile;
+          if(urlFile) addDocBubble(docReq.label, p.referenceNumber, urlFile);
+          else addBubble('ai', `No se pudo obtener el documento. Error: ${doc.error||'desconocido'}`);
+        }
+        document.getElementById('chat-loader').classList.remove('show');
+        document.getElementById('send-btn').disabled=false;
+        return;
+      }
+    }
+
+    // ── FLUJO CONSULTA: pregunta con DNI → Claude lee la carátula ──
+    let userContent = txt;
+    if(dni){
       const txtLow = txt.toLowerCase();
       let ramoParam = '';
-      if(/combinado|hogar|casa|electroni|electrodom|heladera|televisor|notebook|tablet|celular|bicicleta|robo|incendio|contenido/i.test(txtLow)) ramoParam = '1800';
-      else if(/auto|moto|vehiculo|vehículo|patente|tarjeta verde|mercosur/i.test(txtLow)) ramoParam = '200';
-      else if(/accidente|personal|ap\b/i.test(txtLow)) ramoParam = '600';
-      // Sin match claro: fan-out rápido (4 ramos principales)
+      if(/combinado|hogar|casa|electroni|electrodom|heladera|televisor|notebook|tablet|celular|bicicleta|robo|incendio|contenido|cristal/i.test(txtLow)) ramoParam = '1800';
+      else if(/auto|moto|vehiculo|vehículo|patente/i.test(txtLow)) ramoParam = '200';
+      else if(/accidente|personal|\bap\b/i.test(txtLow)) ramoParam = '600';
       const url = `${SANCOR_WORKER}/policies?dni=${dni}${ramoParam ? '&ramo='+ramoParam : '&ramo=quick'}`;
 
       addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
       const polRes  = await fetch(url);
       const polData = await polRes.json();
       const vigentes = polData.vigentes || [];
-
       const chatBody = document.getElementById('chat-body');
       chatBody.removeChild(chatBody.lastChild);
 
       if(vigentes.length > 0){
-        // Solo la primera póliza vigente relevante — suficiente para responder
         const p = vigentes[0];
         const docRes = await fetch(`${SANCOR_WORKER}/document`, {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -3157,13 +3208,12 @@ async function sendMsg(){
       }
     }
 
-    const msgToSend = typeof userContent === 'string'
-      ? { role:'user', content: userContent }
-      : { role:'user', content: userContent };
+    const hasDocs = Array.isArray(userContent);
+    const msgToSend = { role:'user', content: userContent };
+    const mensajesAEnviar = hasDocs ? [msgToSend] : [...hist, msgToSend];
+    hist.push({ role:'user', content: hasDocs ? txt : userContent });
 
-    hist.push(msgToSend);
-
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:hist})});
+    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:mensajesAEnviar})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
     document.getElementById('chat-loader').classList.remove('show');addBubble('ai',reply);
