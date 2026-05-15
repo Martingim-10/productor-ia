@@ -3049,25 +3049,24 @@ async function ejecutarConsultaCobertura() {
           referenceNumber: p.referenceNumber,
           branchCode: Number(p.branchCode),
           certificateNumber: p.certificateNumber || 0,
-          reportName: 'Caratula',
-          format: 'base64'
+          reportName: 'Caratula'
         })
       }).then(r => r.json())
     ));
 
-    const pdfsOk = docs.filter(d => d.base64);
-    if (pdfsOk.length === 0) {
+    const docsOk = docs.filter(d => d.files?.[0]?.urlFile);
+    if (docsOk.length === 0) {
       status.textContent = 'No se pudo obtener el documento de la póliza.';
       btn.disabled = false; return;
     }
 
-    // 3. Construir mensaje para Claude con los PDFs + pregunta
+    // 3. Construir mensaje para Claude con URLs de PDF + pregunta
     status.textContent = '🤖 Consultando IA...';
     const content = [
-      ...pdfsOk.map((d, i) => ({
+      ...docsOk.map((d, i) => ({
         type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data: d.base64 },
-        ...(pdfsOk.length > 1 ? { title: `Póliza ${vigentes[i].referenceNumber}` } : {})
+        source: { type: 'url', url: d.files[0].urlFile },
+        ...(docsOk.length > 1 ? { title: `Póliza ${vigentes[i].referenceNumber}` } : {})
       })),
       { type: 'text', text: pregunta }
     ];
@@ -3146,12 +3145,12 @@ async function sendMsg(){
         const p = vigentes[0];
         const docRes = await fetch(`${SANCOR_WORKER}/document`, {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula', format:'base64' })
+          body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula' })
         });
         const doc = await docRes.json();
-        if(doc.base64){
+        if(doc.files?.[0]?.urlFile){
           userContent = [
-            { type:'document', source:{ type:'base64', media_type:'application/pdf', data: doc.base64 }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
+            { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
             { type:'text', text: txt }
           ];
         }
