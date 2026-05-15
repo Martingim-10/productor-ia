@@ -3113,9 +3113,54 @@ async function sendMsg(){
   inp.value='';inp.style.height='auto';
   document.getElementById('send-btn').disabled=true;
   document.getElementById('qa-wrap').style.display='none';
-  addBubble('user',txt);hist.push({role:'user',content:txt});
+  addBubble('user',txt);
   document.getElementById('chat-loader').classList.add('show');
+
   try{
+    // Detectar DNI en el mensaje (7-8 dígitos solos o precedidos por "dni")
+    const dniMatch = txt.match(/\b(?:dni\s*[:\-]?\s*)?(\d{7,8})\b/i);
+    const dni = dniMatch ? dniMatch[1] : null;
+
+    let userContent = txt;
+
+    if(dni){
+      // Buscar pólizas de todos los ramos para ese DNI
+      document.getElementById('chat-loader').classList.add('show');
+      addBubble('ai', `🔍 Buscando pólizas del DNI ${dni}...`);
+      const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}`);
+      const polData = await polRes.json();
+      const vigentes = polData.vigentes || [];
+
+      // Quitar burbuja de estado
+      const chatBody = document.getElementById('chat-body');
+      chatBody.removeChild(chatBody.lastChild);
+
+      if(vigentes.length > 0){
+        // Descargar PDFs de las primeras 3 pólizas vigentes (para no exceder límite)
+        const toFetch = vigentes.slice(0, 3);
+        const docs = await Promise.allSettled(toFetch.map(p =>
+          fetch(`${SANCOR_WORKER}/document`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula', format:'base64' })
+          }).then(r=>r.json())
+        ));
+        const pdfs = docs.filter(d=>d.status==='fulfilled'&&d.value.base64).map((d,i)=>({
+          type:'document',
+          source:{ type:'base64', media_type:'application/pdf', data: d.value.base64 },
+          title: `Póliza ${toFetch[i].referenceNumber} — ${toFetch[i].branchName}`
+        }));
+        if(pdfs.length > 0){
+          userContent = [...pdfs, { type:'text', text: txt }];
+        }
+      }
+    }
+
+    const msgToSend = typeof userContent === 'string'
+      ? { role:'user', content: userContent }
+      : { role:'user', content: userContent };
+
+    hist.push(msgToSend);
+
     const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:hist})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
