@@ -3239,7 +3239,6 @@ async function sendMsg(){
           : `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`;
         const polRes  = await fetch(polUrl);
         const polData = await polRes.json();
-        console.log('[policies raw]', polData.vigentes);
         // Filtrar por patente si fue especificada y el campo existe en la respuesta
         let vigentes = polData.vigentes || [];
         if(plate && vigentes.length > 1){
