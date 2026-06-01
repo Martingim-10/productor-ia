@@ -3231,23 +3231,36 @@ async function sendMsg(){
       const docReq = DOC_REQUEST_MAP.find(d => d.re.test(txt));
       if(docReq){
         addBubble('ai', `🔍 Buscando ${docReq.label}...`);
-        const ramoParam = docReq.ramo || 'quick';
-        // Si hay patente, buscar por patente + ramo (Sancor requiere branchCode)
-        const polUrl = plate
-          ? `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`
-          : `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`;
+        const ramoParam = docReq.ramo || '200';
+        // Siempre buscar por DNI si está disponible (más confiable que búsqueda por patente)
+        // Si solo hay patente sin DNI, buscar por patente
+        const polUrl = dni
+          ? `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`
+          : `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`;
         const polRes  = await fetch(polUrl);
         const polData = await polRes.json();
-        const vigentes = polData.vigentes || [];
+        console.log('[policies raw]', polData.vigentes);
+        // Filtrar por patente si fue especificada y el campo existe en la respuesta
+        let vigentes = polData.vigentes || [];
+        if(plate && vigentes.length > 1){
+          const filtered = vigentes.filter(p =>
+            p.licensePlate?.replace(/[-\s]/g,'').toUpperCase() === plate ||
+            p.plate?.replace(/[-\s]/g,'').toUpperCase() === plate
+          );
+          if(filtered.length > 0) vigentes = filtered;
+        }
         const chatBody = document.getElementById('chat-body');
         chatBody.removeChild(chatBody.lastChild);
 
         if(vigentes.length === 0){
           addBubble('ai', `No encontré pólizas vigentes de ${docReq.label} para ${plate ? 'la patente '+plate : 'ese DNI'}.`);
-        } else if(vigentes.length > 1 && !plate){
-          // Múltiples pólizas sin patente especificada → pedir aclaración
-          const lista = vigentes.map(p => `• Ref <strong>${p.referenceNumber}</strong>${p.branchName ? ' — '+p.branchName : ''}`).join('<br>');
-          addBubble('ai', `Encontré ${vigentes.length} pólizas vigentes para ese DNI:<br>${lista}<br><br>¿Podés aclarar la patente o el número de referencia?`);
+        } else if(vigentes.length > 1){
+          // Múltiples pólizas → pedir aclaración mostrando lo que tenemos
+          const lista = vigentes.map(p => {
+            const pat = p.licensePlate || p.plate || '';
+            return `• Ref <strong>${p.referenceNumber}</strong>${pat ? ' — Patente '+pat : ''}`;
+          }).join('<br>');
+          addBubble('ai', `Encontré ${vigentes.length} pólizas de Automotores vigentes para ese DNI:<br>${lista}<br><br>¿Podés aclarar la patente?`);
         } else {
           const p = vigentes[0];
           const docRes = await fetch(`${SANCOR_WORKER}/document`, {
