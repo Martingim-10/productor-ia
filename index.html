@@ -3232,9 +3232,9 @@ async function sendMsg(){
       if(docReq){
         addBubble('ai', `🔍 Buscando ${docReq.label}...`);
         const ramoParam = docReq.ramo || 'quick';
-        // Si hay patente, buscar por patente (más preciso); si no, por DNI
+        // Si hay patente, buscar por patente + ramo (Sancor requiere branchCode)
         const polUrl = plate
-          ? `${SANCOR_WORKER}/policies?plate=${plate}`
+          ? `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`
           : `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`;
         const polRes  = await fetch(polUrl);
         const polData = await polRes.json();
@@ -3274,9 +3274,10 @@ async function sendMsg(){
       else if(/auto|moto|vehiculo|vehículo|patente/i.test(txtLow) || plate) ramoParam = '200';
       else if(/accidente|personal|\bap\b/i.test(txtLow)) ramoParam = '600';
 
-      // Si hay patente, buscar por patente directamente
+      // Si hay patente, buscar por patente + ramo (Sancor requiere branchCode)
+      const ramoFinal = ramoParam || '200';
       const polUrl = plate
-        ? `${SANCOR_WORKER}/policies?plate=${plate}`
+        ? `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoFinal}`
         : `${SANCOR_WORKER}/policies?dni=${dni}${ramoParam ? '&ramo='+ramoParam : '&ramo=quick'}`;
 
       addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
