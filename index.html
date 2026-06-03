@@ -1827,52 +1827,32 @@ let renovEstados = JSON.parse(localStorage.getItem('renov_estados_v1')||'{}');
 
 function guardarRenovEstados(){
   localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
-  if(driveToken) driveGuardarRenovEstados();
 }
 
-async function driveGuardarRenovEstados(){
+async function renovEstadosCargarSupabase(){
   try{
-    const folderId = await driveGetFolderId();
-    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d = await r.json();
-    const blob = new Blob([JSON.stringify(renovEstados)],{type:'application/json'});
-    if(d.files?.length){
-      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${d.files[0].id}?uploadType=media`,
-        {method:'PATCH',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:blob});
-    } else {
-      const form = new FormData();
-      form.append('metadata',new Blob([JSON.stringify({name:'renovaciones_estado.json',parents:[folderId],mimeType:'application/json'})],{type:'application/json'}));
-      form.append('file',blob);
-      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-        {method:'POST',headers:{Authorization:'Bearer '+driveToken},body:form});
-    }
-  }catch(e){console.warn('Error guardando estados renovaciones:',e);}
-}
-
-async function driveCargarRenovEstados(){
-  if(!driveToken) return;
-  try{
-    const folderId = await driveGetFolderId();
-    const q = encodeURIComponent(`'${folderId}' in parents and name='renovaciones_estado.json' and trashed=false`);
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:'Bearer '+driveToken}});
-    const d = await r.json();
-    if(!d.files?.length) return;
-    const fr = await fetch(`https://www.googleapis.com/drive/v3/files/${d.files[0].id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
-    const remoto = await fr.json();
-    // Merge: Drive tiene prioridad sobre localStorage
+    const res = await fetch(`${TRAMA_WORKER}/renovaciones-estado?broker_id=${getBrokerId()}`);
+    if(!res.ok) return;
+    const remoto = await res.json();
+    // Merge: Supabase tiene prioridad sobre localStorage
     renovEstados = {...renovEstados, ...remoto};
     localStorage.setItem('renov_estados_v1', JSON.stringify(renovEstados));
     renderRenovacionesFiltradas();
-  }catch(e){console.warn('Error cargando estados renovaciones:',e);}
+  }catch(e){ console.warn('Error cargando estados renovaciones:',e); }
 }
 
 function setEstadoRenov(poliza, estado){
-  // Toggle: si ya tiene ese estado, lo saca
+  const brokerId = getBrokerId();
   if(renovEstados[poliza]===estado){
     delete renovEstados[poliza];
+    fetch(`${TRAMA_WORKER}/renovaciones-estado?broker_id=${brokerId}&poliza=${encodeURIComponent(poliza)}`,
+      { method:'DELETE' }).catch(e=>console.warn('Error borrando estado renov:',e));
   } else {
     renovEstados[poliza] = estado;
+    fetch(`${TRAMA_WORKER}/renovaciones-estado`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ broker_id: brokerId, numero_poliza: poliza, estado })
+    }).catch(e=>console.warn('Error guardando estado renov:',e));
   }
   guardarRenovEstados();
   renderRenovacionesFiltradas();
@@ -3414,7 +3394,7 @@ function driveAuth(){
     document.getElementById('drive-status-sub').textContent='Los snapshots se guardarán en ProductorIA_Snapshots';
     document.getElementById('drive-btn').textContent='Reconectar';
     document.getElementById('btn-sync-drive').style.display='inline-flex';
-    await driveCargarSnapshots();await gestionesCargarDrive();await driveCargarRenovEstados();renderSeguimientosAgenda();
+    await driveCargarSnapshots();renderSeguimientosAgenda();
   }});
   client.requestAccessToken();
 }
@@ -5153,6 +5133,7 @@ cargarRetiroLocal();
 if(comisionesActuales)renderComisiones();
 enriquecerCarteraConComisiones();
 gestionesCargarSupabase();
+renovEstadosCargarSupabase();
 </script>
 </body>
 </html>
