@@ -1533,7 +1533,8 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 </div>
 
 <div class="modal-overlay" id="modal-gestion">
-  <div class="modal-box">
+  <div class="modal-box" style="position:relative">
+    <button onclick="cerrarModalGestion()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;padding:0" title="Cerrar">✕</button>
     <div class="modal-title">📋 Registrar Gestión</div>
     <div class="modal-sub" id="modal-gestion-sub">Nueva gestión comercial</div>
     <div class="modal-cliente-info" id="modal-cliente-info"></div>
@@ -1551,12 +1552,13 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <select id="mg-resultado" onchange="mgResultadoCambio()">
         <option value="contactado">✅ Contactado</option>
         <option value="no_contesto">📵 No contestó</option>
+        <option value="rechazado">❌ Rechazado</option>
         <option value="interesado">🌟 Interesado</option>
         <option value="cerrado">🏆 Cerrado / Vendido</option>
       </select>
     </div>
     <div class="modal-field" id="mg-freno-wrap" style="display:none">
-      <label>¿Cuál fue el freno principal? <span style="color:var(--rust)">*</span></label>
+      <label>¿Cuál fue el freno principal? <span id="mg-freno-req" style="color:var(--rust);display:none">*</span></label>
       <select id="mg-freno">
         <option value="">— Seleccioná —</option>
       </select>
@@ -1585,6 +1587,9 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     <div class="modal-field">
       <label>Recordatorio — próximo seguimiento</label>
       <input type="date" id="mg-fecha-seg">
+    </div>
+    <div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;margin-bottom:8px">
+      Tu diagnóstico entrena a PULSO para cuidar mejor a tus clientes.
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="cerrarModalGestion()">Cancelar</button>
@@ -3620,9 +3625,11 @@ function shuffle(arr){
 
 function mgResultadoCambio(){
   const r=document.getElementById('mg-resultado').value;
-  const negativo = r==='no_contesto' || r==='rechazado' || r==='contactado';
-  const positivo = r==='cerrado' || r==='interesado';
-  document.getElementById('mg-freno-wrap').style.display    = negativo ? '' : 'none';
+  const conFreno  = r==='no_contesto' || r==='rechazado';
+  const obligFreno = r==='rechazado';
+  const positivo  = r==='cerrado' || r==='interesado';
+  document.getElementById('mg-freno-wrap').style.display     = conFreno ? '' : 'none';
+  document.getElementById('mg-freno-req').style.display      = obligFreno ? '' : 'none';
   document.getElementById('mg-motivador-wrap').style.display = positivo ? '' : 'none';
 }
 
@@ -3699,21 +3706,41 @@ function abrirPerfilCliente(id){
   document.getElementById('modal-perfil').classList.add('open');
 }
 
+let _precioConsecutivo = 0;
+
 async function guardarGestion(){
   const{clienteId,clienteNombre,ramo,poliza}=gestionModalCtx;
-  const resultado  = document.getElementById('mg-resultado').value;
-  const tipo       = document.getElementById('mg-tipo').value;
-  const nota       = document.getElementById('mg-nota').value.trim();
-  const fechaSeg   = document.getElementById('mg-fecha-seg').value;
-  const reaccion   = parseInt(document.getElementById('mg-reaccion').value);
-  const negativo   = resultado==='no_contesto'||resultado==='rechazado'||resultado==='contactado';
-  const positivo   = resultado==='cerrado'||resultado==='interesado';
-  const freno      = negativo ? document.getElementById('mg-freno').value : null;
-  const motivador  = positivo ? document.getElementById('mg-motivador').value : null;
+  const resultado = document.getElementById('mg-resultado').value;
+  const tipo      = document.getElementById('mg-tipo').value;
+  const nota      = document.getElementById('mg-nota').value.trim();
+  const fechaSeg  = document.getElementById('mg-fecha-seg').value;
+  const reaccion  = parseInt(document.getElementById('mg-reaccion').value);
+  const conFreno  = resultado==='no_contesto' || resultado==='rechazado';
+  const positivo  = resultado==='cerrado'     || resultado==='interesado';
+  const freno     = conFreno ? document.getElementById('mg-freno').value : null;
+  const motivador = positivo ? document.getElementById('mg-motivador').value : null;
 
-  if(negativo && !freno){
+  // Freno obligatorio solo para rechazado
+  if(resultado==='rechazado' && !freno){
     alert('Seleccioná el freno principal antes de guardar.');
     return;
+  }
+
+  // Fricción cognitiva: 3 veces consecutivas "precio" como freno
+  const esPrecio = freno && freno.toLowerCase().includes('precio');
+  if(esPrecio){
+    _precioConsecutivo++;
+    if(_precioConsecutivo >= 3){
+      const confirmar = confirm(
+        `Marcaste "Precio" como freno ${_precioConsecutivo} veces seguidas.\n\n` +
+        `¿Estás seguro? El precio raramente es el freno real.\n\n` +
+        `Confirmá solo si es genuinamente el caso.`
+      );
+      if(!confirmar) return;
+      _precioConsecutivo = 0;
+    }
+  } else {
+    _precioConsecutivo = 0;
   }
 
   const btn = document.getElementById('btn-guardar-gestion');
@@ -3737,7 +3764,6 @@ async function guardarGestion(){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Error al guardar');
 
-    // Mantener array local para seguimientos de sesión
     gestiones.push({
       id: data.id, clienteId, clienteNombre, ramo, poliza,
       tipo, resultado, nota, fechaSeg,
