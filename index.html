@@ -3584,6 +3584,29 @@ function cargarCfg(){
 let gestiones=[];let gestionModalCtx={};
 const GESTIONES_FILENAME='gestiones_productor.json';
 
+async function gestionesCargarSupabase(){
+  try{
+    const res = await fetch(`${TRAMA_WORKER}/gestiones?broker_id=${getBrokerId()}`);
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!Array.isArray(data)) return;
+    // Mapear campos de Supabase al formato que usa renderSeguimientosAgenda()
+    gestiones = data.map(g=>({
+      id:            g.id,
+      clienteId:     g.cliente_id || '',
+      clienteNombre: g.cliente_nombre || g.cliente_id || 'Cliente',
+      ramo:          '',
+      poliza:        '',
+      tipo:          g.tipo,
+      resultado:     g.resultado,
+      nota:          g.nota || '',
+      fechaSeg:      g.fecha_seguimiento || '',
+      fechaGestion:  (g.timestamp_trama||'').slice(0,10),
+    }));
+    renderSeguimientosAgenda();
+  }catch(e){ console.warn('Error cargando gestiones desde Supabase:',e); }
+}
+
 async function gestionesCargarDrive(){
   if(!driveToken)return;
   try{
@@ -3753,6 +3776,7 @@ async function guardarGestion(){
       body: JSON.stringify({
         broker_id:           getBrokerId(),
         cliente_id:          clienteId||null,
+        cliente_nombre:      clienteNombre||null,
         tipo, resultado,
         reaccion_cliente:    reaccion,
         freno_principal:     freno,
@@ -5128,6 +5152,7 @@ cargarCarteraLocal();
 cargarRetiroLocal();
 if(comisionesActuales)renderComisiones();
 enriquecerCarteraConComisiones();
+gestionesCargarSupabase();
 </script>
 </body>
 </html>
