@@ -1548,12 +1548,35 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     </div>
     <div class="modal-field">
       <label>Resultado</label>
-      <select id="mg-resultado">
+      <select id="mg-resultado" onchange="mgResultadoCambio()">
         <option value="contactado">✅ Contactado</option>
         <option value="no_contesto">📵 No contestó</option>
         <option value="interesado">🌟 Interesado</option>
         <option value="cerrado">🏆 Cerrado / Vendido</option>
       </select>
+    </div>
+    <div class="modal-field" id="mg-freno-wrap" style="display:none">
+      <label>¿Cuál fue el freno principal? <span style="color:var(--rust)">*</span></label>
+      <select id="mg-freno">
+        <option value="">— Seleccioná —</option>
+      </select>
+    </div>
+    <div class="modal-field" id="mg-motivador-wrap" style="display:none">
+      <label>¿Qué motivó la decisión?</label>
+      <select id="mg-motivador">
+        <option value="confianza" selected>🤝 Confianza en el broker</option>
+        <option value="precio">💰 Precio / cuota accesible</option>
+        <option value="cobertura">🛡️ Amplitud de cobertura</option>
+        <option value="urgencia">⚡ Urgencia / necesidad inmediata</option>
+        <option value="recomendacion">⭐ Recomendación de tercero</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Reacción del cliente <span style="font-size:11px;color:var(--muted)">(1 muy negativa · 3 neutral · 5 muy positiva)</span></label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="range" id="mg-reaccion" min="1" max="5" value="3" style="flex:1;accent-color:var(--blue-fg)" oninput="document.getElementById('mg-reaccion-val').textContent=this.value">
+        <span id="mg-reaccion-val" style="font-weight:700;font-size:18px;min-width:20px;text-align:center">3</span>
+      </div>
     </div>
     <div class="modal-field">
       <label>Nota (opcional)</label>
@@ -1565,7 +1588,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="cerrarModalGestion()">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarGestion()">Guardar gestión</button>
+      <button class="btn btn-primary" id="btn-guardar-gestion" onclick="guardarGestion()">Guardar gestión</button>
     </div>
   </div>
 </div>
@@ -3034,6 +3057,14 @@ async function accionIA(tipo,nombre,ramo){
 // CONSULTA DE COBERTURA POR PÓLIZA REAL
 // ═══════════════════════════════════════════════════════════
 const SANCOR_WORKER = 'https://sancor-api.mgmg050382.workers.dev';
+const TRAMA_WORKER  = 'https://trama-worker.mgmg050382.workers.dev';
+
+// broker_id estable por dispositivo hasta que implementemos auth real
+function getBrokerId(){
+  let id = localStorage.getItem('trama_broker_id');
+  if(!id){ id = crypto.randomUUID(); localStorage.setItem('trama_broker_id', id); }
+  return id;
+}
 
 function abrirConsultaCobertura() {
   document.getElementById('modal-cobertura').style.display = 'flex';
@@ -3575,12 +3606,42 @@ async function gestionesGuardarDrive(){
   }catch(e){console.error('Error guardando gestiones:',e);alert('Error al guardar en Drive.');return false;}
 }
 
+const MG_FRENOS = [
+  'Precio / cuota alta','No ve necesidad','Ya tiene otra cobertura',
+  'Necesita consultarlo','Mala experiencia previa','No contestó / no disponible',
+  'No confía en seguros','Prefiere esperar','Situación económica','Otro'
+];
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function mgResultadoCambio(){
+  const r=document.getElementById('mg-resultado').value;
+  const negativo = r==='no_contesto' || r==='rechazado' || r==='contactado';
+  const positivo = r==='cerrado' || r==='interesado';
+  document.getElementById('mg-freno-wrap').style.display    = negativo ? '' : 'none';
+  document.getElementById('mg-motivador-wrap').style.display = positivo ? '' : 'none';
+}
+
 function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   gestionModalCtx={clienteId,clienteNombre,ramo,poliza};
   document.getElementById('modal-gestion-sub').textContent='Nueva gestión comercial';
   document.getElementById('modal-cliente-info').innerHTML=`<strong>${esc(clienteNombre)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(ramo)}${poliza?' · Póliza '+esc(poliza):''}</span>`;
   const d=new Date();d.setDate(d.getDate()+7);document.getElementById('mg-fecha-seg').value=d.toISOString().slice(0,10);
-  document.getElementById('mg-tipo').value='llamado';document.getElementById('mg-resultado').value='contactado';document.getElementById('mg-nota').value='';
+  document.getElementById('mg-tipo').value='llamado';
+  document.getElementById('mg-resultado').value='contactado';
+  document.getElementById('mg-nota').value='';
+  document.getElementById('mg-reaccion').value=3;
+  document.getElementById('mg-reaccion-val').textContent='3';
+  // Frenos: shuffle en cada apertura, sin opción preseleccionada
+  const sel=document.getElementById('mg-freno');
+  sel.innerHTML='<option value="">— Seleccioná —</option>';
+  shuffle(MG_FRENOS).forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+  document.getElementById('mg-motivador').value='confianza';
+  mgResultadoCambio();
   document.getElementById('modal-gestion').classList.add('open');
 }
 function cerrarModalGestion(){document.getElementById('modal-gestion').classList.remove('open');}
@@ -3640,13 +3701,57 @@ function abrirPerfilCliente(id){
 
 async function guardarGestion(){
   const{clienteId,clienteNombre,ramo,poliza}=gestionModalCtx;
-  const tipo=document.getElementById('mg-tipo').value;const resultado=document.getElementById('mg-resultado').value;
-  const nota=document.getElementById('mg-nota').value.trim();const fechaSeg=document.getElementById('mg-fecha-seg').value;
-  const g={id:Date.now().toString(),clienteId,clienteNombre,ramo,poliza,tipo,resultado,nota,fechaSeg,fechaGestion:new Date().toISOString().slice(0,10)};
-  gestiones.push(g);
-  const btn=document.querySelector('#modal-gestion .btn-primary');btn.textContent='Guardando...';btn.disabled=true;
-  const ok=await gestionesGuardarDrive();btn.textContent='Guardar gestión';btn.disabled=false;
-  if(ok){cerrarModalGestion();renderSeguimientosAgenda();toast('✅ Gestión guardada en Drive');}
+  const resultado  = document.getElementById('mg-resultado').value;
+  const tipo       = document.getElementById('mg-tipo').value;
+  const nota       = document.getElementById('mg-nota').value.trim();
+  const fechaSeg   = document.getElementById('mg-fecha-seg').value;
+  const reaccion   = parseInt(document.getElementById('mg-reaccion').value);
+  const negativo   = resultado==='no_contesto'||resultado==='rechazado'||resultado==='contactado';
+  const positivo   = resultado==='cerrado'||resultado==='interesado';
+  const freno      = negativo ? document.getElementById('mg-freno').value : null;
+  const motivador  = positivo ? document.getElementById('mg-motivador').value : null;
+
+  if(negativo && !freno){
+    alert('Seleccioná el freno principal antes de guardar.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-guardar-gestion');
+  btn.textContent='Guardando...';btn.disabled=true;
+
+  try{
+    const res = await fetch(`${TRAMA_WORKER}/gestiones`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        broker_id:           getBrokerId(),
+        cliente_id:          clienteId||null,
+        tipo, resultado,
+        reaccion_cliente:    reaccion,
+        freno_principal:     freno,
+        motivador_principal: motivador,
+        nota:                nota||null,
+        fecha_seguimiento:   fechaSeg||null,
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Error al guardar');
+
+    // Mantener array local para seguimientos de sesión
+    gestiones.push({
+      id: data.id, clienteId, clienteNombre, ramo, poliza,
+      tipo, resultado, nota, fechaSeg,
+      fechaGestion: new Date().toISOString().slice(0,10)
+    });
+
+    cerrarModalGestion();
+    renderSeguimientosAgenda();
+    toast(`✅ Gestión guardada. PULSO recalibró el score de ${clienteNombre}. ¡Buen diagnóstico!`);
+  }catch(e){
+    alert('Error: '+e.message);
+  }finally{
+    btn.textContent='Guardar gestión';btn.disabled=false;
+  }
 }
 
 function renderSeguimientosAgenda(){
