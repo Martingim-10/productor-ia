@@ -4611,26 +4611,73 @@ function renderTablaXSL(){
   }).join('');
 }
 
+// Estima la edad a partir del DNI argentino (emitidos secuencialmente).
+// Útil para el corte conductual <45 / >45 cuando no hay edad explícita.
+function estimarEdadDesdeDNI(dniStr){
+  const dni = parseInt((dniStr||'').replace(/\D/g,'')) || 0;
+  if(dni < 1000000)  return null;
+  if(dni < 8000000)  return 68;  // nacidos antes de ~1960
+  if(dni < 13000000) return 55;  // ~1960-1975
+  if(dni < 18000000) return 46;  // ~1975-1982  ← zona gris del corte 45
+  if(dni < 25000000) return 36;  // ~1982-1995
+  if(dni < 36000000) return 26;  // ~1995-2008
+  return null;                    // muy joven o dato inválido
+}
+
 function crsBuildPrompt(cli, tipoOp, labelOp){
-  const primerNombre = cli.sanitized.nombreDisplay.split(' ')[0];
-  const productoActual = cli.sanitized.productoActual;
+  const primerNombre    = cli.sanitized.nombreDisplay.split(' ')[0];
+  const productoActual  = cli.sanitized.productoActual;
   const nombreProductor = localStorage.getItem('cfg_nombre') || 'tu productor';
+  const ciudad          = localStorage.getItem('cfg_ciudad') || '';
+  const esPersona       = cli.pf !== false;
+  const edadEst         = esPersona ? estimarEdadDesdeDNI(cli.nroAsoc || cli.id || '') : null;
+
+  // Contexto del cliente
+  let ctx = `- Nombre: ${primerNombre}`;
+  if(esPersona && edadEst) ctx += `\n- Edad estimada: ~${edadEst} años (a partir del DNI)`;
+  else if(!esPersona)      ctx += `\n- Perfil: empresa u organización`;
+  ctx += `\n- Cobertura actual: ${productoActual}`;
+  if(ciudad) ctx += `\n- Zona del productor: ${ciudad}`;
+
+  // Enfoque conductual dinámico según producto + perfil
+  let enfoque = '';
+  if((tipoOp === 'vida' || tipoOp === 'retiro') && esPersona){
+    if(edadEst !== null && edadEst < 45){
+      enfoque = `PSICOLOGÍA — Descuento Hiperbólico (perfil joven ~${edadEst} años):
+El cliente siente que el futuro está lejos. Tu trabajo es acortarlo con concretud: no "cuando seas grande", sino qué representa esto en 10-15 años en términos tangibles. Encuadralo como decisión de construcción patrimonial, no como gasto mensual. Sin metáforas de precio triviales.`;
+    } else if(edadEst !== null && edadEst >= 45){
+      enfoque = `PSICOLOGÍA — Aversión a la Pérdida + Legado (perfil maduro ~${edadEst} años):
+Este perfil ya construyó algo. El miedo a perderlo supera al deseo de ganar más. No hables de crecimiento: hablá de proteger lo construido y de dejar todo resuelto. Tono maduro y sumamente respetuoso. Sin urgencia artificial.`;
+    } else {
+      enfoque = `PSICOLOGÍA — Aversión a la Pérdida (edad desconocida):
+Encuadrá la decisión como evitar una pérdida concreta. Qué pasa si NO contrata hoy. Sin comparaciones de precio triviales.`;
+    }
+  } else if(tipoOp === 'hogar'){
+    const ref = ciudad ? `en ${ciudad}` : 'en la zona';
+    enfoque = `PSICOLOGÍA — Sesgo de Optimismo + Heurística de Cercanía:
+El cliente cree que los siniestros le pasan a otros. Hacelo real y local: mencioná un riesgo concreto y verosímil ${ref} (agua, granizo, viento — lo que aplique para esa geografía). Sin catástrofes abstractas.`;
+  } else if(!esPersona){
+    enfoque = `PSICOLOGÍA — Continuidad Operativa:
+Para empresas el driver es continuidad del negocio y responsabilidad, no miedo personal. Encuadrá como decisión profesional de gestión de riesgo.`;
+  }
+
   return `Actuás como ${nombreProductor}, productor asesor de seguros de Sancor en Argentina.
 
-Generá un mensaje de WhatsApp CORTO, persuasivo y cercano:
-- Cliente: ${primerNombre}
-- Producto actual: ${productoActual}
-- Oportunidad: Le falta ${labelOp}
+Generá un mensaje de WhatsApp CORTO, conductual y personalizado.
 
-Requisitos:
-1. No uses "Estimado/a" — arrancá con el nombre o directo al punto
-2. Mencioná un beneficio de "protección integral" relacionado con ${labelOp}
-3. CTA directo: invitá a una breve llamada
-4. MÁXIMO 280 caracteres
-5. Tono humano, de igual a igual, sin markdown
-6. Firmá como ${nombreProductor}
+CONTEXTO DEL CLIENTE:
+${ctx}
+- Oportunidad: le falta ${labelOp}
 
-Devolvé ÚNICAMENTE el texto del mensaje.`;
+${enfoque ? enfoque + '\n\n' : ''}REQUISITOS:
+1. Arrancá con el nombre de forma natural.
+2. Cero palabras corporativas ("estimado", "propuesta", "adquirir", "informarle").
+3. Máximo 3-4 líneas. El cliente lee en el celular.
+4. Sin metáforas genéricas de precio (no cafés, no pizzas). Si usás una comparación, que sea específica para este perfil.
+5. Cerrá con UN paso concreto, no con "cualquier consulta".
+6. Firmá como "${nombreProductor}".
+
+Devolvé ÚNICAMENTE el texto del mensaje listo para enviar.`;
 }
 
 async function crsGenerarMensaje(key, tipoOp, labelOp){
