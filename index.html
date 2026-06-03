@@ -3925,7 +3925,11 @@ async function guardarGestion(){
   const resultado = document.getElementById('mg-resultado').value;
   const tipo      = document.getElementById('mg-tipo').value;
   const nota      = document.getElementById('mg-nota').value.trim();
-  const fechaSeg  = document.getElementById('mg-fecha-seg').value;
+  const fechaSegInput = document.getElementById('mg-fecha-seg').value;
+  // Forzar zona horaria Argentina para evitar ambigüedad UTC en Supabase si el tipo cambia a timestamptz
+  const fechaSeg = fechaSegInput
+    ? new Date(fechaSegInput + 'T12:00:00-03:00').toISOString().slice(0, 10)
+    : null;
   const reaccion  = parseInt(document.getElementById('mg-reaccion').value);
   const conFreno  = resultado==='no_contesto' || resultado==='rechazado';
   const positivo  = resultado==='cerrado'     || resultado==='interesado';
