@@ -3592,16 +3592,19 @@ async function gestionesCargarSupabase(){
     if(!Array.isArray(data)) return;
     // Mapear campos de Supabase al formato que usa renderSeguimientosAgenda()
     gestiones = data.map(g=>({
-      id:            g.id,
-      clienteId:     g.cliente_id || '',
-      clienteNombre: g.cliente_nombre || g.cliente_id || 'Cliente',
-      ramo:          '',
-      poliza:        '',
-      tipo:          g.tipo,
-      resultado:     g.resultado,
-      nota:          g.nota || '',
-      fechaSeg:      g.fecha_seguimiento || '',
-      fechaGestion:  (g.timestamp_trama||'').slice(0,10),
+      id:                 g.id,
+      clienteId:          g.cliente_id || '',
+      clienteNombre:      g.cliente_nombre || g.cliente_id || 'Cliente',
+      ramo:               g.ramo || '',
+      poliza:             '',
+      tipo:               g.tipo,
+      resultado:          g.resultado,
+      freno_principal:    g.freno_principal    || null,
+      motivador_principal:g.motivador_principal|| null,
+      reaccion_cliente:   g.reaccion_cliente   ?? 3,
+      nota:               g.nota || '',
+      fechaSeg:           g.fecha_seguimiento || '',
+      fechaGestion:       (g.timestamp_trama||'').slice(0,10),
     }));
     renderSeguimientosAgenda();
   }catch(e){ console.warn('Error cargando gestiones desde Supabase:',e); }
@@ -3646,32 +3649,46 @@ function shuffle(arr){
   return a;
 }
 
-// Calcula defaults basados en patrones AGREGADOS del broker (últimas 20 gestiones).
-// No usa historia individual del cliente para evitar anclaje.
-function getSmartDefaults(){
-  const recientes = gestiones.slice(0, 20);
+// Defaults inteligentes — tres niveles de especificidad.
+// "Precio" excluido del default: ya tiene fricción explícita, no lo facilitamos.
+const FRENOS_EXCLUIDOS_DEFAULT = ['Precio / cuota alta'];
 
-  const topVal = (items) => {
+function getSmartDefaults(clienteId, ramo){
+  const topVal = (items, excluir=[]) => {
     const cnt = {};
-    items.forEach(v => { if(v) cnt[v] = (cnt[v]||0) + 1; });
+    items.forEach(v => { if(v && !excluir.includes(v)) cnt[v] = (cnt[v]||0) + 1; });
     return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
   };
 
-  const freno = topVal(
-    recientes
-      .filter(g => g.resultado==='rechazado' || g.resultado==='no_contesto')
-      .map(g => g.freno_principal)
-  );
-  const motivador = topVal(
-    recientes
-      .filter(g => g.resultado==='cerrado' || g.resultado==='interesado')
-      .map(g => g.motivador_principal)
-  ) || 'confianza';
+  const calcular = (pool) => ({
+    freno:    topVal(pool.filter(g=>g.resultado==='rechazado'||g.resultado==='no_contesto').map(g=>g.freno_principal), FRENOS_EXCLUIDOS_DEFAULT),
+    motivador:topVal(pool.filter(g=>g.resultado==='cerrado'||g.resultado==='interesado').map(g=>g.motivador_principal)) || null,
+  });
 
-  return { freno, motivador };
+  // Nivel 1: historial del cliente específico (≥3 gestiones)
+  const gCliente = gestiones.filter(g => g.clienteId === clienteId);
+  if(gCliente.length >= 3){
+    const d = calcular(gCliente);
+    if(d.freno || d.motivador)
+      return { ...d, motivador: d.motivador||'confianza', fuente:'cliente' };
+  }
+
+  // Nivel 2: patrones por ramo del broker (≥3 gestiones del mismo ramo)
+  if(ramo){
+    const gRamo = gestiones.filter(g => g.ramo === ramo).slice(0, 30);
+    if(gRamo.length >= 3){
+      const d = calcular(gRamo);
+      if(d.freno || d.motivador)
+        return { ...d, motivador: d.motivador||'confianza', fuente:'ramo', ramo };
+    }
+  }
+
+  // Nivel 3: patrones globales del broker (últimas 20, sin Precio)
+  const d = calcular(gestiones.slice(0, 20));
+  return { freno: d.freno, motivador: d.motivador||'confianza', fuente: d.freno||d.motivador ? 'broker' : null };
 }
 
-let _smartDefaults = { freno: null, motivador: 'confianza' };
+let _smartDefaults = { freno: null, motivador: 'confianza', fuente: null };
 
 function mgResultadoCambio(){
   const r=document.getElementById('mg-resultado').value;
@@ -3684,17 +3701,22 @@ function mgResultadoCambio(){
   document.getElementById('mg-motivador-wrap').style.display = positivo ? '' : 'none';
 
   // Aplicar default inteligente de freno cuando el campo aparece
+  const frenoHint = document.getElementById('mg-freno-hint');
   if(conFreno && _smartDefaults.freno){
     document.getElementById('mg-freno').value = _smartDefaults.freno;
-    document.getElementById('mg-freno-hint').style.display = '';
+    const txt = _smartDefaults.fuente==='cliente' ? 'Basado en el historial de este cliente'
+              : _smartDefaults.fuente==='ramo'    ? `Basado en tus gestiones de ${_smartDefaults.ramo}`
+              : 'Basado en tus patrones recientes';
+    frenoHint.textContent = `✦ ${txt} — podés cambiarlo`;
+    frenoHint.style.display = '';
   } else {
-    document.getElementById('mg-freno-hint').style.display = 'none';
+    frenoHint.style.display = 'none';
   }
 }
 
 function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   gestionModalCtx={clienteId,clienteNombre,ramo,poliza};
-  _smartDefaults = getSmartDefaults();
+  _smartDefaults = getSmartDefaults(clienteId, ramo);
 
   document.getElementById('modal-gestion-sub').textContent='Nueva gestión comercial';
   document.getElementById('modal-cliente-info').innerHTML=`<strong>${esc(clienteNombre)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(ramo)}${poliza?' · Póliza '+esc(poliza):''}</span>`;
@@ -3712,7 +3734,16 @@ function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
 
   // Default motivador inteligente
   document.getElementById('mg-motivador').value = _smartDefaults.motivador;
-  document.getElementById('mg-motivador-hint').style.display = _smartDefaults.motivador !== 'confianza' ? '' : 'none';
+  const motivHint = document.getElementById('mg-motivador-hint');
+  if(_smartDefaults.fuente && _smartDefaults.motivador !== 'confianza'){
+    const txt = _smartDefaults.fuente==='cliente' ? 'Basado en el historial de este cliente'
+              : _smartDefaults.fuente==='ramo'    ? `Basado en tus gestiones de ${_smartDefaults.ramo}`
+              : 'Basado en tus patrones recientes';
+    motivHint.textContent = `✦ ${txt} — podés cambiarlo`;
+    motivHint.style.display = '';
+  } else {
+    motivHint.style.display = 'none';
+  }
 
   mgResultadoCambio();
   document.getElementById('modal-gestion').classList.add('open');
@@ -3820,6 +3851,7 @@ async function guardarGestion(){
         broker_id:           getBrokerId(),
         cliente_id:          clienteId||null,
         cliente_nombre:      clienteNombre||null,
+        ramo:                ramo||null,
         tipo, resultado,
         reaccion_cliente:    reaccion,
         freno_principal:     freno,
@@ -3831,10 +3863,13 @@ async function guardarGestion(){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Error al guardar');
 
-    gestiones.push({
+    gestiones.unshift({
       id: data.id, clienteId, clienteNombre, ramo, poliza,
       tipo, resultado, nota, fechaSeg,
-      fechaGestion: new Date().toISOString().slice(0,10)
+      freno_principal:     freno,
+      motivador_principal: motivador,
+      reaccion_cliente:    reaccion,
+      fechaGestion:        new Date().toISOString().slice(0,10)
     });
 
     cerrarModalGestion();
