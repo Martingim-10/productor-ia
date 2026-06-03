@@ -1580,9 +1580,11 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <select id="mg-freno">
         <option value="">— Seleccioná —</option>
       </select>
+      <div id="mg-freno-hint" style="display:none;font-size:10px;color:var(--muted);margin-top:4px;font-style:italic">✦ Sugerencia basada en tus últimas gestiones — podés cambiarlo</div>
     </div>
     <div class="modal-field" id="mg-motivador-wrap" style="display:none">
       <label>¿Qué motivó la decisión?</label>
+      <div id="mg-motivador-hint" style="display:none;font-size:10px;color:var(--muted);margin-bottom:4px;font-style:italic">✦ Sugerencia basada en tus últimas gestiones — podés cambiarlo</div>
       <select id="mg-motivador">
         <option value="confianza" selected>🤝 Confianza en el broker</option>
         <option value="precio">💰 Precio / cuota accesible</option>
@@ -3644,18 +3646,56 @@ function shuffle(arr){
   return a;
 }
 
+// Calcula defaults basados en patrones AGREGADOS del broker (últimas 20 gestiones).
+// No usa historia individual del cliente para evitar anclaje.
+function getSmartDefaults(){
+  const recientes = gestiones.slice(0, 20);
+
+  const topVal = (items) => {
+    const cnt = {};
+    items.forEach(v => { if(v) cnt[v] = (cnt[v]||0) + 1; });
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+  };
+
+  const freno = topVal(
+    recientes
+      .filter(g => g.resultado==='rechazado' || g.resultado==='no_contesto')
+      .map(g => g.freno_principal)
+  );
+  const motivador = topVal(
+    recientes
+      .filter(g => g.resultado==='cerrado' || g.resultado==='interesado')
+      .map(g => g.motivador_principal)
+  ) || 'confianza';
+
+  return { freno, motivador };
+}
+
+let _smartDefaults = { freno: null, motivador: 'confianza' };
+
 function mgResultadoCambio(){
   const r=document.getElementById('mg-resultado').value;
-  const conFreno  = r==='no_contesto' || r==='rechazado';
+  const conFreno   = r==='no_contesto' || r==='rechazado';
   const obligFreno = r==='rechazado';
-  const positivo  = r==='cerrado' || r==='interesado';
+  const positivo   = r==='cerrado' || r==='interesado';
+
   document.getElementById('mg-freno-wrap').style.display     = conFreno ? '' : 'none';
   document.getElementById('mg-freno-req').style.display      = obligFreno ? '' : 'none';
   document.getElementById('mg-motivador-wrap').style.display = positivo ? '' : 'none';
+
+  // Aplicar default inteligente de freno cuando el campo aparece
+  if(conFreno && _smartDefaults.freno){
+    document.getElementById('mg-freno').value = _smartDefaults.freno;
+    document.getElementById('mg-freno-hint').style.display = '';
+  } else {
+    document.getElementById('mg-freno-hint').style.display = 'none';
+  }
 }
 
 function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   gestionModalCtx={clienteId,clienteNombre,ramo,poliza};
+  _smartDefaults = getSmartDefaults();
+
   document.getElementById('modal-gestion-sub').textContent='Nueva gestión comercial';
   document.getElementById('modal-cliente-info').innerHTML=`<strong>${esc(clienteNombre)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(ramo)}${poliza?' · Póliza '+esc(poliza):''}</span>`;
   const d=new Date();d.setDate(d.getDate()+7);document.getElementById('mg-fecha-seg').value=d.toISOString().slice(0,10);
@@ -3664,11 +3704,16 @@ function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   document.getElementById('mg-nota').value='';
   document.getElementById('mg-reaccion').value=3;
   document.getElementById('mg-reaccion-val').textContent='3';
-  // Frenos: shuffle en cada apertura, sin opción preseleccionada
+
+  // Shuffle frenos — el default se aplica después si el resultado es negativo
   const sel=document.getElementById('mg-freno');
   sel.innerHTML='<option value="">— Seleccioná —</option>';
   shuffle(MG_FRENOS).forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
-  document.getElementById('mg-motivador').value='confianza';
+
+  // Default motivador inteligente
+  document.getElementById('mg-motivador').value = _smartDefaults.motivador;
+  document.getElementById('mg-motivador-hint').style.display = _smartDefaults.motivador !== 'confianza' ? '' : 'none';
+
   mgResultadoCambio();
   document.getElementById('modal-gestion').classList.add('open');
 }
