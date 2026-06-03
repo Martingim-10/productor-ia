@@ -1532,6 +1532,24 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-honor" style="z-index:9999">
+  <div class="modal-box" style="max-width:480px;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">🤝</div>
+    <div class="modal-title" style="font-size:18px">Compromiso de Integridad</div>
+    <div style="font-size:13px;color:var(--muted);margin:16px 0;line-height:1.7">
+      Al ingresar a ProductorIA reafirmás tu compromiso de registrar<br>
+      <strong>diagnósticos reales</strong> de cada interacción con tus clientes.<br><br>
+      Los datos que cargás entrenan a PULSO para mejorar la calidad<br>
+      de toda la red. Un diagnóstico deshonesto contamina el modelo<br>
+      y perjudica a todos los productores.<br><br>
+      <em style="color:var(--blue-fg)">Tu honestidad es el activo más valioso de TRAMA.</em>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:14px" onclick="aceptarHonor()">
+      Acepto el compromiso — Ingresar
+    </button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-gestion">
   <div class="modal-box" style="position:relative">
     <button onclick="cerrarModalGestion()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;padding:0" title="Cerrar">✕</button>
@@ -5027,6 +5045,7 @@ async function lockSubmit() {
     localStorage.setItem(LOCK_HASH_KEY, hash);
     sessionStorage.setItem(LOCK_SESSION_KEY, '1');
     document.getElementById('lock-screen').classList.add('hidden');
+    checkHonorCode();
     return;
   }
 
@@ -5038,6 +5057,7 @@ async function lockSubmit() {
     sessionStorage.removeItem(LOCK_ATTEMPTS_KEY);
     sessionStorage.removeItem(LOCK_UNTIL_KEY);
     document.getElementById('lock-screen').classList.add('hidden');
+    checkHonorCode();
   } else {
     const att = parseInt(sessionStorage.getItem(LOCK_ATTEMPTS_KEY)||'0') + 1;
     sessionStorage.setItem(LOCK_ATTEMPTS_KEY, String(att));
@@ -5109,6 +5129,7 @@ function initLockScreen() {
     input.focus();
   } else if (isUnlocked) {
     document.getElementById('lock-screen').classList.add('hidden');
+    checkHonorCode();
   } else {
     lockMode = 'login';
     document.getElementById('lock-subtitle').textContent = 'Ingresá tu PIN para continuar';
@@ -5118,6 +5139,31 @@ function initLockScreen() {
     document.getElementById('lock-screen').classList.remove('hidden');
     input.focus();
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CÓDIGO DE HONOR — chequeo mensual
+// ═══════════════════════════════════════════════════════════
+async function checkHonorCode(){
+  try{
+    const res = await fetch(`${TRAMA_WORKER}/honor?broker_id=${getBrokerId()}`);
+    if(!res.ok) return;
+    const { acepto } = await res.json();
+    if(!acepto) document.getElementById('modal-honor').classList.add('open');
+  }catch(e){ console.warn('Error chequeando código de honor:',e); }
+}
+
+async function aceptarHonor(){
+  const btn = document.querySelector('#modal-honor .btn-primary');
+  btn.textContent='Registrando...'; btn.disabled=true;
+  try{
+    await fetch(`${TRAMA_WORKER}/honor`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ broker_id: getBrokerId() })
+    });
+  }catch(e){ console.warn('Error registrando honor:',e); }
+  document.getElementById('modal-honor').classList.remove('open');
+  btn.textContent='Acepto el compromiso — Ingresar'; btn.disabled=false;
 }
 
 // ═══════════════════════════════════════════════════════════
