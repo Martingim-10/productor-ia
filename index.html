@@ -3355,7 +3355,17 @@ async function sendMsg(){
       const chatBody = document.getElementById('chat-body');
       chatBody.removeChild(chatBody.lastChild);
 
-      if(vigentes.length > 0){
+      if(vigentes.length > 1){
+        // Múltiples pólizas del mismo ramo — mostrar picker antes de consultar
+        const opciones = vigentes.map(p => {
+          const fecha = (p.startDate||'').slice(0,10);
+          return `<button onclick="elegirPolizaChat('${p.referenceNumber}','${p.branchCode}','${p.certificateNumber||0}',\`${txt.replace(/`/g,'\\`')}\`)" style="background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--blue-fg);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px">Ref ${p.referenceNumber} · desde ${fecha}</button>`;
+        }).join('');
+        addBubble('ai', `Encontré ${vigentes.length} pólizas de ${vigentes[0].branchName} para ese DNI. ¿Cuál consulto?<br><div style="margin-top:8px">${opciones}</div>`);
+        document.getElementById('chat-loader').classList.remove('show');
+        document.getElementById('send-btn').disabled=false;
+        return;
+      } else if(vigentes.length > 0){
         const p = vigentes[0];
         const docRes = await fetch(`${SANCOR_WORKER}/document`, {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -3920,6 +3930,36 @@ function abrirPerfilCliente(id){
 }
 
 let _precioConsecutivo = 0;
+
+async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, pregunta){
+  const key = getKey(); if(!key) return;
+  addBubble('user', `Póliza ${referenceNumber}`);
+  document.getElementById('chat-loader').classList.add('show');
+  document.getElementById('send-btn').disabled = true;
+  try{
+    const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ referenceNumber, branchCode: Number(branchCode), certificateNumber: Number(certificateNumber), reportName:'Caratula' })
+    });
+    const doc = await docRes.json();
+    if(!doc.files?.[0]?.urlFile){ addBubble('ai','No pude obtener esa póliza.'); return; }
+    const userContent = [
+      { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${referenceNumber}` },
+      { type:'text', text: pregunta }
+    ];
+    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:[{role:'user',content:userContent}]})
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Sin respuesta.';
+    hist.push({role:'user',content:pregunta});
+    hist.push({role:'assistant',content:reply});
+    addBubble('ai', reply);
+  }catch(e){ addBubble('ai','Error al consultar la póliza.'); }
+  finally{ document.getElementById('chat-loader').classList.remove('show'); document.getElementById('send-btn').disabled=false; }
+}
 
 async function guardarGestion(){
   const{clienteId,clienteNombre,ramo,poliza}=gestionModalCtx;
