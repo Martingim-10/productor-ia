@@ -3967,19 +3967,23 @@ async function guardarGestion(){
     const res = await fetch(`${TRAMA_WORKER}/gestiones`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
+         // 1. El filtro del ID justo antes del body
+    const idValidado = (clienteId && clienteId.includes('-')) ? clienteId : null;
+    
+    // 2. El cuerpo del envío corregido
+    body: JSON.stringify({
         broker_id:           getBrokerId(),
-        cliente_id:          clienteId||null,
+        cliente_id:          idValidado, 
         cliente_nombre:      clienteNombre||null,
         ramo:                ramo||null,
         tipo, resultado,
         reaccion_cliente:    reaccion,
         freno_principal:     freno,
         motivador_principal: motivador,
-        nota:                nota||null,
+        nota:                (!idValidado && clienteId) ? `[DNI: ${clienteId}] | ${nota||''}` : (nota||null),
         fecha_seguimiento:   fechaSeg||null,
-      })
-    });
+      }) // <-- Sin punto y coma acá (cierre del JSON)
+    }); // <-- ACÁ SÍ VA EL PUNTO Y COMA (cierre del fetch completo)
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Error al guardar');
 
