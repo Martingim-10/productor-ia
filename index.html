@@ -3970,18 +3970,19 @@ async function guardarGestion(){
          // 1. El filtro del ID justo antes del body
     const idValidado = (clienteId && clienteId.includes('-')) ? clienteId : null;
     
-    // 2. El cuerpo del envío corregido
     body: JSON.stringify({
-        broker_id:           getBrokerId(),
+        broker_id:           getBrokerId() || "00000000-0000-0000-0000-000000000000", // UUID por defecto si falla
         cliente_id:          idValidado, 
-        cliente_nombre:      clienteNombre||null,
-        ramo:                ramo||null,
-        tipo, resultado,
-        reaccion_cliente:    reaccion,
-        freno_principal:     freno,
-        motivador_principal: motivador,
+        cliente_nombre:      clienteNombre || "Cliente Sancor",
+        ramo:                ramo || "Varios",
+        gestion_tipo:        tipo || "Gestión", // Desglosamos 'tipo' con el nombre técnico estándar
+        estado:              resultado || "Pendiente", // Desglosamos 'resultado' como 'estado'
+        reaccion_cliente:    parseInt(reaccion) || 3,
+        freno_principal:     freno || null,
+        motivador_principal: motivador || null,
         nota:                (!idValidado && clienteId) ? `[DNI: ${clienteId}] | ${nota||''}` : (nota||null),
-        fecha_seguimiento:   fechaSeg||null,
+        fecha_seguimiento:   fechaSeg || null
+    })
       }) // <-- Sin punto y coma acá (cierre del JSON)
     }); // <-- ACÁ SÍ VA EL PUNTO Y COMA (cierre del fetch completo)
     const data = await res.json();
