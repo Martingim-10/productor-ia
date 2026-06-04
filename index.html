@@ -3937,11 +3937,76 @@ async function guardarGestion(){
   const freno     = conFreno ? document.getElementById('mg-freno').value : null;
   const motivador = positivo ? document.getElementById('mg-motivador').value : null;
 
-  // Freno obligatorio solo para rechazado
+  async function guardarGestion(){
+  const {clienteId, clienteNombre, ramo, poliza} = g_actual_oportunidad || gestionModalCtx || {};
+  const resultado = document.getElementById('mg-resultado').value;
+  const tipo      = document.getElementById('mg-tipo').value;
+  const nota      = document.getElementById('mg-nota').value.trim();
+  const fechaSegInput = document.getElementById('mg-fecha-seg').value;
+  
+  const fechaSeg = fechaSegInput
+    ? new Date(fechaSegInput + 'T12:00:00-03:00').toISOString().slice(0, 10)
+    : null;
+  const reaccion  = parseInt(document.getElementById('mg-reaccion').value);
+  const conFreno  = resultado==='no_contesto' || resultado==='rechazado';
+  const positivo  = resultado==='cerrado'     || resultado==='interesado';
+  const freno     = conFreno ? document.getElementById('mg-freno').value : null;
+  const motivador = positivo ? document.getElementById('mg-motivador').value : null;
+
+  // 🛑 Tu validación: Freno obligatorio solo para rechazado
   if(resultado==='rechazado' && !freno){
     alert('Seleccioná el freno principal antes de guardar.');
     return;
   }
+
+  // 🚀 El parche para el Worker de Cloudflare
+  const esUUID = clienteId && clienteId.includes('-');
+  const idParaWorker = esUUID ? clienteId : null;
+  const notaEnriquecida = !esUUID 
+    ? `[DNI Sancor: ${clienteId}] | Poliza: ${poliza || 'N/A'} | Ramo: ${ramo || 'N/A'}\n${nota}`
+    : nota;
+
+  try {
+    const btnGuardar = document.getElementById('mg-btn-guardar') || document.querySelector('.modal-footer .btn-primary');
+    if(btnGuardar) { btnGuardar.disabled = true; btnGuardar.innerText = 'Guardando...'; }
+
+    const response = await fetch('https://trama-worker.mgmg050382.workers.dev/gestiones', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': localStorage.getItem('trama_api_key') || ''
+      },
+      body: JSON.stringify({
+        broker_id: localStorage.getItem('trama_broker_id') || crypto.randomUUID(),
+        cliente_id: idParaWorker, 
+        cliente_nombre: clienteNombre || 'Cliente Sancor',
+        gestion_tipo: tipo,
+        detalle: notaEnriquecida,
+        estado: resultado,
+        reaccion: reaccion,
+        freno: freno,
+        motivador: motivador,
+        fecha_seguimiento: fechaSeg
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Error del servidor (${response.status}): ${errText}`);
+    }
+
+    alert('¡Gestión guardada con éxito, socio!');
+    if(typeof cerrarModalGestion === 'function') cerrarModalGestion();
+    if(typeof cargarAgendaDelDia === 'function') cargarAgendaDelDia();
+    
+  } catch (error) {
+    console.error('Error al guardar gestión:', error);
+    alert('No se pudo guardar: ' + error.message);
+  } finally {
+    const btnGuardar = document.getElementById('mg-btn-guardar') || document.querySelector('.modal-footer .btn-primary');
+    if(btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Gestión'; }
+  }
+} // <-- Esta llave cierra la función y arregla el SyntaxError
 
   // 🚨 EL LUBRICANTE PARA EL WORKER:
   // Si clienteId es un DNI (no tiene guiones de UUID), lo pasamos como null para que el Worker no tire Error 400.
