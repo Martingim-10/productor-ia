@@ -3921,7 +3921,13 @@ function abrirPerfilCliente(id){
 
 let _precioConsecutivo = 0;
 
-
+// ACÁ ESTÁ EL SECRETO: Asegurate de que tenga la palabra "async" antes de "function"
+async function guardarGestion() {
+    const { clienteId, clienteNombre, ramo, poliza } = (typeof g_actual_oportunidad !== 'undefined' && g_actual_oportunidad) || gestionModalCtx || {};
+    
+    const resultado     = document.getElementById('mg-resultado').value;
+    const tipo          = document.getElementById('mg-tipo').value;
+    // ... todo el resto del código queda igual ...
 
 // 2. La función limpia, estructurada y con los cierres perfectos de llaves
 async function guardarGestion() {
