@@ -3803,6 +3803,9 @@ async function ejecutarConsultaCobertura() {
       body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1000, system: getSistema(), messages: [{ role: 'user', content }] })
     }, 25000);
     const data  = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || data.details || `Error del servidor de IA (${res.status})`);
+    }
     const reply = data.content?.[0]?.text || 'Sin respuesta.';
 
     // 4. Cerrar modal e inyectar respuesta en el chat
@@ -4222,10 +4225,18 @@ async function sendMsg(){
     hist.push({ role:'user', content: hasDocs ? txt : userContent });
 
     const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:mensajesAEnviar})});
-    const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
+    const data=await res.json();
+    if (!res.ok) {
+      document.getElementById('chat-loader').classList.remove('show');
+      const errMsg = data.error || data.details || `Error del servidor (${res.status})`;
+      addBubble('ai', `⚠️ <strong>Error del asistente:</strong> ${errMsg}`);
+      document.getElementById('send-btn').disabled=false;
+      return;
+    }
+    const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
     document.getElementById('chat-loader').classList.remove('show');addBubble('ai',reply);
-  }catch(e){document.getElementById('chat-loader').classList.remove('show');addBubble('ai','Error al conectar.');}
+  }catch(e){document.getElementById('chat-loader').classList.remove('show');addBubble('ai',`⚠️ Error al conectar con el asistente: ${e.message}`);}
   document.getElementById('send-btn').disabled=false;
 }
 
@@ -4245,7 +4256,14 @@ async function genMail(){
   document.getElementById('mail-loader').classList.add('show');document.getElementById('mail-prev').classList.remove('show');
   try{
     const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:[{role:'user',content:prompt}]})});
-    const data=await res.json();const reply=data.content?.[0]?.text||'';
+    const data=await res.json();
+    if (!res.ok) {
+      document.getElementById('mail-loader').classList.remove('show');
+      const errMsg = data.error || data.details || `Error del servidor (${res.status})`;
+      alert(`❌ Error al generar: ${errMsg}`);
+      return;
+    }
+    const reply=data.content?.[0]?.text||'';
     document.getElementById('mail-loader').classList.remove('show');
     const lines=reply.split('\n');let asunto='',body='',inB=false;
     for(const l of lines){if(l.startsWith('ASUNTO:'))asunto=l.replace('ASUNTO:','').trim();else if(l==='---')inB=true;else if(inB)body+=l+'\n';}
@@ -4484,9 +4502,15 @@ async function callIA(prompt,outId){
   const key=getKey();const out=document.getElementById(outId);out.classList.add('show');
   try{
     const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:2000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
-    const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
+    const data=await res.json();
+    if (!res.ok) {
+      const errMsg = data.error || data.details || `Error del servidor (${res.status})`;
+      out.innerHTML = `<span style="color:#ef4444; font-weight:600">❌ Error: ${errMsg}</span>`;
+      return;
+    }
+    const reply=data.content?.[0]?.text||'Sin respuesta.';
     out.innerHTML=`<button class="copy-btn" onclick="copiar('${outId}')">Copiar</button>${reply.replace(/\n/g,'<br>')}`;
-  }catch(e){out.innerHTML='Error al conectar con la IA.';}
+  }catch(e){out.innerHTML=`<span style="color:#ef4444; font-weight:600">❌ Error al conectar con la IA: ${e.message}</span>`;}
 }
 
 function copiar(id){
@@ -4500,7 +4524,12 @@ function copiar(id){
 function guardarCfg(){
   localStorage.setItem('cfg_nombre',document.getElementById('cfg-nombre').value);
   localStorage.setItem('cfg_ciudad',document.getElementById('cfg-ciudad').value);
-  const k=document.getElementById('cfg-key').value.trim();if(k)localStorage.setItem('apikey',k);
+  const k=document.getElementById('cfg-key').value.trim();
+  if(k) {
+    localStorage.setItem('apikey',k);
+  } else {
+    localStorage.removeItem('apikey');
+  }
   alert('✅ Configuración guardada.');
 }
 function cargarCfg(){
