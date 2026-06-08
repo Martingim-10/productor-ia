@@ -55,6 +55,8 @@
   --glow-gold:0 0 0 3px rgba(0,212,255,0.18);
   --radius:12px; --radius-xl:22px;
   --trans:all .25s cubic-bezier(.4,0,.2,1);
+  --card:#0D1B2E;
+  --card-bg:#0D1B2E;
 }
 *{box-sizing:border-box;margin:0;padding:0;transition:color .25s cubic-bezier(.4,0,.2,1),background-color .25s cubic-bezier(.4,0,.2,1),border-color .25s cubic-bezier(.4,0,.2,1),box-shadow .25s cubic-bezier(.4,0,.2,1),transform .25s cubic-bezier(.4,0,.2,1),opacity .25s cubic-bezier(.4,0,.2,1)}
 button:active{transform:scale(.96)!important}
@@ -2084,7 +2086,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 </div>
 
 <!-- PULSO feedback card — aparece post-guardado de gestión -->
-<div id="pulso-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 32px));background:var(--card);border:1px solid rgba(0,212,255,.3);border-radius:14px;padding:16px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:8000;animation:slideUp .25s ease">
+<div id="pulso-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 32px));background:#0D1B2E;border:2.5px solid var(--gold-accent);border-radius:14px;padding:16px 18px;box-shadow:0 12px 48px rgba(0,0,0,0.85);z-index:9999;animation:slideUp .25s ease">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
     <div style="font-size:12px;font-weight:700;color:var(--gold-accent);letter-spacing:.7px;text-transform:uppercase">🧠 PULSO · Feedback Inmediato</div>
     <button onclick="cerrarPulsoCard()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>
