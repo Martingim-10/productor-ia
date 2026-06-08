@@ -2136,10 +2136,9 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     <div class="modal-field">
       <label>Resultado</label>
       <select id="mg-resultado" onchange="mgResultadoCambio()">
-        <option value="contactado">✅ Contactado</option>
+        <option value="interesado">🌟 Interesado / Contactado</option>
         <option value="no_contesto">📵 No contestó</option>
         <option value="rechazado">❌ Rechazado</option>
-        <option value="interesado">🌟 Interesado</option>
         <option value="cerrado">🏆 Cerrado / Vendido</option>
       </select>
     </div>
@@ -3910,7 +3909,7 @@ Respuesta: ${reply.slice(0, 500)}`;
         cliente_nombre: dbClienteNombre,
         ramo: ramo || null,
         tipo: 'consulta_cobertura_ia',
-        resultado: estaVencida ? 'alerta_vencida' : 'consulta_tecnica',
+        resultado: 'interesado',
         reaccion_cliente: reaccion,
         freno_principal: freno,
         motivador_principal: motivador,
@@ -3931,7 +3930,7 @@ Respuesta: ${reply.slice(0, 500)}`;
         ramo: ramo,
         poliza: null,
         tipo: 'consulta_cobertura_ia',
-        resultado: estaVencida ? 'alerta_vencida' : 'consulta_tecnica',
+        resultado: 'interesado',
         freno_principal: freno,
         motivador_principal: motivador,
         reaccion_cliente: reaccion,
@@ -5102,7 +5101,7 @@ function abrirModalGestion(clienteId,clienteNombre,ramo,poliza){
   document.getElementById('modal-cliente-info').innerHTML=`<strong>${esc(clienteNombre)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(ramo)}${poliza?' · Póliza '+esc(poliza):''}</span>`;
   const d=new Date();d.setDate(d.getDate()+7);document.getElementById('mg-fecha-seg').value=d.toISOString().slice(0,10);
   document.getElementById('mg-tipo').value='llamado';
-  document.getElementById('mg-resultado').value='contactado';
+  document.getElementById('mg-resultado').value='interesado';
   document.getElementById('mg-nota').value='';
   document.getElementById('mg-reaccion').value=3;
   document.getElementById('mg-reaccion-val').textContent='3';
