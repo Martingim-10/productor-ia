@@ -3668,9 +3668,9 @@ async function accionIA(tipo,nombre,ramo){
 // ═══════════════════════════════════════════════════════════
 // CONSULTA DE COBERTURA POR PÓLIZA REAL
 // ═══════════════════════════════════════════════════════════
-const SANCOR_WORKER = window.location.origin + '/api/sancor';
-const TRAMA_WORKER  = window.location.origin + '/api/trama';
-const STEEP_FOG_WORKER = window.location.origin + '/api/steep-fog';
+const SANCOR_WORKER = 'https://sancor-api.mgmg050382.workers.dev';
+const TRAMA_WORKER  = 'https://trama-worker.mgmg050382.workers.dev';
+const STEEP_FOG_WORKER = 'https://steep-fog-c622.mgmg050382.workers.dev';
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
