@@ -58,7 +58,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;transition:color .25s cubic-bezier(.4,0,.2,1),background-color .25s cubic-bezier(.4,0,.2,1),border-color .25s cubic-bezier(.4,0,.2,1),box-shadow .25s cubic-bezier(.4,0,.2,1),transform .25s cubic-bezier(.4,0,.2,1),opacity .25s cubic-bezier(.4,0,.2,1)}
 button:active{transform:scale(.96)!important}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-paper);color:var(--text-main);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-paper);color:var(--text-main);height:100vh;max-height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 header{background:var(--primary-ink);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.07)}
 header::after{content:'';position:absolute;bottom:0;left:32px;right:32px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-accent) 30%,var(--gold-l) 50%,var(--gold-accent) 70%,transparent)}
 .logo{display:flex;align-items:center;gap:12px}
@@ -69,16 +69,19 @@ header::after{content:'';position:absolute;bottom:0;left:32px;right:32px;height:
 .hdr-meta{font-size:11px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:20px}
 .dot{width:7px;height:7px;background:#34d399;border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite;box-shadow:0 0 8px #34d399}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.shell{display:flex;flex:1;min-height:calc(100vh - 68px)}
-nav{width:228px;background:var(--primary-ink);padding:16px 0 24px;display:flex;flex-direction:column;gap:0;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06)}
+.shell{display:flex;flex:1;height:calc(100vh - 68px);max-height:calc(100vh - 68px);overflow:hidden}
+nav{width:228px;background:var(--primary-ink);padding:16px 0 24px;display:flex;flex-direction:column;gap:0;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto}
+nav::-webkit-scrollbar{width:4px}
+nav::-webkit-scrollbar-track{background:transparent}
+nav::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.15);border-radius:2px}
 .nav-sec{padding:20px 20px 5px;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.2);font-weight:700;margin-top:4px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px 11px 24px;color:rgba(255,255,255,.48);cursor:pointer;font-size:13px;user-select:none;border-left:3px solid transparent;margin:1px 0}
 .nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.85);border-left-color:rgba(212,175,55,.3)}
 .nav-item.active{background:rgba(255,255,255,.07);color:#fff;font-weight:600;border-left-color:var(--gold-accent)}
 .nav-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;height:100%}
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;height:100%}
 .panel.active{display:flex}
 .ph{background:rgba(248,250,252,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--border-color);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .ph-title{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-.5px;color:var(--primary-ink);font-weight:700}
@@ -157,17 +160,20 @@ tr:hover td{background:#F0F7FF}
 .qa-wrap{display:flex;gap:8px;flex-wrap:wrap;padding:0 28px 14px;flex-shrink:0}
 .qa{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
 .qa:hover{background:var(--ink);color:var(--gold-l);border-color:var(--ink)}
-.chat-foot{background:var(--white);border-top:1px solid var(--border);padding:14px 28px;flex-shrink:0}
-.inp-row{display:flex;gap:10px;align-items:flex-end}
-.chat-inp{flex:1;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);resize:none;min-height:44px;max-height:130px;outline:none;transition:border-color .15s;line-height:1.5}
-.chat-inp:focus{border-color:var(--gold)}
+.chat-foot{background:var(--primary-ink);border-top:1px solid rgba(0,212,255,0.15);padding:14px 28px;flex-shrink:0}
+.inp-row{display:flex;gap:10px;align-items:center}
+textarea.chat-inp{flex:1!important;width:auto!important;background:#152942!important;border:1.5px solid rgba(0,212,255,0.55)!important;border-radius:10px!important;padding:11px 14px!important;font-family:'Inter',sans-serif!important;font-size:14px!important;color:#E2F4FF!important;resize:none!important;min-height:44px!important;max-height:130px;outline:none!important;transition:border-color .15s!important;line-height:1.5!important;box-shadow:none!important}
+textarea.chat-inp:focus{border-color:var(--gold-accent)!important;box-shadow:0 0 15px rgba(0,212,255,0.35)!important}
 .send{width:46px;height:46px;background:linear-gradient(135deg,var(--ink2),var(--ink3));color:var(--gold-l);border:none;border-radius:11px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:var(--trans);flex-shrink:0;box-shadow:var(--shadow-sm)}
 .send:hover{background:linear-gradient(135deg,var(--gold-d),var(--gold));color:#fff;box-shadow:var(--shadow-gold);transform:translateY(-1px)}
 .send:disabled{opacity:.5;cursor:default}
 .fg{margin-bottom:16px}
 label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
-input[type=text],input[type=email],textarea,select{width:100%;background:var(--surface);border:1.5px solid var(--border-color);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-main);outline:none;box-shadow:var(--shadow-xs)}
-input:focus,textarea:focus,select:focus{border-color:var(--gold-accent);box-shadow:var(--glow-gold)}
+input[type=text],input[type=email],input[type=tel],input[type=date],textarea,select{width:100%;background:#132338;border:1.5px solid rgba(0,212,255,0.35);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-main);outline:none;box-shadow:var(--shadow-xs)}
+input:focus,textarea:focus,select:focus{border-color:var(--gold-accent);background:#162c46;box-shadow:var(--glow-gold)}
+::placeholder{color:rgba(168,212,232,0.45)!important;opacity:1!important}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
+select option{background-color:#122035!important;color:#E2F4FF!important}
 textarea{resize:vertical;line-height:1.6}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:22px}
@@ -231,24 +237,24 @@ textarea{resize:vertical;line-height:1.6}
 .seg-fecha-chip.vencido{background:var(--red-bg);color:var(--red-fg)}
 .seg-fecha-chip.hoy{background:#fef3c7;color:#92400e}
 .seg-fecha-chip.proximo{background:var(--green-bg);color:var(--green-fg)}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px);overflow-y:auto;padding:24px 12px}
 .modal-overlay.open{display:flex;animation:fu .2s ease}
-.modal-perfil-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-perfil-overlay{display:none;position:fixed;inset:0;background:rgba(8,15,30,.72);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px);overflow-y:auto;padding:24px 12px}
 .modal-perfil-overlay.open{display:flex;animation:fu .2s ease}
-.modal-perfil-box{background:var(--white);border-radius:16px;padding:28px;width:660px;max-width:96vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.modal-perfil-box{background:var(--white);border-radius:16px;padding:28px;width:660px;max-width:96vw;max-height:calc(100vh - 70px);overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border);margin:auto}
 .perfil-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
 .perfil-poliza-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
 .perfil-op-row{padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
-.modal-box{background:var(--white);border-radius:var(--radius-xl);padding:32px;width:470px;max-width:95vw;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.modal-box{background:var(--white);border-radius:var(--radius-xl);padding:24px 28px;width:470px;max-width:95vw;max-height:calc(100vh - 60px);overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border);margin:auto;display:flex;flex-direction:column;gap:5px}
 .modal-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:4px}
-.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-.modal-field{margin-bottom:14px}
-.modal-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.05em;text-transform:uppercase}
-.modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff;color:var(--ink)}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.05em;text-transform:uppercase}
+.modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--secondary-ink);color:var(--text-main)}
 .modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{outline:none;border-color:var(--gold)}
 .modal-field textarea{resize:vertical;min-height:70px}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
-.modal-cliente-info{background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.modal-cliente-info{background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px}
 .modal-cliente-info strong{color:var(--green)}
 
 /* ── RENOVACIONES ─────────────────────────────────────── */
@@ -553,13 +559,19 @@ textarea{resize:vertical;line-height:1.6}
 .lock-pin-box.filled{border-color:var(--gold-accent);background:rgba(0,212,255,.08)}
 .lock-pin-box.active{border-color:var(--gold-accent);box-shadow:0 0 0 3px rgba(0,212,255,.18)}
 #lock-pin-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.lock-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px auto 14px;max-width:240px}
+.lock-key{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:12px;height:48px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#F5F0E8;cursor:pointer;user-select:none;transition:background 0.15s, border-color 0.15s, transform 0.1s}
+.lock-key:hover{background:rgba(255,255,255,0.12);border-color:rgba(0,212,255,0.45)}
+.lock-key:active{background:rgba(0,212,255,0.15);transform:scale(0.95)}
+.lock-key.clear{color:#F87171}
+.lock-key.back{color:var(--gold-accent)}
 .lock-attempts{font-size:11px;color:#F59E0B;min-height:16px;margin-bottom:6px}
 .lock-error{font-size:12px;color:#F87171;min-height:18px;margin-bottom:14px}
 .lock-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold-hover),var(--gold-accent));border:none;border-radius:10px;font-size:14px;font-weight:600;color:var(--primary-ink);cursor:pointer;transition:opacity .15s;margin-bottom:10px;letter-spacing:.01em}
 .lock-btn:hover{opacity:.88}
 .lock-btn:disabled{opacity:.35;cursor:default}
-.lock-btn-sec{background:none;border:none;font-size:12px;color:rgba(245,240,232,.35);cursor:pointer;padding:4px 8px;transition:color .15s}
-.lock-btn-sec:hover{color:rgba(245,240,232,.65)}
+.lock-btn-sec{background:none;border:none;font-size:13px;color:rgba(245,240,232,0.6);cursor:pointer;padding:6px 12px;transition:all .15s;border-radius:6px;font-weight:500}
+.lock-btn-sec:hover{color:var(--gold-accent);background:rgba(255,255,255,0.04)}
 @keyframes lock-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .lock-shake{animation:lock-shake .35s ease}
 .hdr-lock-btn{background:none;border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:5px 10px;font-size:12px;color:rgba(226,244,255,.6);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
@@ -701,10 +713,88 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 <body>
 
 <!-- ══ LOCK SCREEN ═══════════════════════════════════════════ -->
+<!-- ══ CUSTOM CONFIRMATION & ALERT MODALS ════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-confirm" style="z-index:1000000; background:rgba(4,9,20,0.85); backdrop-filter:blur(10px)">
+  <div class="modal-box" style="max-width:380px; text-align:center; background:#0D1B2E; border:1px solid rgba(0,212,255,0.3); box-shadow:0 15px 45px rgba(0,0,0,0.9); margin: auto;">
+    <div style="font-size:36px; margin-bottom:12px" id="confirm-emoji">⚠️</div>
+    <div class="modal-title" style="font-size:20px; color:#F5F0E8; font-family:'DM Serif Display',serif; margin-bottom:10px" id="confirm-title">Confirmación</div>
+    <div id="confirm-message" style="font-size:13.5px; color:rgba(245,240,232,0.75); margin:16px 0; line-height:1.6"></div>
+    <div style="display:flex; gap:12px; margin-top:24px">
+      <button class="btn btn-secondary" style="flex:1; border:1px solid rgba(255,255,255,0.15); background: transparent; color:rgba(255,255,255,0.75)" id="confirm-btn-cancel">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="confirm-btn-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-alert" style="z-index:1000000; background:rgba(4,9,20,0.85); backdrop-filter:blur(10px)">
+  <div class="modal-box" style="max-width:380px; text-align:center; background:#0D1B2E; border:1px solid rgba(0,212,255,0.3); box-shadow:0 15px 45px rgba(0,0,0,0.9); margin: auto;">
+    <div style="font-size:36px; margin-bottom:12px" id="alert-emoji">⚠️</div>
+    <div class="modal-title" style="font-size:20px; color:#F5F0E8; font-family:'DM Serif Display',serif; margin-bottom:10px" id="alert-title">Atención</div>
+    <div id="alert-message" style="font-size:13.5px; color:rgba(245,240,232,0.75); margin:16px 0; line-height:1.6"></div>
+    <button class="btn btn-primary" style="width:100%; padding:12px; margin-top:16px" id="alert-btn-close">Entendido</button>
+  </div>
+</div>
+
 <div id="lock-screen">
-  <div class="lock-card">
-    <div class="lock-logo"><img src="logo.png" alt="Productor IA"></div>
-    <div class="lock-title">Productor IA</div>
+  <div class="lock-card" style="border: 1px solid rgba(0,212,255,0.22); border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.75), 0 0 50px rgba(0,212,255,0.12)">
+    <div class="lock-logo" style="margin-bottom: 18px; display:flex; justify-content:center;">
+      <svg viewBox="0 0 40 40" width="80" height="80" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 16px rgba(0,212,255,0.4)); animation: floatLogo 4s ease-in-out infinite;">
+        <style>
+          @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(2deg); }
+          }
+        </style>
+        <defs>
+          <linearGradient id="lgrad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d4ff" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+          <linearGradient id="lgrad-2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#00d4ff" />
+          </linearGradient>
+        </defs>
+        <!-- Sophisticated high-tech structural insurance grid -->
+        <path d="M 20 4 L 34 12 L 34 28 L 20 36 L 6 28 L 6 12 Z" fill="rgba(13, 27, 46, 0.75)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        <path d="M 20 4 L 20 36" fill="none" stroke="url(#lgrad-1)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 6 12 L 34 28" fill="none" stroke="url(#lgrad-2)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 34 12 L 6 28" fill="none" stroke="url(#lgrad-1)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2" opacity="0.8"/>
+        <!-- Inner ring representation of sync -->
+        <circle cx="20" cy="20" r="6" fill="#091321" stroke="#00d4ff" stroke-width="2.2"/>
+        <circle cx="20" cy="20" r="2" fill="#10b981"/>
+        <!-- Perfect vertex coordinates for stability -->
+        <circle cx="20" cy="4" r="3" fill="#10b981"/>
+        <circle cx="34" cy="12" r="3" fill="#f59e0b"/>
+        <circle cx="34" cy="28" r="3" fill="#00d4ff"/>
+        <circle cx="20" cy="36" r="3" fill="#10b981"/>
+        <circle cx="6" cy="28" r="3" fill="#f59e0b"/>
+        <circle cx="6" cy="12" r="3" fill="#00d4ff"/>
+      </svg>
+    </div>
+    <div class="lock-title" style="font-family:'Inter',sans-serif; font-weight:900; font-size:27px; letter-spacing:0.04em; background:linear-gradient(135deg, #fff 50%, #00d4ff 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom: 2px">TRAMA</div>
+    <div style="font-size:10px; color:#00d4ff; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:14px">Seguimiento Consolidado de Red</div>
+    
+    <!-- Selector de Perfil desde el Login -->
+    <div style="font-size:10px; text-transform:uppercase; color:rgba(255,255,255,0.3); font-weight:700; letter-spacing:0.8px; margin: 16px 0 8px;">Seleccioná tu Perfil Activo</div>
+    <div class="lock-profiles-grid" style="display:flex; gap:8px; justify-content:center; margin-bottom:20px;">
+      <div class="lock-profile-card" id="lpc-productor" onclick="selectLockProfile('productor')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid var(--green); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
+        <div style="font-size:22px">👤</div>
+        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:var(--green); margin-top:4px">Martín G.</div>
+        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Productor</div>
+      </div>
+      <div class="lock-profile-card" id="lpc-organizador" onclick="selectLockProfile('organizador')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
+        <div style="font-size:22px">📊</div>
+        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.6); margin-top:4px">Sofía V.</div>
+        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Organizador</div>
+      </div>
+      <div class="lock-profile-card" id="lpc-empleado" onclick="selectLockProfile('empleado')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
+        <div style="font-size:22px">💼</div>
+        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.6); margin-top:4px">Gaby Admin</div>
+        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Personal</div>
+      </div>
+    </div>
+
     <div class="lock-subtitle" id="lock-subtitle">Ingresá tu PIN para continuar</div>
     <input id="lock-pin-input" type="tel" maxlength="6" autocomplete="off" inputmode="numeric">
     <div class="lock-pin-boxes" id="lock-pin-boxes" onclick="document.getElementById('lock-pin-input').focus()">
@@ -714,6 +804,21 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <div class="lock-pin-box" id="lpb-3"></div>
       <div class="lock-pin-box" id="lpb-4"></div>
       <div class="lock-pin-box" id="lpb-5"></div>
+    </div>
+    
+    <div class="lock-keypad">
+      <div class="lock-key" onclick="pressLockKey('1')">1</div>
+      <div class="lock-key" onclick="pressLockKey('2')">2</div>
+      <div class="lock-key" onclick="pressLockKey('3')">3</div>
+      <div class="lock-key" onclick="pressLockKey('4')">4</div>
+      <div class="lock-key" onclick="pressLockKey('5')">5</div>
+      <div class="lock-key" onclick="pressLockKey('6')">6</div>
+      <div class="lock-key" onclick="pressLockKey('7')">7</div>
+      <div class="lock-key" onclick="pressLockKey('8')">8</div>
+      <div class="lock-key" onclick="pressLockKey('9')">9</div>
+      <div class="lock-key clear" onclick="pressLockKey('clear')">C</div>
+      <div class="lock-key" onclick="pressLockKey('0')">0</div>
+      <div class="lock-key back" onclick="pressLockKey('back')">⌫</div>
     </div>
     <div class="lock-attempts" id="lock-attempts"></div>
     <div class="lock-error" id="lock-error"></div>
@@ -725,10 +830,38 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 
 <header>
   <div class="logo">
-    <div class="logo-icon"><img src="logo.png" alt="Productor IA"></div>
+    <div class="logo-icon" style="background: none; box-shadow: none; width: auto; height: auto; border-radius: 0;">
+      <svg viewBox="0 0 40 40" width="38" height="38" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 10px rgba(0,212,255,0.4));">
+        <defs>
+          <linearGradient id="trama-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d4ff" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+          <linearGradient id="trama-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#00d4ff" />
+          </linearGradient>
+        </defs>
+        <!-- Perfect network grid representation of Trama -->
+        <path d="M 20 4 L 34 12 L 34 28 L 20 36 L 6 28 L 6 12 Z" fill="rgba(13, 27, 46, 0.6)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+        <path d="M 20 4 L 20 36" fill="none" stroke="url(#trama-grad-1)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 6 12 L 34 28" fill="none" stroke="url(#trama-grad-2)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 34 12 L 6 28" fill="none" stroke="url(#trama-grad-1)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2" opacity="0.8"/>
+        <!-- Inner core -->
+        <circle cx="20" cy="20" r="5" fill="#0D1B2E" stroke="#00d4ff" stroke-width="2"/>
+        <circle cx="20" cy="20" r="1.5" fill="#10b981"/>
+        <!-- Node joints -->
+        <circle cx="20" cy="4" r="2.5" fill="#10b981"/>
+        <circle cx="34" cy="12" r="2.5" fill="#f59e0b"/>
+        <circle cx="34" cy="28" r="2.5" fill="#00d4ff"/>
+        <circle cx="20" cy="36" r="2.5" fill="#10b981"/>
+        <circle cx="6" cy="28" r="2.5" fill="#f59e0b"/>
+        <circle cx="6" cy="12" r="2.5" fill="#00d4ff"/>
+      </svg>
+    </div>
     <div>
-      <div class="logo-text">Productor IA</div>
-      <div class="logo-sub">Sancor Seguros · Chubut</div>
+      <div class="logo-text" style="font-family:'Inter',sans-serif; font-weight:900; font-size:19px; background:linear-gradient(135deg, #fff 40%, #00d4ff 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:flex; align-items:center; gap:6.5px; line-height: 1.1">TRAMA <span style="font-size:9px; background:rgba(0,212,255,0.12); color:#00d4ff; border:1px solid rgba(0,212,255,0.25); border-radius:5px; padding:1px 4.5px; font-family:'DM Mono',monospace; font-weight:700; letter-spacing:0; -webkit-text-fill-color:#00d4ff">IA</span></div>
+      <div class="logo-sub" style="font-family:'Inter',sans-serif; font-size:9.5px; color:rgba(255,255,255,0.45); letter-spacing:0.04em; font-weight:500; margin-top: 1px;">Red de Productores · Chubut</div>
     </div>
   </div>
   <div class="hdr-meta">
@@ -741,6 +874,19 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 <div class="shell">
 
 <nav>
+  <!-- Sprint 4: Selector de Roles Multiusuario de Trama -->
+  <div style="padding:14px 20px 8px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:8px">
+    <div style="font-size:9.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); font-weight:700; letter-spacing:0.8px; margin-bottom:6px">Perfil Activo</div>
+    <select id="user-role-selector" onchange="switchUserRole(this.value)" style="width:100%; padding:8px 10px; background:#0d1b2e; border:1px solid rgba(0,212,255,0.25); border-radius:6px; color:#fff; font-size:12px; font-weight:600; font-family:sans-serif; cursor:pointer; outline:none; transition: border-color .2s;">
+      <option value="productor">👤 Productor Independiente</option>
+      <option value="organizador">📊 Organizador (Supervisión)</option>
+      <option value="empleado">💼 Personal de Oficina</option>
+    </select>
+    <div id="role-badge" style="font-size:10px; color:var(--gold-accent); font-weight:600; margin-top:6px; display:flex; align-items:center; gap:4px">
+      <span class="dot" style="width:6px; height:6px; margin:0; background:var(--green)"></span> <span id="role-badge-text">Acceso Completo</span>
+    </div>
+  </div>
+
   <div class="nav-sec">Principal</div>
   <div class="nav-item" data-panel="agenda">
     <span class="ic">🎯</span>Agenda del Día
@@ -754,37 +900,53 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     <span class="ic">🔄</span>Renovaciones
     <span class="nav-badge" id="badge-renovaciones" style="background:var(--rust)"></span>
   </div>
-  <div class="nav-item" data-panel="chat">
+  <div class="nav-item" data-panel="chat" id="nav-item-chat">
     <span class="ic">💬</span>Asistente
   </div>
-  <div class="nav-sec">Herramientas</div>
-  <div class="nav-item" data-panel="analizador">
+
+  <!-- Supervisión de Red de Organizadores (Sólo visible en rol Organizador) -->
+  <div class="nav-sec" id="nav-sec-supervision" style="display:none">Supervisión</div>
+  <div class="nav-item" id="nav-item-red" data-panel="red-organizacion" style="display:none">
+    <span class="ic">📊</span>Red de Organizadores
+    <span style="font-size:9px;background:#c084fc;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto;font-weight:700">RED</span>
+  </div>
+
+  <div class="nav-sec" id="nav-sec-herramientas">Herramientas</div>
+  <div class="nav-item" id="nav-item-analizador" data-panel="analizador">
     <span class="ic">📑</span>Analizador de Pólizas
     <span style="font-size:9px;background:#2a5c45;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
   </div>
-  <div class="nav-item" data-panel="crosselling">
+  <div class="nav-item" id="nav-item-crosselling" data-panel="crosselling">
     <span class="ic">🎯</span>Oportunidades
     <span style="font-size:9px;background:#6b21a8;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
   </div>
-  <div class="nav-item" data-panel="retiro">
+  <div class="nav-item" id="nav-item-retiro" data-panel="retiro">
     <span class="ic">🏦</span>Retiro
     <span style="font-size:9px;background:#0369a1;color:#fff;padding:1px 5px;border-radius:8px;margin-left:auto">NUEVO</span>
   </div>
-  <div class="nav-item" data-panel="mail">
+  <div class="nav-item" id="nav-item-mail" data-panel="mail">
     <span class="ic">📧</span>Redactar Mail
   </div>
-  <div class="nav-item" data-panel="informe">
+  <div class="nav-item" id="nav-item-informe" data-panel="informe">
     <span class="ic">📄</span>Informes IA
   </div>
-  <div class="nav-item" data-panel="comercial">
+  <div class="nav-item" id="nav-item-comercial" data-panel="comercial">
     <span class="ic">📣</span>Comercial
   </div>
-  <div class="nav-item" data-panel="comisiones">
+  <div class="nav-item" id="nav-item-comisiones" data-panel="comisiones">
     <span class="ic">💰</span>Comisiones
     <span class="nav-badge" id="badge-comisiones" style="background:#2a5c45"></span>
   </div>
-  <div class="nav-sec">Config</div>
-  <div class="nav-item" data-panel="config">
+
+  <!-- Novedad: Simulador de Celular de Clientes (PULSO Labs) -->
+  <div class="nav-sec">Simuladores</div>
+  <div class="nav-item" data-panel="simulador-cliente">
+    <span class="ic">📱</span>Celular Cliente [PULSO]
+    <span style="font-size:9px;background:#eab308;color:#000;padding:1px 5px;border-radius:8px;margin-left:auto;font-weight:700">LAB</span>
+  </div>
+
+  <div class="nav-sec" id="nav-sec-config">Config</div>
+  <div class="nav-item" id="nav-item-config" data-panel="config">
     <span class="ic">⚙️</span>Configurar
   </div>
 </nav>
@@ -798,7 +960,10 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <div class="ph-title">🎯 Agenda del Día</div>
       <div class="ph-sub" id="agenda-fecha"></div>
     </div>
-    <button class="btn btn-primary" onclick="renderAgenda(true)">↻ Actualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" onclick="sincronizarCarteraDiaria()">🔄 Sincronizar con TRAMA</button>
+      <button class="btn btn-primary" onclick="renderAgenda(true)">↻ Actualizar</button>
+    </div>
   </div>
   <div class="pb">
     <div id="pulso-stats-bar" style="display:none;background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(139,92,246,.08));border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -807,6 +972,19 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       <span id="ps-clientes" style="font-size:12px;color:var(--muted)">—</span>
       <span id="ps-mes" style="font-size:12px;color:var(--muted)">—</span>
     </div>
+
+    <!-- Mes 2 a 4 Nudge Social - Efecto Manada / Normas de Pares -->
+    <div id="pulso-social-nudge" style="background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(0,212,255,0.06));border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">👥</span>
+        <div>
+          <div style="font-weight:700;font-size:12px;color:var(--gold-accent);text-transform:uppercase;letter-spacing:0.5px">Efecto Manada · Organización</div>
+          <div style="font-size:12.5px;color:var(--text-main);margin-top:2px">El <strong>85% de los productores</strong> de tu organización ya protegió a sus clientes actualizando sus estados hoy.</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('pulso-social-nudge').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px">✕</button>
+    </div>
+
     <div id="pulso-alertas" style="margin-bottom:16px"></div>
     <div id="agenda-seguimientos"></div>
     <div id="agenda-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px"></div>
@@ -846,6 +1024,12 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
         <option value="urgente">🔴 Vence ≤ 7 días</option>
         <option value="pronto">🟡 Vence 8–30 días</option>
         <option value="ok">🟢 Más de 30 días</option>
+      </select>
+      <select id="f-productor" onchange="filtrar()" style="display:none; background:#0f1c2d; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff; font-size:12px; font-weight:600; padding:8px 10px; cursor:pointer;">
+        <option value="all">🌐 Toda la Organización</option>
+        <option value="productor">👤 Martín Giménez (Productor)</option>
+        <option value="organizador">📊 Sofía Valenzuela (Organizador)</option>
+        <option value="pas_red">💼 Roberto Gómez (Red)</option>
       </select>
       <span class="f-count" id="f-count"></span>
     </div>
@@ -937,8 +1121,8 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 
       <!-- DNI + Ramo -->
       <div style="display:flex;gap:8px">
-        <input id="cob-dni" type="text" placeholder="DNI del cliente" style="flex:1;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
-        <select id="cob-ramo" style="flex:1;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
+        <input id="cob-dni" type="text" placeholder="DNI del cliente" style="flex:1;background:#12243d;border:1.5px solid rgba(0,212,255,0.45);border-radius:8px;padding:10px 12px;color:var(--text-main);font-size:14px;outline:none">
+        <select id="cob-ramo" style="flex:1;background:#12243d;border:1.5px solid rgba(0,212,255,0.45);border-radius:8px;padding:10px 12px;color:var(--text-main);font-size:14px;outline:none">
           <option value="1800">Combinado Familiar</option>
           <option value="200">Automotores</option>
           <option value="600">Acc. Personales</option>
@@ -948,20 +1132,20 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       </div>
 
       <!-- Tabs: Consulta / Documento -->
-      <div style="display:flex;gap:0;border:1px solid var(--border-color);border-radius:8px;overflow:hidden">
+      <div style="display:flex;gap:0;border:1px solid rgba(0,212,255,0.3);border-radius:8px;overflow:hidden">
         <button id="cob-tab-consulta" onclick="setCobTab('consulta')" style="flex:1;padding:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--blue-fg);color:#000">🤖 Consultar cobertura</button>
-        <button id="cob-tab-doc" onclick="setCobTab('doc')" style="flex:1;padding:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--input-bg);color:var(--text-muted)">📄 Obtener documento</button>
+        <button id="cob-tab-doc" onclick="setCobTab('doc')" style="flex:1;padding:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#12243d;color:var(--text-muted)">📄 Obtener documento</button>
       </div>
 
       <!-- Panel: consulta -->
-      <div id="cob-panel-consulta">
-        <textarea id="cob-pregunta" rows="2" placeholder="¿Qué querés saber? (ej: ¿cubre el iPhone? ¿tiene cristales?)" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;resize:none;outline:none;font-family:inherit"></textarea>
+      <div id="cob-panel-consulta" style="display:block">
+        <textarea id="cob-pregunta" rows="2" placeholder="¿Qué querés saber? (ej: ¿cubre el iPhone? ¿tiene cristales?)" style="width:100%;box-sizing:border-box;background:#12243d;border:1.5px solid rgba(0,212,255,0.45);border-radius:8px;padding:10px 12px;color:var(--text-main);font-size:14px;resize:none;outline:none;font-family:inherit"></textarea>
         <button id="cob-btn" onclick="ejecutarConsultaCobertura()" style="margin-top:8px;width:100%;background:var(--blue-fg);border:none;border-radius:8px;padding:11px;color:#000;font-weight:700;font-size:14px;cursor:pointer">Consultar con IA</button>
       </div>
 
       <!-- Panel: documento -->
       <div id="cob-panel-doc" style="display:none;flex-direction:column;gap:8px">
-        <select id="cob-doc-tipo" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;outline:none">
+        <select id="cob-doc-tipo" style="background:#12243d;border:1.5px solid rgba(0,212,255,0.45);border-radius:8px;padding:10px 12px;color:var(--text-main);font-size:14px;outline:none">
           <option value="Caratula">Carátula</option>
           <option value="TarjetaAutomotorPolizaElectronica">Tarjeta Verde (Auto)</option>
           <option value="MercosurPolizaElectronica">Mercosur</option>
@@ -1092,6 +1276,364 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     <div class="fg"><label>Contexto adicional (opcional)</label><textarea id="com-ctx" rows="3" placeholder="Ej: Me dirijo a docentes municipales de Chubut, 40–55 años..."></textarea></div>
     <div class="loader" id="com-loader"><div class="dots"><span></span><span></span><span></span></div><span>Generando...</span></div>
     <div class="output-box" id="com-out"><button class="copy-btn" onclick="copiar('com-out')">Copiar</button></div>
+  </div>
+</div>
+
+<!-- ══ RED DE ORGANIZADORES (Sprint 4: Persona 2) ════════════════════════ -->
+<div id="red-organizacion-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">📊 Red de Organizadores</div>
+      <div class="ph-sub">Supervisión en tiempo real de productores adscriptos — Chubut Norte</div>
+    </div>
+    <div style="display:flex; gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="alert('Se enviará un reporte ejecutivo de red a tu email institucional.')">📧 Exportar Reporte</button>
+      <button class="btn btn-primary" onclick="alert('Actualizando métricas consolidadas del grupo...')">↻ Actualizar Red</button>
+    </div>
+  </div>
+  <div class="pb">
+    <!-- Resumen Consolidado sinmontos directos -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px">
+      <div style="background:linear-gradient(135deg, rgba(139,92,246,0.1), rgba(0,212,255,0.06)); border:1px solid rgba(0,212,255,0.15); border-radius:12px; padding:16px; box-shadow:var(--shadow-xs)">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px">Agencias Activas</div>
+        <div style="font-size:26px; font-weight:700; color:var(--text-main); margin-top:4px">8 Productores</div>
+        <div style="font-size:11.5px; color:var(--green-fg); margin-top:4px; display:flex; align-items:center; gap:4px">● 100% activos hoy</div>
+      </div>
+      <div style="background:linear-gradient(135deg, rgba(139,92,246,0.1), rgba(0,212,255,0.06)); border:1px solid rgba(0,212,255,0.15); border-radius:12px; padding:16px; box-shadow:var(--shadow-xs)">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px">Eficiencia Cross-Selling</div>
+        <div style="font-size:26px; font-weight:700; color:var(--gold-accent); margin-top:4px">71.2%</div>
+        <div style="font-size:11.5px; color:var(--green-fg); margin-top:4px">↑ 3.4% sobre promedio regional</div>
+      </div>
+      <div style="background:linear-gradient(135deg, rgba(139,92,246,0.1), rgba(0,212,255,0.06)); border:1px solid rgba(0,212,255,0.15); border-radius:12px; padding:16px; box-shadow:var(--shadow-xs)">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px">Índice GAPs Cubierto</div>
+        <div style="font-size:26px; font-weight:700; color:#a855f7; margin-top:4px">68.4%</div>
+        <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px">Meta de organización: 75%</div>
+      </div>
+      <div style="background:linear-gradient(135deg, rgba(139,92,246,0.1), rgba(0,212,255,0.06)); border:1px solid rgba(0,212,255,0.15); border-radius:12px; padding:16px; box-shadow:var(--shadow-xs)">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px">Retención (Hogar/Auto)</div>
+        <div style="font-size:26px; font-weight:700; color:var(--green-fg); margin-top:4px">94.8%</div>
+        <div style="font-size:11.5px; color:var(--green-fg); margin-top:4px">Récord histórico de la red</div>
+      </div>
+    </div>
+
+    <!-- Tabla de Control de Productores sin Montos absolutos -->
+    <div class="section-title" style="margin-bottom:12px; display:flex; align-items:center; gap:8px">👥 Desempeño Relativo de Agencias <span>(Control de Grupo)</span></div>
+    
+    <div style="overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px">
+      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02)">
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600">Productor / Agencia</th>
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600">Cross-Selling</th>
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600">Crecimiento Cartera</th>
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600">Evolución Comisiones</th>
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600">Integridad PULSO</th>
+            <th style="padding:14px 18px; color:var(--text-muted); font-weight:600; text-align:right">Acciones Directas</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-red-organizacion">
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:14px 18px">
+              <strong style="color:var(--text-main); font-size:13.5px">Martín Giménez</strong>
+              <div style="font-size:11px; color:var(--text-muted)">Trelew · Matricula 213038</div>
+            </td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:8px">
+                <span style="font-weight:700; color:var(--green-fg)">74.0%</span>
+                <span style="font-size:10px; padding:2px 6px; background:rgba(16,185,129,0.1); color:var(--green-fg); border-radius:8px">Líder</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; color:var(--text-main)">+14.5% <span style="font-size:11px; color:var(--green-fg)">este mes</span></td>
+            <td style="padding:14px 18px; color:var(--green-fg); font-weight:600">📈 +12.3%</td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:6px">
+                <span class="dot" style="background:var(--green); animation:none"></span>
+                <span>Excelente (98%)</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; text-align:right">
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Martín Giménez', 'Su alta conversión en cross-selling de Combinado se correlaciona con la aplicación consistente de neuro-mensajes (descuento hiperbólico). ¡Excelente trabajo!')">🤖 Sugerencia IA</button>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:14px 18px">
+              <strong style="color:var(--text-main); font-size:13.5px">Sofía Valenzuela</strong>
+              <div style="font-size:11px; color:var(--text-muted)">Puerto Madryn · Matricula 194302</div>
+            </td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:8px">
+                <span style="font-weight:700; color:var(--gold-accent)">68.0%</span>
+                <span style="font-size:10px; padding:2px 6px; background:rgba(0,212,255,0.1); color:var(--gold-accent); border-radius:8px">Estable</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; color:var(--text-main)">+8.2% <span style="font-size:11px; color:var(--text-muted)">este mes</span></td>
+            <td style="padding:14px 18px; color:var(--green-fg); font-weight:600">📈 +5.8%</td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:6px">
+                <span class="dot" style="background:var(--green); animation:none"></span>
+                <span>Bueno (92%)</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; text-align:right">
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Sofía Valenzuela', 'Detectamos que el 15% de su cartera de Automotor en Puerto Madryn carece de Combinado Familiar. Enviar campaña automatizada basada en Heurística de Cercanía.')">🤖 Sugerencia IA</button>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:14px 18px">
+              <strong style="color:var(--text-main); font-size:13.5px">Juan Carlos Mendoza</strong>
+              <div style="font-size:11px; color:var(--text-muted)">Gaiman · Matricula 158223</div>
+            </td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:8px">
+                <span style="font-weight:700; color:var(--red-fg)">45.0%</span>
+                <span style="font-size:10px; padding:2px 6px; background:rgba(239,68,68,0.1); color:var(--red-fg); border-radius:8px">Bajo</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; color:var(--text-main)">-2.4% <span style="font-size:11px; color:var(--text-muted)">fricción de cuota</span></td>
+            <td style="padding:14px 18px; color:var(--red-fg); font-weight:600">📉 -1.1%</td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:6px">
+                <span class="dot" style="background:var(--yellow-fg); animation:none"></span>
+                <span>Faltan cargas (78%)</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; text-align:right">
+              <button class="btn btn-secondary btn-sm" style="border-color:var(--yellow-fg)" onclick="enviarSugerenciaIA('Juan Carlos Mendoza', 'La fricción de cuota en Gaiman se puede mitigar con el módulo de manejo de objeciones. Sugerimos agendar clínica de rol para amortiguar shock inflacionario en su cartera.')">🤖 Sugerencia IA</button>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 18px">
+              <strong style="color:var(--text-main); font-size:13.5px">Estudio Chubut</strong>
+              <div style="font-size:11px; color:var(--text-muted)">Rawson / Dique Ameghino · Organización</div>
+            </td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:8px">
+                <span style="font-weight:700; color:var(--green-fg)">71.0%</span>
+                <span style="font-size:10px; padding:2px 6px; background:rgba(16,185,129,0.1); color:var(--green-fg); border-radius:8px">Destacado</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; color:var(--text-main)">+11.2% <span style="font-size:11px; color:var(--green-fg)">este mes</span></td>
+            <td style="padding:14px 18px; color:var(--green-fg); font-weight:600">📈 +9.4%</td>
+            <td style="padding:14px 18px">
+              <div style="display:flex; align-items:center; gap:6px">
+                <span class="dot" style="background:var(--green); animation:none"></span>
+                <span>Excelente (95%)</span>
+              </div>
+            </td>
+            <td style="padding:14px 18px; text-align:right">
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Estudio Chubut', 'Excelente sinergia detectada en Rawson. Se recomienda incentivar al equipo adscripto con premio especial Sancor por campaña de Automotores Todo Riesgo.')">🤖 Sugerencia IA</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TERMINAL DE SINCRONIZACIÓN LIVE FEED EN TIEMPO REAL -->
+    <div style="background:var(--surface); border:1px solid rgba(0,212,255,0.15); border-radius:12px; padding:20px; margin-top:24px; box-shadow:var(--shadow-md)">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px">
+        <div style="font-size:15px; font-weight:600; color:var(--text-main); display:flex; align-items:center; gap:8px">
+          <span style="display:inline-block; width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow: 0 0 8px var(--green)"></span>
+          📡 Terminal de Sincronización Live Feed (Red Chubut)
+        </div>
+        <span style="font-size:10px; padding:3px 8px; background:rgba(0,212,255,0.08); color:var(--blue-fg); border-radius:12px; font-weight:700; letter-spacing:0.5px">CONEXIÓN REPLICADA</span>
+      </div>
+      <div id="red-activity-ticker" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-right:4px">
+        <!-- Cargando ticker dinámico -->
+      </div>
+    </div>
+
+    <!-- Panel de Alertas de Red de la Organización -->
+    <div class="com-charts-row" style="margin-top:24px">
+      <div class="com-chart-card" style="flex:1">
+        <div class="com-chart-title">🚨 Tendencias Recientes de Objeciones (PULSO Agrupado)</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px">Consolidación de las razones declaradas por clientes adscriptos al ser contactados esta semana</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
+              <span>💰 Suma/Cuota de Auto Desfasada (Inflación)</span>
+              <strong>40% de los frenos</strong>
+            </div>
+            <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden">
+              <div style="width:40%; height:100%; background:var(--rust); border-radius:3px"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
+              <span>🏠 Prioriza otros gastos (Prefiere no asegurar casa)</span>
+              <strong>32% de los frenos</strong>
+            </div>
+            <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden">
+              <div style="width:32%; height:100%; background:var(--gold-accent); border-radius:3px"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
+              <span>⏳ Falta de tiempo para procesar documentación</span>
+              <strong>18% de los frenos</strong>
+            </div>
+            <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden">
+              <div style="width:18%; height:100%; background:var(--green); border-radius:3px"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
+              <span>⚖️ Prefiere cotización de competidor directo</span>
+              <strong>10% de los frenos</strong>
+            </div>
+            <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden">
+              <div style="width:10%; height:100%; background:#a855f7; border-radius:3px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="com-chart-card" style="max-width:400px">
+        <div class="com-chart-title">💡 Diagnóstico Organizativo del Asistente</div>
+        <div style="font-size:12px; color:var(--text-muted); line-height:1.6">
+          La red reporta que el tuteo y los neuro-mensajes generados para el WhatsApp comercial de Sancor incrementaron la retención general en <strong>12 puntos porcentuales</strong> con relación a la comunicación corporativa tradicional.<br><br>
+          <span style="color:var(--gold-accent); font-weight:600">Recomendación Organizativa:</span> Continuar promoviendo que las oficinas operadoras registren honestamente los diagnósticos en el <strong>Código de Honor</strong> de PULSO.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SIMULADOR DE CELULAR CLIENTE AUTOMÁTICO (Sprint 4: Persona 4) ══════ -->
+<div id="simulador-cliente-panel" class="panel">
+  <div class="ph">
+    <div>
+      <div class="ph-title">📱 Celular Cliente — Asistente de Trama</div>
+      <div class="ph-sub">Proba cómo interactúa el cliente con su celular y cómo impacta en tiempo real en tu app</div>
+    </div>
+    <div style="background:#0d1b2e; border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--gold-accent); display:flex; align-items:center; gap:6px">
+      <span class="dot" style="margin:0; width:8px; height:8px"></span>
+      PULSO Live Feed Conectado
+    </div>
+  </div>
+  
+  <div class="pb" style="display:flex; gap:28px; flex-wrap:wrap">
+    
+    <!-- Celular Mockup Frame -->
+    <div style="width:290px; height:550px; background:#070B14; border:11px solid #1e293b; border-radius:36px; box-shadow:0 15px 45px rgba(0,0,0,0.8); display:flex; flex-direction:column; overflow:hidden; position:relative; flex-shrink:0">
+      
+      <!-- Teléfono notch -->
+      <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:100px; height:18px; background:#1e293b; border-bottom-left-radius:12px; border-bottom-right-radius:12px; z-index:1001; display:flex; justify-content:center; align-items:center">
+        <div style="width:30px; height:4px; background:#070b14; border-radius:2px; margin-bottom:4px"></div>
+      </div>
+      
+      <!-- WhatsApp Header -->
+      <div style="background:#075e54; padding:22px 14px 10px; color:#fff; display:flex; align-items:center; gap:8px; z-index:1000; flex-shrink:0">
+        <span style="font-size:16px; cursor:pointer" onclick="reiniciarChatCliente()">←</span>
+        <div style="width:30px; height:30px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; position:relative">
+          🤖
+          <span style="position:absolute; bottom:0; right:0; width:8px; height:8px; background:#22c55e; border-radius:50%; border:1.5px solid #075e54"></span>
+        </div>
+        <div>
+          <div style="font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:4px">
+            Sancor Asistente
+            <span style="font-size:10px" title="Verificado">🛡️</span>
+          </div>
+          <div style="font-size:9.5px; opacity:0.85">Martín Giménez Broker</div>
+        </div>
+      </div>
+      
+      <!-- WhatsApp Chat Background / Area -->
+      <div id="sim-chat-area" style="flex:1; padding:12px; overflow-y:auto; background:#efeae2; display:flex; flex-direction:column; gap:10px; font-family:'Inter', sans-serif">
+        
+        <!-- Mensaje de bienvenida del Asistente -->
+        <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+          ¡Hola! Soy tu asistente de seguros de <strong>Martín Giménez Broker</strong> (Sancor).
+          <br><br>
+          ¿En qué puedo ayudarte hoy? Podés pedirme pólizas, consultar por coberturas o sacarte dudas.
+        </div>
+        
+      </div>
+      
+      <!-- WhatsApp Input Bar Mockup -->
+      <div style="background:#f0f0f0; padding:6px 12px; display:flex; align-items:center; gap:6px; border-top:1px solid #ddd; flex-shrink:0">
+        <input id="sim-user-input" type="text" placeholder="Escribí una pregunta..." style="flex:1; border:none; border-radius:20px; padding:6px 14px; font-size:11.5px; background:#fff; color:#333; outline:none; font-family:sans-serif" onkeydown="if(event.key==='Enter') enviarMensajeClienteCustom()">
+        <button onclick="enviarMensajeClienteCustom()" style="background:#075e54; border:none; color:#fff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer">➔</button>
+      </div>
+    </div>
+
+    <!-- Panel de control de experimentos de Martín -->
+    <div style="flex:1; min-width:300px">
+      <div class="com-chart-card" style="box-shadow:none; margin:0">
+        <div class="com-chart-title" style="color:var(--gold-accent); font-family:'DM Serif Display',serif; font-size:18px">Simulación de Objeciones y Comportamiento</div>
+        <div style="font-size:12.5px; color:var(--text-muted); line-height:1.6; margin-bottom:16px">
+          PULSO no solo procesa tus registros manuales: también captura <strong>señales conductuales pasivas</strong> del cliente. Al clickear uno de estos detonadores rápidos, simulás la acción del cliente en su WhatsApp. Notarás cómo el asistente responde de forma autónoma y alimenta tu agenda de inmediato.
+        </div>
+
+        <!-- Módulo de Identificación de Socio (MIRI) -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(0,212,255,0.3); border-radius: 12px; padding: 14px; margin-bottom: 20px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <span style="font-size:11px; font-weight:700; color:var(--gold-accent); text-transform:uppercase; letter-spacing:0.5px">🔍 Motor de Identificación del Socio (MIRI)</span>
+            <span id="miri-status-badge" style="padding: 2px 6px; background: rgba(16,185,129,0.15); color: var(--green); border-radius: 4px; font-size: 10px; font-weight: 700">TELÉFONO EN PORTAFOLIO</span>
+          </div>
+          
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px;">
+            <div id="miri-avatar" style="font-size:24px; background:rgba(255,255,255,0.05); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center">👤</div>
+            <div style="flex:1">
+              <div id="miri-client-name" style="font-size:13px; font-weight:700; color:#fff">Socio Inicializado</div>
+              <div id="miri-client-info" style="font-size:11px; color:var(--text-muted)">Esperando interacción o simulación...</div>
+            </div>
+            <div id="miri-phone-indicator" style="font-family:monospace; font-size:11px; color:var(--gold-accent)">+54 9 280 4XXXXXX</div>
+          </div>
+          
+          <!-- Botón Especial para Simular Asociado Desconocido y Probar NLP de Auto-Verificación -->
+          <button onclick="simularSocioDesconocidoNLP()" class="btn btn-secondary btn-sm" style="width:100%; border:1px solid rgba(168,85,247,0.4); background:rgba(168,85,247,0.03); color:#d8b4fe; padding:8px; font-size:11px; margin-bottom:8px">
+            🧪 Simular Teléfono Desconocido (Demostración de Auto-Verificación NLP)
+          </button>
+          
+          <div style="font-size:11px; color:rgba(255,245,230,0.45); line-height:1.45">
+            <strong>¿Cómo sabe con quién habla?</strong> Trama utiliza el webhook de WhatsApp Business para capturar el teléfono celular entrante. Al compararlo instantáneamente con la base de datos sincronizada de Martín, asocia de inmediato al socio. Si no existe coincidencia previa, el asistente gatilla defensivamente la <strong>Auto-Verificación</strong> vía DNI en conversación para resguardar la identidad.
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px">
+          
+          <div onclick="clickSimularEscenario('juan')" style="border:1px solid var(--border); background:rgba(255,255,255,0.02); border-radius:10px; padding:12px; cursor:pointer; hover:bg-rgba(255,255,255,0.06);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+              <span style="font-weight:700; font-size:12.5px; color:var(--text-main)">Escenario A: Consulta de Cobertura de Celulares</span>
+              <span style="font-size:11px; color:var(--gold-accent)">📱 Juan Bautista</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted)">"¿El seguro de Hogar cubre el robo de mi iPhone 15 Pro en la vía pública?"</div>
+            <div style="margin-top:6px; font-size:11px; font-style:italic; color:var(--green)">⚡ Genera: Oportunidad de Cross-Selling en el acto.</div>
+          </div>
+
+          <div onclick="clickSimularEscenario('maria')" style="border:1px solid var(--border); background:rgba(255,255,255,0.02); border-radius:10px; padding:12px; cursor:pointer">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+              <span style="font-weight:700; font-size:12.5px; color:var(--text-main)">Escenario B: Objeción de Precio (Shock Inflacionario)</span>
+              <span style="font-size:11px; color:var(--gold-accent)">💰 María Laura</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted)">"¿Por qué me subió tanto la cuota del auto Sancor este mes?"</div>
+            <div style="margin-top:6px; font-size:11px; font-style:italic; color:var(--green)">⚡ Genera: Alerta de Retención Temprana (Riesgo Churn).</div>
+          </div>
+
+          <div onclick="clickSimularEscenario('carlos')" style="border:1px solid var(--border); background:rgba(255,255,255,0.02); border-radius:10px; padding:12px; cursor:pointer">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+              <span style="font-weight:700; font-size:12.5px; color:var(--text-main)">Escenario C: Análisis de Póliza Activa</span>
+              <span style="font-size:11px; color:var(--gold-accent)">📑 Carlos G.</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted)">"Mandame por favor el PDF de mi Combinado Familiar vigentes."</div>
+            <div style="margin-top:6px; font-size:11px; font-style:italic; color:var(--green)">⚡ Genera: Alerta de Lectura Activa. Posible Churn o Incremento.</div>
+          </div>
+
+        </div>
+
+        <div style="background:rgba(0,212,255,0.02); border:1px solid rgba(0,212,255,0.15); border-radius:10px; padding:12px">
+          <div style="font-size:11.5px; text-transform:uppercase; font-weight:700; color:var(--gold-accent); margin-bottom:6px">🧠 Detrás de escena: El bucle de Trama</div>
+          <div style="font-size:12px; color:var(--text-muted); line-height:1.55" id="sim-backstage-logs">
+            1. Un cliente envía consulta vía WhatsApp API.<br>
+            2. El Asistente de Sancor (alimentado por Gemini) responde.<br>
+            3. El motor de TRAMA detecta la intención oculta del cliente.<br>
+            4. Se calcula el score y se inyecta la Alerta en la Agenda de Martín.<br>
+            <span style="color:var(--text-main); font-weight:500;">Listo para simular. Presioná un escenario para analizar el circuito.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </div>
 
@@ -1544,12 +2086,18 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 <!-- PULSO feedback card — aparece post-guardado de gestión -->
 <div id="pulso-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 32px));background:var(--card);border:1px solid rgba(0,212,255,.3);border-radius:14px;padding:16px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:8000;animation:slideUp .25s ease">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-    <div style="font-size:12px;font-weight:700;color:var(--blue-fg);letter-spacing:.5px">🧠 PULSO</div>
+    <div style="font-size:12px;font-weight:700;color:var(--gold-accent);letter-spacing:.7px;text-transform:uppercase">🧠 PULSO · Feedback Inmediato</div>
     <button onclick="cerrarPulsoCard()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>
   </div>
-  <div id="pc-cliente" style="font-size:14px;font-weight:600;margin-bottom:8px"></div>
-  <div id="pc-stats" style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap"></div>
-  <div id="pc-sugerencia" style="font-size:12px;color:var(--muted);line-height:1.5;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border-left:2px solid var(--blue-fg)"></div>
+  <div id="pc-cliente" style="font-size:14px;font-weight:600;margin-bottom:4px"></div>
+  <div id="pc-stats" style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap"></div>
+  
+  <!-- Sprint 3: Visualización de Scores Conductuales Dinámicos -->
+  <div id="pc-scores" style="display:flex;justify-content:space-between;gap:6px;margin:10px 0;padding:8px;background:rgba(0,212,255,0.03);border-radius:8px;border:1px solid rgba(0,212,255,0.1)">
+    <!-- Se inyecta dinámicamente -->
+  </div>
+
+  <div id="pc-sugerencia" style="font-size:12px;color:var(--muted);line-height:1.5;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border-left:2px solid var(--gold-accent)"></div>
 </div>
 
 <div class="modal-overlay" id="modal-honor" style="z-index:9999">
@@ -1649,6 +2197,7 @@ const AUTO_SIN_COMERCIAL = new Set(["30548970837","30714342025","30708600659","3
 const AUTO_SIN_COMBINADO = new Set(["7808972","26889129","17310756","33771148","25948643","23791463","20844183","8396049","29692129","16421093","30532565975","29050533","31959026","37860321","32587015","23291393","33345439","14757124","46465259","22203028","24644955","22277805","22271267","33946690","31956294","26568871","30938661","30714342025","28055209","14757182","23863822","28054523","16173225","26889259","30008170","31020012","30517666","30708153520","28990966","22260922","6189814","30284197","14281858","30717012530","40739360","30708600659","30715099671","30366317","39441224","13390837","29235658","29689628","30716703432","21959267","26889096","16998238","29983514","30134895","29983546","40384867","30712177809","30715581465","28156197","35381921","17130636","30548970837","31469548","7888645","16421452","32932228","30715038303","31148660","13814769","10147458","35989970","11444785","14396743","5388591","29066556","23791268","27092695","32801268","25138673","31914810","24926653","6665616","31148894","35730546","31334145","33478402","31504859","26975588","31280484","20542837","25011905","25138697"]);
 
 // CSV URL del Sheet público
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgdIOlpjhuvxoHBZuRuz4sbuUKMUuIUAEs3Hp4x4EoVcIWfYRM5e_y6WJjgs5Kr_t7gFoRpoWANQ0m/pub?output=csv';
 
 // ═══════════════════════════════════════════════════════════
@@ -1727,11 +2276,13 @@ CUANDO REDACTÁS MENSAJES:
 - Si es renovación: énfasis en que ya está todo listo, solo necesita confirmación.
 - Si es cross-sell: énfasis en el beneficio para el cliente, no en la venta.`;
 
-function getKey(){return localStorage.getItem('apikey')||'';}
+function getKey(){return localStorage.getItem('apikey')||'ai-studio-server-key';}
 function getSistema(){
   const n=localStorage.getItem('cfg_nombre')||'Martín Giménez';
   const c=localStorage.getItem('cfg_ciudad')||'Trelew, Chubut';
-  return SISTEMA+`\nNombre: ${n}. Ciudad: ${c}.`;
+  const hoyStr = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const hoyDiaS = new Date().toLocaleDateString('es-AR', { weekday: 'long' });
+  return SISTEMA+`\nNombre: ${n}. Ciudad: ${c}.\nFecha y hora actual: ${hoyDiaS}, ${hoyStr} (HOY en Argentina).`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2023,11 +2574,11 @@ Instrucciones:
   document.getElementById('xsl-modal').classList.add('show');
 
   try {
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+    const res = await fetch(STEEP_FOG_WORKER,{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key},
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body: JSON.stringify({
-        model:'claude-sonnet-4-6',
+        model: CLAUDE_MODEL,
         max_tokens:400,
         messages:[{role:'user',content:prompt}]
       })
@@ -2162,7 +2713,7 @@ function toast(msg){
 }
 
 async function enrichCarteraConAPI(){
-  const WORKER='https://sancor-api.mgmg050382.workers.dev';
+  const WORKER=SANCOR_WORKER;
   const autos=carteraActiva.filter(r=>r.ramo===200&&/^\d{7,11}$/.test(r.id));
   if(!autos.length)return;
   const uniqueIds=[...new Set(autos.map(r=>r.id))];
@@ -2298,6 +2849,18 @@ function fmtF(isoStr){if(!isoStr)return'—';const d=new Date(isoStr);return isN
 function fmtM(n){if(!n)return'—';if(n>=1000000)return'$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'$'+Math.round(n/1000)+'K';return'$'+Math.round(n).toLocaleString('es-AR');}
 // Escapa entidades HTML para evitar XSS al inyectar datos de clientes en innerHTML
 function esc(s){return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function getAssignedProductor(id, nombre) {
+  const hashStr = String(id || nombre || '');
+  let hash = 0;
+  for (let i = 0; i < hashStr.length; i++) {
+    hash += hashStr.charCodeAt(i);
+  }
+  const mod = hash % 100;
+  if (mod < 60) return 'productor';      // Martín Giménez (Productor)
+  if (mod < 85) return 'organizador';    // Sofía Valenzuela (Organizador)
+  return 'pas_red';                      // Roberto Gómez (PAS Red)
+}
 // Escapa valor para usar dentro de un atributo onclick="func('${val}')"
 function escOncl(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,"\\'")}
 // Devuelve solo el primer nombre de pila para usar en prompts de IA
@@ -2329,12 +2892,12 @@ function parsePeriodoNum(str){
 }
 
 function initCartera(data){
-  carteraActiva=data.map(r=>({nombre:r.n||'',cuit:r.c||'',id:r.id||r.c||'',ramo:r.r||0,poliza:r.p||'',cert:r.cert||1,venc:r.v||null,premio:r.pm||0,prima:r.pm||0,pf:r.pf!==undefined?r.pf:true,crossell:AUTO_SIN_COMBINADO.has(r.id||r.c||'')})).filter(r=>r.nombre);
+  carteraActiva=data.map(r=>({nombre:r.n||'',cuit:r.c||'',id:r.id||r.c||'',ramo:r.r||0,poliza:r.p||'',cert:r.cert||1,venc:r.v||null,premio:r.pm||0,prima:r.pm||0,pf:r.pf!==undefined?r.pf:true,productor:r.productor||r.pr||getAssignedProductor(r.id||r.c, r.n||r.nombre),crossell:AUTO_SIN_COMBINADO.has(r.id||r.c||'')})).filter(r=>r.nombre);
   carteraActiva.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
   const ramos=[...new Set(carteraActiva.map(r=>r.ramo).filter(Boolean))].sort((a,b)=>a-b);
   const sel=document.getElementById('f-ramo');
   sel.innerHTML='<option value="">Todos los ramos</option>'+ramos.map(r=>`<option value="${r}">Ramo ${r}</option>`).join('');
-  renderStats(carteraActiva);renderTabla(carteraActiva);
+  filtrar();
   enrichCarteraConAPI();
 }
 
@@ -2372,18 +2935,24 @@ function renderTabla(data){
     else{rowCls=i%2?'odd':'even';badge=`<span class="badge b-green">${dias!==null?dias+'d':'—'}</span>`;}
     const diasNum=dias!==null?`<span style="font-weight:700;color:${dias<=7?'var(--red-fg)':dias<=30?'var(--yellow-fg)':'var(--green)'}">${dias}</span>`:'—';
     const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'—';
+    let ownerBadge = '';
+    if (typeof currentTramaRole !== 'undefined' && currentTramaRole !== 'productor' && r.productor) {
+      const color = r.productor === 'productor' ? 'var(--green-fg)' : r.productor === 'organizador' ? 'var(--gold-accent)' : '#c084fc';
+      const name = r.productor === 'productor' ? 'Martín G.' : r.productor === 'organizador' ? 'Sofía V.' : 'Roberto G.';
+      ownerBadge = ` <span style="font-size:9.5px; padding:1.5px 5.5px; border-radius:4px; font-weight:700; background:rgba(255,255,255,0.06); color:${color}; margin-left:6px">${name}</span>`;
+    }
     const apiChip=r.ramo===200&&r._sancorVigente!==undefined?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;background:${r._sancorVigente?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)'};color:${r._sancorVigente?'#4ade80':'#f87171'}">${r._sancorVigente?`● ${r._sancorCount}p`:'○'}</span>`:'';
     const ne=escOncl(r.nombre);
     const ramoNombre=RAMO_MAP[r.ramo]||'Ramo '+r.ramo;
     const ramoRenovaAuto=[200,3100,1720].includes(r.ramo);
-    let accion='';
+    let accion=`<button class="btn btn-secondary btn-sm" style="background:rgba(139,92,246,.15);color:#c4b5fd" onclick="abrirModalGestion('${r.id}','${ne}','${escOncl(ramoNombre)}','${escOncl(r.poliza)}')">📋 Gestión</button> `;
     if(!estaRenovada&&dias!==null&&dias>=-7&&dias<=7)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(0,212,255,.1);color:var(--blue-fg);font-size:11px" onclick="marcarRenovada('${r.id}','${ne}')">✅ Renovada</button> `;
     if(!ramoRenovaAuto&&!estaRenovada&&dias!==null&&dias>=0&&dias<=30)accion+=`<button class="btn btn-secondary btn-sm" onclick="accionIA('renovacion','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">✉️ Renovar</button> `;
     if(r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(0,212,255,.1);color:var(--blue-fg)" onclick="accionRetirex('${ne}')">🔵 Retirex</button> `;
     if(r.crossell&&r.ramo===200&&r.pf)accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(245,158,11,.15);color:#fcd34d" onclick="accionIA('combinado','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏠 Combinado</button>`;
     if(r.ramo===200&&!r.pf&&AUTO_SIN_COMERCIAL.has(r.id))accion+=`<button class="btn btn-secondary btn-sm" style="background:rgba(255,77,106,.12);color:#ff7090" onclick="accionIA('comercial','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">🏢 Integral</button>`;
     if(!accion)accion=`<button class="btn btn-secondary btn-sm" onclick="accionIA('upsell','${ne}','${ramoNombre.replace(/'/g,"\\'")}')">📈 Cross-sell</button>`;
-    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" onclick="abrirPerfilCliente('${r.id}')">${esc(r.nombre)}</strong>${apiChip}${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
+    return`<tr class="${rowCls}"><td style="white-space:nowrap">${fmtF(r.venc)}</td><td style="text-align:center">${diasNum}</td><td><strong style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" onclick="abrirPerfilCliente('${r.id}')">${esc(r.nombre)}</strong>${ownerBadge}${apiChip}${r.cuit?`<br><span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${esc(r.cuit)}</span>`:''}</td><td><span class="badge b-ramo">${RAMO_MAP[r.ramo]||r.ramo}</span></td><td style="font-family:'DM Mono',monospace;font-size:11px">${esc(r.poliza)}</td><td style="text-align:center;font-size:12px">${r.cert}</td><td style="text-align:right;font-weight:500">${monto}</td><td>${badge}</td><td>${accion}</td></tr>`;
   }).join('');
 }
 
@@ -2391,13 +2960,28 @@ function filtrar(){
   const q=document.getElementById('f-buscar').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const r=document.getElementById('f-ramo').value;
   const e=document.getElementById('f-estado').value;
+  const prodSelectEl=document.getElementById('f-productor');
+  const p = prodSelectEl ? prodSelectEl.value : 'all';
+
   const filtered=carteraActiva.filter(row=>{
+    // 1. Role-based matching
+    if (typeof currentTramaRole !== 'undefined') {
+      if (currentTramaRole === 'productor') {
+        if (row.productor !== 'productor') return false;
+      } else {
+        if (p !== 'all' && row.productor !== p) return false;
+      }
+    }
+
+    // 2. Search query matching
     const hay=(row.nombre+row.poliza+String(row.ramo)+row.cuit).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     const mQ=!q||hay.includes(q);
     const mR=!r||String(row.ramo)===r;
     const mE=!e||(()=>{const d=diasA(row.venc);if(e==='urgente')return d!==null&&d>=0&&d<=7;if(e==='pronto')return d!==null&&d>7&&d<=30;if(e==='ok')return d===null||d>30;return true;})();
     return mQ&&mR&&mE;
   });
+
+  renderStats(filtered);
   renderTabla(filtered);
 }
 
@@ -2477,7 +3061,7 @@ function cargarComisionesLocal(){
 // ── PERSISTENCIA CARTERA SANCOR ──────────────────────────────
 function guardarCarteraLocal(){
   try{
-    const compact=carteraActiva.map(r=>({n:r.nombre,c:r.cuit,id:r.id,r:r.ramo,p:r.poliza,cert:r.cert,v:r.venc,pm:r.premio||r.prima,pf:r.pf}));
+    const compact=carteraActiva.map(r=>({n:r.nombre,c:r.cuit,id:r.id,r:r.ramo,p:r.poliza,cert:r.cert,v:r.venc,pm:r.premio||r.prima,pf:r.pf,productor:r.productor}));
     localStorage.setItem('cartera_sancor_v1',JSON.stringify(compact));
   }catch(e){console.warn('Error guardando cartera local:',e);}
 }
@@ -3004,7 +3588,7 @@ async function analizarComisionesIA(){
   const btn=document.getElementById('btn-analizar-com');btn.disabled=true;btn.textContent='⏳ Analizando...';
   const out=document.getElementById('com-ia-out');out.innerHTML='<span style="color:var(--muted)">Procesando...</span>';
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':getKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':getKey(),'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const txt=data.content?.[0]?.text||'Sin respuesta';
     out.innerHTML=txt.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   }catch(e){out.innerHTML='Error: '+e.message;}
@@ -3033,7 +3617,10 @@ async function driveCargarSnapshotsComisiones(){
     const folderId=await driveGetOrCreateFolder();
     const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and name contains 'comisiones_' and trashed=false&fields=files(id,name)&orderBy=name`,{headers:{Authorization:'Bearer '+driveToken}});
     const data=await res.json();const snaps=[];
-    for(const f of(data.files||[])){const r=await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});snaps.push(await r.json());}
+    for(const f of(data.files||[])){
+      const r=await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+      snaps.push(await r.json());
+    }
     return snaps.sort((a,b)=>a.periodo.localeCompare(b.periodo));
   }catch(e){return[];}
 }
@@ -3081,8 +3668,287 @@ async function accionIA(tipo,nombre,ramo){
 // ═══════════════════════════════════════════════════════════
 // CONSULTA DE COBERTURA POR PÓLIZA REAL
 // ═══════════════════════════════════════════════════════════
-const SANCOR_WORKER = 'https://sancor-api.mgmg050382.workers.dev';
-const TRAMA_WORKER  = 'https://trama-worker.mgmg050382.workers.dev';
+const SANCOR_WORKER = window.location.origin + '/api/sancor';
+const TRAMA_WORKER  = window.location.origin + '/api/trama';
+const STEEP_FOG_WORKER = window.location.origin + '/api/steep-fog';
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch(e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+function robustParseDate(str) {
+  if (!str) return null;
+  const clean = str.trim();
+  
+  // Try DD/MM/YYYY or DD-MM-YYYY (at the start of string)
+  const matchDMY = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+  if (matchDMY) {
+    let day = parseInt(matchDMY[1], 10);
+    let month = parseInt(matchDMY[2], 10);
+    let year = parseInt(matchDMY[3], 10);
+    if (year < 100) year += 2000;
+    const d = new Date(year, month - 1, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Try YYYY-MM-DD or YYYY/MM/DD (at the start of string)
+  const matchYMD = clean.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (matchYMD) {
+    let year = parseInt(matchYMD[1], 10);
+    let month = parseInt(matchYMD[2], 10);
+    let day = parseInt(matchYMD[3], 10);
+    const d = new Date(year, month - 1, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Fallback to native JS Date parsing
+  const nativeDate = new Date(clean.replace(' ', 'T'));
+  if (!isNaN(nativeDate.getTime())) return nativeDate;
+
+  return null;
+}
+
+function esFechaFutura(fechaStr) {
+  if (!fechaStr) return true;
+  const d = robustParseDate(fechaStr);
+  if (!d) return true; // Default to true if completely unparseable
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  return d >= hoy;
+}
+
+async function ejecutarConsultaCobertura() {
+  const dni      = document.getElementById('cob-dni').value.trim();
+  const ramo     = document.getElementById('cob-ramo').value;
+  const pregunta = document.getElementById('cob-pregunta').value.trim();
+  const key      = getKey();
+  const status   = document.getElementById('cob-status');
+  const btn      = document.getElementById('cob-btn');
+
+  if (!dni || !pregunta) { status.textContent = 'Completá DNI y pregunta.'; return; }
+  if (!key) { status.textContent = 'Configurá tu API Key primero.'; return; }
+
+  btn.disabled = true;
+  status.textContent = '🔍 Buscando pólizas...';
+
+  try {
+    // 1. Buscar pólizas vigentes con timeout de 15s
+    const polRes  = await fetchWithTimeout(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`, {}, 15000);
+    const polData = await polRes.json();
+    const todasPol = polData.vigentes || [];
+    const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
+    const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+
+    if (todasPol.length === 0) {
+      status.textContent = 'No se encontraron pólizas para ese DNI y ramo.';
+      btn.disabled = false; return;
+    }
+
+    const targets = vigentes.length > 0 ? vigentes : vencidas;
+    const estaVencida = vigentes.length === 0;
+
+    // 2. Descargar PDF(s) en base64 — todas las de la lista seleccionada con timeout de 15s
+    status.textContent = estaVencida 
+      ? `📄 Descargando ${targets.length} póliza(s) vencida(s)...`
+      : `📄 Descargando ${targets.length} póliza(s)...`;
+
+    const docs = await Promise.all(targets.map(p =>
+      fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referenceNumber: p.referenceNumber,
+          branchCode: Number(p.branchCode),
+          certificateNumber: p.certificateNumber || 0,
+          reportName: 'Caratula'
+        })
+      }, 15000).then(r => r.json())
+    ));
+
+    const docsOk = docs.filter(d => d.files?.[0]?.urlFile);
+    if (docsOk.length === 0) {
+      throw new Error('document_download_failed');
+    }
+
+    // 3. Construir mensaje para Claude con URLs de PDF + pregunta
+    status.textContent = '🤖 Consultando IA...';
+    let prependedContext = "";
+    if (estaVencida) {
+      const v = targets[0];
+      const fec = v.endDate ? v.endDate.slice(0, 10).split('-').reverse().join('/') : '';
+      prependedContext = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
+    }
+
+    const content = [
+      ...docsOk.map((d, i) => ({
+        type: 'document',
+        source: { type: 'url', url: d.files[0].urlFile },
+        ...(docsOk.length > 1 ? { title: `Póliza ${targets[i].referenceNumber}` } : {})
+      })),
+      { type: 'text', text: prependedContext + pregunta }
+    ];
+
+    const res = await fetchWithTimeout(STEEP_FOG_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1000, system: getSistema(), messages: [{ role: 'user', content }] })
+    }, 25000);
+    const data  = await res.json();
+    const reply = data.content?.[0]?.text || 'Sin respuesta.';
+
+    // 4. Cerrar modal e inyectar respuesta en el chat
+    cerrarConsultaCobertura();
+    const pLabel = estaVencida ? `Póliza vencida` : `Póliza real`;
+    addBubble('user', `[${pLabel} · DNI ${dni} · ${document.getElementById('cob-ramo').selectedOptions[0].text}]\n${pregunta}`);
+    hist.push({ role: 'user', content });
+    addBubble('ai', reply);
+    hist.push({ role: 'assistant', content: reply });
+    document.getElementById('qa-wrap').style.display = 'none';
+
+    // 5. Autoguardado en background sin bloquear la UI
+    autoGuardarConsultaCobertura(dni, ramo, pregunta, reply, estaVencida);
+
+  } catch(e) {
+    console.error('Error detail:', e);
+    if (e.name === 'AbortError' || e.message?.includes('timeout') || e.message?.includes('aborted')) {
+      status.textContent = '❌ Sancor tardó demasiado. Intentá de nuevo.';
+    } else if (e.message?.includes('document') || e.message?.includes('descarga') || e.message?.includes('pdf') || e.message?.includes('files')) {
+      status.textContent = '❌ No se pudo descargar la póliza.';
+    } else {
+      status.textContent = '❌ Error de IA o de conexión. Intentá de nuevo.';
+    }
+  }
+  btn.disabled = false;
+}
+
+async function autoGuardarConsultaCobertura(dni, ramo, pregunta, reply, estaVencida) {
+  try {
+    const key = getKey();
+    if (!key) return; // No key configured, cannot call AI
+
+    const brokerId = getBrokerId();
+    if (!brokerId) return;
+
+    // 1. Buscar cliente_id en Supabase por DNI + broker_id
+    let dbClienteId = null;
+    let dbClienteNombre = `Cliente DNI ${dni}`;
+    try {
+      const cliRes = await fetch(`${TRAMA_WORKER}/clientes?broker_id=${brokerId}&dni=${dni}`);
+      if (cliRes.ok) {
+        const cliData = await cliRes.json();
+        const client = Array.isArray(cliData) ? cliData[0] : cliData;
+        if (client) {
+          dbClienteId = client.id || client.cliente_id || null;
+          dbClienteNombre = client.nombre || client.cliente_nombre || `Cliente DNI ${dni}`;
+        }
+      }
+    } catch (e) {
+      console.warn('Error al buscar cliente por DNI:', e);
+    }
+
+    // 2. Hacer un segundo llamado a Claude con el prompt de extracción
+    const prompt = `Basándote en esta consulta de cobertura, extraé en JSON los siguientes campos: freno_principal, motivador_principal, reaccion_cliente (debe ser un número del 1 al 5 como entero), resumen (máximo 100 caracteres).
+Devolvé únicamente un objeto JSON con estas claves, sin explicar nada, sin rodeos, sin usar markdown ni backticks.
+
+Consulta: ${pregunta}
+Respuesta: ${reply.slice(0, 500)}`;
+
+    let parsed = {};
+    try {
+      const res = await fetchWithTimeout(STEEP_FOG_WORKER, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: CLAUDE_MODEL,
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      }, 15000);
+
+      if (res.ok) {
+        const data = await res.json();
+        const txt = data.content?.[0]?.text || '{}';
+        const clean = txt.replace(/```json|```/g, '').trim();
+        parsed = JSON.parse(clean);
+      }
+    } catch (e) {
+      console.warn('Error en la extracción de Claude:', e);
+    }
+
+    const reaccion = Number(parsed.reaccion_cliente) || 3;
+    const freno = parsed.freno_principal || 'Ninguno';
+    const motivador = parsed.motivador_principal || 'Ninguno';
+    const resumen = parsed.resumen || '';
+    const maxNota = `${pregunta} | ${resumen}`.slice(0, 500);
+
+    const regByLabel = localStorage.getItem('broker_nombre') || 'Productor';
+    const prodAsig = brokerId;
+
+    // 3. POST a TRAMA_WORKER/gestiones
+    const postRes = await fetch(`${TRAMA_WORKER}/gestiones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        broker_id: brokerId,
+        cliente_id: dbClienteId,
+        cliente_nombre: dbClienteNombre,
+        ramo: ramo || null,
+        tipo: 'consulta_cobertura_ia',
+        resultado: estaVencida ? 'alerta_vencida' : 'consulta_tecnica',
+        reaccion_cliente: reaccion,
+        freno_principal: freno,
+        motivador_principal: motivador,
+        nota: maxNota,
+        productor: prodAsig,
+        registrado_por: regByLabel
+      })
+    });
+
+    if (postRes.ok) {
+      const postData = await postRes.json();
+      
+      // Actualizar listado local de gestiones
+      gestiones.unshift({
+        id: postData.id || ('temp-' + Date.now()),
+        clienteId: dbClienteId,
+        clienteNombre: dbClienteNombre,
+        ramo: ramo,
+        poliza: null,
+        tipo: 'consulta_cobertura_ia',
+        resultado: estaVencida ? 'alerta_vencida' : 'consulta_tecnica',
+        freno_principal: freno,
+        motivador_principal: motivador,
+        reaccion_cliente: reaccion,
+        nota: maxNota,
+        fechaGestion: new Date().toISOString().slice(0, 10),
+        productor: prodAsig,
+        registrado_por: regByLabel
+      });
+
+      // Recargar stats y vistas si existen
+      if (typeof cargarStatsAgenda === 'function') cargarStatsAgenda();
+      if (typeof renderSeguimientosAgenda === 'function') renderSeguimientosAgenda();
+    } else {
+      console.error('Error al guardar gestión en Supabase (status code):', postRes.status);
+    }
+
+  } catch (err) {
+    console.error('Error silencioso en autoGuardarConsultaCobertura:', err);
+  }
+}
 
 // broker_id estable por dispositivo hasta que implementemos auth real
 function getBrokerId(){
@@ -3104,9 +3970,9 @@ function setCobTab(tab) {
   const isConsulta = tab === 'consulta';
   document.getElementById('cob-panel-consulta').style.display = isConsulta ? 'block' : 'none';
   document.getElementById('cob-panel-doc').style.display      = isConsulta ? 'none'  : 'flex';
-  document.getElementById('cob-tab-consulta').style.background = isConsulta ? 'var(--blue-fg)' : 'var(--input-bg)';
+  document.getElementById('cob-tab-consulta').style.background = isConsulta ? 'var(--blue-fg)' : '#12243d';
   document.getElementById('cob-tab-consulta').style.color      = isConsulta ? '#000' : 'var(--text-muted)';
-  document.getElementById('cob-tab-doc').style.background      = isConsulta ? 'var(--input-bg)' : 'var(--blue-fg)';
+  document.getElementById('cob-tab-doc').style.background      = isConsulta ? '#12243d' : 'var(--blue-fg)';
   document.getElementById('cob-tab-doc').style.color           = isConsulta ? 'var(--text-muted)' : '#000';
 }
 function resetChat() {
@@ -3126,11 +3992,16 @@ async function ejecutarObtenerDoc() {
   try {
     const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`);
     const polData = await polRes.json();
-    const vigentes = polData.vigentes || [];
-    if (vigentes.length === 0) { status.textContent = 'No hay pólizas vigentes para ese DNI y ramo.'; return; }
+    const todasPol = polData.vigentes || [];
+    const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
+    const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
 
-    status.textContent = '📄 Obteniendo documento...';
-    const p = vigentes[0];
+    if (todasPol.length === 0) { status.textContent = 'No se encontraron pólizas para ese DNI y ramo.'; return; }
+
+    const p = vigentes.length > 0 ? vigentes[0] : vencidas[0];
+    const estaVencida = vigentes.length === 0;
+
+    status.textContent = estaVencida ? '📄 Obteniendo documento (póliza vencida)...' : '📄 Obteniendo documento...';
     const docRes = await fetch(`${SANCOR_WORKER}/document`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docTipo })
@@ -3141,90 +4012,12 @@ async function ejecutarObtenerDoc() {
 
     cerrarConsultaCobertura();
     const label = document.getElementById('cob-doc-tipo').selectedOptions[0].text;
-    addDocBubble(label, p.referenceNumber, urlFile);
+    const labelFin = estaVencida ? `${label} [VENCIDA]` : label;
+    addDocBubble(labelFin, p.referenceNumber, urlFile);
     document.getElementById('qa-wrap').style.display = 'none';
   } catch(e) {
     status.textContent = 'Error: ' + e.message;
   }
-}
-
-async function ejecutarConsultaCobertura() {
-  const dni      = document.getElementById('cob-dni').value.trim();
-  const ramo     = document.getElementById('cob-ramo').value;
-  const pregunta = document.getElementById('cob-pregunta').value.trim();
-  const key      = getKey();
-  const status   = document.getElementById('cob-status');
-  const btn      = document.getElementById('cob-btn');
-
-  if (!dni || !pregunta) { status.textContent = 'Completá DNI y pregunta.'; return; }
-  if (!key) { status.textContent = 'Configurá tu API Key primero.'; return; }
-
-  btn.disabled = true;
-  status.textContent = '🔍 Buscando pólizas...';
-
-  try {
-    // 1. Buscar pólizas vigentes
-    const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`);
-    const polData = await polRes.json();
-    const vigentes = polData.vigentes || [];
-
-    if (vigentes.length === 0) {
-      status.textContent = 'No se encontraron pólizas vigentes para ese DNI y ramo.';
-      btn.disabled = false; return;
-    }
-
-    // 2. Descargar PDF(s) en base64 — todas las pólizas vigentes del ramo
-    status.textContent = `📄 Descargando ${vigentes.length} póliza(s)...`;
-    const docs = await Promise.all(vigentes.map(p =>
-      fetch(`${SANCOR_WORKER}/document`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          referenceNumber: p.referenceNumber,
-          branchCode: Number(p.branchCode),
-          certificateNumber: p.certificateNumber || 0,
-          reportName: 'Caratula'
-        })
-      }).then(r => r.json())
-    ));
-
-    const docsOk = docs.filter(d => d.files?.[0]?.urlFile);
-    if (docsOk.length === 0) {
-      status.textContent = 'No se pudo obtener el documento de la póliza.';
-      btn.disabled = false; return;
-    }
-
-    // 3. Construir mensaje para Claude con URLs de PDF + pregunta
-    status.textContent = '🤖 Consultando IA...';
-    const content = [
-      ...docsOk.map((d, i) => ({
-        type: 'document',
-        source: { type: 'url', url: d.files[0].urlFile },
-        ...(docsOk.length > 1 ? { title: `Póliza ${vigentes[i].referenceNumber}` } : {})
-      })),
-      { type: 'text', text: pregunta }
-    ];
-
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: getSistema(), messages: [{ role: 'user', content }] })
-    });
-    const data  = await res.json();
-    const reply = data.content?.[0]?.text || 'Sin respuesta.';
-
-    // 4. Cerrar modal e inyectar respuesta en el chat
-    cerrarConsultaCobertura();
-    addBubble('user', `[Póliza real · DNI ${dni} · ${document.getElementById('cob-ramo').selectedOptions[0].text}]\n${pregunta}`);
-    hist.push({ role: 'user', content });
-    addBubble('ai', reply);
-    hist.push({ role: 'assistant', content: reply });
-    document.getElementById('qa-wrap').style.display = 'none';
-
-  } catch(e) {
-    status.textContent = 'Error: ' + e.message;
-  }
-  btn.disabled = false;
 }
 
 // CHAT
@@ -3295,36 +4088,44 @@ async function sendMsg(){
           : `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`;
         const polRes  = await fetch(polUrl);
         const polData = await polRes.json();
-        // Filtrar por patente si fue especificada y el campo existe en la respuesta
-        let vigentes = polData.vigentes || [];
-        if(plate && vigentes.length > 1){
-          const filtered = vigentes.filter(p =>
+        const todasPol = polData.vigentes || [];
+        
+        let vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
+        let vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+
+        if(plate && (vigentes.length > 1 || (vigentes.length === 0 && vencidas.length > 1))){
+          const targets = vigentes.length > 0 ? vigentes : vencidas;
+          const filtered = targets.filter(p =>
             p.licensePlate?.replace(/[-\s]/g,'').toUpperCase() === plate ||
             p.plate?.replace(/[-\s]/g,'').toUpperCase() === plate
           );
-          if(filtered.length > 0) vigentes = filtered;
+          if(filtered.length > 0) {
+            if(vigentes.length > 0) vigentes = filtered;
+            else vencidas = filtered;
+          }
         }
         const chatBody = document.getElementById('chat-body');
         chatBody.removeChild(chatBody.lastChild);
 
-        if(vigentes.length === 0){
-          addBubble('ai', `No encontré pólizas vigentes de ${docReq.label} para ${plate ? 'la patente '+plate : 'ese DNI'}.`);
-        } else if(vigentes.length > 1){
-          // Múltiples pólizas → pedir aclaración mostrando lo que tenemos
-          const lista = vigentes.map(p => {
-            const pat = p.licensePlate || p.plate || '';
-            return `• Ref <strong>${p.referenceNumber}</strong>${pat ? ' — Patente '+pat : ''}`;
-          }).join('<br>');
-          addBubble('ai', `Encontré ${vigentes.length} pólizas de Automotores vigentes para ese DNI:<br>${lista}<br><br>¿Podés aclarar la patente?`);
+        if(vigentes.length === 0 && vencidas.length === 0){
+          addBubble('ai', `No encontré pólizas de ${docReq.label} para ${plate ? 'la patente '+plate : 'ese DNI'}.`);
         } else {
-          const p = vigentes[0];
+          // Si no hay vigentes pero hay vencidas, avisarle al cliente
+          const estaVencida = vigentes.length === 0;
+          const p = estaVencida ? vencidas[0] : vigentes[0];
+          
+          if (estaVencida) {
+            const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
+            addBubble('ai', `⚠️ Hola! Veo que esa póliza de ${p.branchName} se encuentra <strong>vencida</strong> desde el día <strong>${fec || 'en el pasado'}</strong>.<br><br>De todas formas, acá tenés el documento anterior por si querés consultarlo, y si querés avisame y te cotizo la renovación:`);
+          }
+
           const docRes = await fetch(`${SANCOR_WORKER}/document`, {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docReq.reportName })
           });
           const doc = await docRes.json();
           const urlFile = doc.files?.[0]?.urlFile;
-          if(urlFile) addDocBubble(docReq.label, p.referenceNumber, urlFile);
+          if(urlFile) addDocBubble(estaVencida ? `${docReq.label} [VENCIDA]` : docReq.label, p.referenceNumber, urlFile);
           else addBubble('ai', `No se pudo obtener el documento. Error: ${doc.error||'desconocido'}`);
         }
         document.getElementById('chat-loader').classList.remove('show');
@@ -3333,7 +4134,7 @@ async function sendMsg(){
       }
     }
 
-    // ── FLUJO CONSULTA: pregunta con DNI → Claude lee la carátula ──
+    // ── FLUJO CONSULTA: pregunta con DNI o Patente → Claude/Gemini lee la carátula ──
     let userContent = txt;
     if(dni || plate){
       const txtLow = txt.toLowerCase();
@@ -3351,32 +4152,66 @@ async function sendMsg(){
       addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
       const polRes  = await fetch(polUrl);
       const polData = await polRes.json();
-      const vigentes = polData.vigentes || [];
+      
+      const todasPol = polData.vigentes || [];
+      const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
+      const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+
       const chatBody = document.getElementById('chat-body');
       chatBody.removeChild(chatBody.lastChild);
 
-      if(vigentes.length > 1){
-        // Múltiples pólizas del mismo ramo — mostrar picker antes de consultar
-        const opciones = vigentes.map(p => {
+      if(todasPol.length === 0){
+        document.getElementById('chat-loader').classList.remove('show');
+        document.getElementById('send-btn').disabled = false;
+        let desc = plate ? `la patente <strong>${plate}</strong>` : `el DNI <strong>${dni}</strong>`;
+        addBubble('ai', `No encontré ninguna póliza en Sancor Seguros para ${desc}.<br><br>Por favor verificá que el número ingresado sea correcto.<br><br>💡 <strong>Dato de prueba:</strong> Podés usar la patente activa de prueba: <strong>AG855MB</strong> (Automotor de María Laura) o el DNI de prueba: <strong>18306003</strong>.`);
+        return;
+      }
+
+      // Si hay múltiples vigentes, o si no hay vigentes pero hay múltiples vencidas, mostrar picker
+      const targetPols = vigentes.length > 0 ? vigentes : vencidas;
+      const estaVencida = vigentes.length === 0;
+
+      if(targetPols.length > 1){
+        const opciones = targetPols.map(p => {
           const fecha = (p.startDate||'').slice(0,10);
-          return `<button onclick="elegirPolizaChat('${p.referenceNumber}','${p.branchCode}','${p.certificateNumber||0}',\`${txt.replace(/`/g,'\\`')}\`)" style="background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--blue-fg);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px">Ref ${p.referenceNumber} · desde ${fecha}</button>`;
+          return `<button onclick="elegirPolizaChat('${p.referenceNumber}','${p.branchCode}','${p.certificateNumber||0}',\`${txt.replace(/`/g,'\\`')}\`,${estaVencida},\`${p.endDate||''}\`)" style="background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--blue-fg);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px">Ref ${p.referenceNumber} · desde ${fecha}${estaVencida ? ' [VENCIDA]' : ''}</button>`;
         }).join('');
-        addBubble('ai', `Encontré ${vigentes.length} pólizas de ${vigentes[0].branchName} para ese DNI. ¿Cuál consulto?<br><div style="margin-top:8px">${opciones}</div>`);
+        const labelVenc = estaVencida ? 'vencidas (ya no están activas)' : 'vigentes';
+        addBubble('ai', `Encontré ${targetPols.length} pólizas de ${targetPols[0].branchName} ${labelVenc} para ese DNI. ¿Cuál consulto?<br><div style="margin-top:8px">${opciones}</div>`);
         document.getElementById('chat-loader').classList.remove('show');
         document.getElementById('send-btn').disabled=false;
         return;
-      } else if(vigentes.length > 0){
-        const p = vigentes[0];
-        const docRes = await fetch(`${SANCOR_WORKER}/document`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula' })
-        });
-        const doc = await docRes.json();
-        if(doc.files?.[0]?.urlFile){
-          userContent = [
-            { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
-            { type:'text', text: txt }
-          ];
+      } else {
+        const p = targetPols[0];
+        try {
+          const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula' })
+          });
+          const doc = await docRes.json();
+          if(doc.files?.[0]?.urlFile){
+            let contextForIA = "";
+            if (estaVencida) {
+              const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
+              contextForIA = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
+            }
+            userContent = [
+              { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
+              { type:'text', text: contextForIA + txt }
+            ];
+          } else {
+            document.getElementById('chat-loader').classList.remove('show');
+            document.getElementById('send-btn').disabled = false;
+            const labelVenc = estaVencida ? 'vencida ' : '';
+            addBubble('ai', `Encontré la póliza ${labelVenc}de ${p.branchName} Ref <strong>${p.referenceNumber}</strong> en Sancor Seguros, pero no se pudo descargar el documento original para analizar la cobertura con el procesador de IA. Intentá consultando de nuevo en unos momentos.`);
+            return;
+          }
+        } catch(docErr) {
+          document.getElementById('chat-loader').classList.remove('show');
+          document.getElementById('send-btn').disabled = false;
+          addBubble('ai', `Error de red al intentar descargar la póliza desde Sancor: ${docErr.message}. Por favor de reintentar.`);
+          return;
         }
       }
     }
@@ -3386,7 +4221,7 @@ async function sendMsg(){
     const mensajesAEnviar = hasDocs ? [msgToSend] : [...hist, msgToSend];
     hist.push({ role:'user', content: hasDocs ? txt : userContent });
 
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:mensajesAEnviar})});
+    const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:mensajesAEnviar})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     hist.push({role:'assistant',content:reply});
     document.getElementById('chat-loader').classList.remove('show');addBubble('ai',reply);
@@ -3409,7 +4244,7 @@ async function genMail(){
   const prompt=`Redactá un mail de ${tipos[tipo]||tipo} para ${dest}. Tono: ${tono}. Firma: ${firma}.\n${ctx?'Contexto: '+ctx:''}\n\nRespondé SOLO con el mail en este formato:\nASUNTO: [asunto]\n---\n[cuerpo]`;
   document.getElementById('mail-loader').classList.add('show');document.getElementById('mail-prev').classList.remove('show');
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'';
     document.getElementById('mail-loader').classList.remove('show');
     const lines=reply.split('\n');let asunto='',body='',inB=false;
@@ -3514,6 +4349,8 @@ async function driveSnapshotActual(){
 // ═══════════════════════════════════════════════════════════
 // INFORME
 // ═══════════════════════════════════════════════════════════
+const simulatedPulsoAlertas = [];
+
 function selTpl(el,tipo){document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');tplSel=tipo;}
 
 function calcularEstadisticasCartera(){
@@ -3531,6 +4368,71 @@ function calcularEstadisticasCartera(){
   let evolucionCtx='';
   if(typeof driveSnapshots!=='undefined'&&driveSnapshots.length>=2){const snaps=driveSnapshots.slice(-6);const tabla=snaps.map(s=>`  ${s.fecha}: ${s.totalCerts} certs | $${Math.round(s.premioTotal||0).toLocaleString('es-AR')}/mes`).join('\n');const last=snaps[snaps.length-1];const prev=snaps[snaps.length-2];const dPremio=Math.round((last.premioTotal||0)-(prev.premioTotal||0));const dCerts=(last.totalCerts||0)-(prev.totalCerts||0);evolucionCtx=`\n\nEVOLUCIÓN (últimos ${snaps.length} snapshots):\n${tabla}\n\nVARIACIÓN: Certs: ${dCerts>0?'+':''}${dCerts} | Premio: ${dPremio>0?'+':''}$${dPremio.toLocaleString('es-AR')}`;}
   return{resumen:`DATOS REALES (${hoy.toLocaleDateString('es-AR')}):\nTotal: ${total} certs · ${clientesTotal} clientes (${pfIds.size} PF, ${empIds.size} empresas)\nPremio: $${Math.round(premioTotal).toLocaleString('es-AR')}/mes\n\nPOR RAMO:\n${distribucion}\n\nCROSS-SELL:\n- PF con Auto sin Combinado: ${autoSinCombinadoUnicos}\n- Empresas con Auto sin Integral: ${empSinComercial}${evolucionCtx}`,totalCerts:total,clientesUnicos:clientesTotal,premioTotal,pfCount:pfIds.size,empCount:empIds.size};
+}
+
+async function cargarAlertasZona(){
+  const el = document.getElementById('pulso-alertas');
+  if(!el) return;
+  
+  let zonalAlertsHTML = '';
+  try{
+    const res = await fetch(`${TRAMA_WORKER}/alertas-zona?broker_id=${getBrokerId()}`);
+    if(res.ok) {
+      const alertas = await res.json();
+      if(Array.isArray(alertas) && alertas.length > 0) {
+        const FRENO_ICONO = {
+          'Precio / cuota alta':'💰','No ve necesidad':'🤔','Mala experiencia previa':'😞',
+          'Ya tiene otra cobertura':'🔄','Necesita consultarlo':'⏳','No confía en seguros':'⚠️',
+          'Prefiere esperar':'🕐','Situación económica':'📉','Otro':'📌'
+        };
+        zonalAlertsHTML = alertas.map(a => {
+          const icono = FRENO_ICONO[a.freno] || '🔔';
+          const tuyo  = a.es_propio ? '<span style="color:var(--blue-fg);font-size:10px"> · también en tu cartera</span>' : '';
+          return `<div style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(239,68,68,.12));border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:16px">${icono}</span>
+              <span style="font-size:12px;font-weight:700;color:#fbbf24">Alerta de red — ${a.ramo||'Sin ramo'}</span>
+              ${tuyo}
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">
+              <strong style="color:var(--text-main)">${a.n_brokers} productores</strong> registraron
+              <strong style="color:var(--text-main)">"${a.freno}"</strong> como freno esta semana en ${a.ramo||'este ramo'}.
+              ${a.n_casos > a.n_brokers ? `Total: ${a.n_casos} casos.` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+  }catch(e){ console.warn('Error cargando alertas zona (usando simuladas si hay):',e); }
+
+  let simulatedHTML = '';
+  if (simulatedPulsoAlertas.length > 0) {
+    simulatedHTML = simulatedPulsoAlertas.map(a => `
+      <div class="pulso-sim-alert" style="background:linear-gradient(135deg, rgba(0,212,255,0.12), rgba(139,92,246,0.12)); border:1.5px solid var(--gold-accent); border-radius:12px; padding:14px; margin-bottom:12px; box-shadow:0 0 15px rgba(0,212,255,0.25); position:relative; overflow:hidden">
+        <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:var(--gold-accent)"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-size:18px">🧠</span>
+            <span style="font-size:12px; font-weight:700; color:var(--gold-accent); text-transform:uppercase; letter-spacing:0.5px">PULSO Vivo · Alerta Conductual</span>
+          </div>
+          <span style="font-size:10px; color:var(--text-muted); background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:10px; margin-left:auto">${a.time}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-main); line-height:1.5">
+          El cliente <strong>${a.cliente}</strong> disparó una consulta automatizada en su celular.<br>
+          <span style="color:var(--text-muted)">Intención de comportamiento:</span> <strong>${a.intencion}</strong>
+          <p style="margin-top:6px; font-size:11.5px; color:var(--green-fg); font-weight:600; background:rgba(0,216,120,0.08); padding:6px 10px; border-radius:6px; border:1px solid rgba(0,216,120,0.15)">
+            💡 Acción sugerida: ${a.accion}
+          </p>
+        </div>
+        <div style="margin-top:8px; display:flex; justify-content:flex-end; gap:8px">
+          <button class="btn btn-secondary btn-sm" style="font-size:11px; padding:4px 8px" onclick="eliminarAlertaSimulada(${a.id})">Ignorar</button>
+          <button class="btn btn-primary btn-sm" style="font-size:11px; padding:4px 10px; background:var(--gold-accent); color:#000" onclick="iniciarGestionDesdeAlertaSimulada('${a.clienteId}', '${a.cliente}', '${a.ramo}')">Acción Directa</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  el.innerHTML = simulatedHTML + (zonalAlertsHTML || (simulatedPulsoAlertas.length === 0 ? '<div style="color:var(--muted); font-size:11.5px; font-style:italic">No hay alertas de red ni comportamientos críticos registrados.</div>' : ''));
 }
 
 async function genInforme(){
@@ -3581,7 +4483,7 @@ function accionRetirex(nombre){
 async function callIA(prompt,outId){
   const key=getKey();const out=document.getElementById(outId);out.classList.add('show');
   try{
-    const res=await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
+    const res=await fetch(STEEP_FOG_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:2000,system:getSistema(),messages:[{role:'user',content:prompt}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Sin respuesta.';
     out.innerHTML=`<button class="copy-btn" onclick="copiar('${outId}')">Copiar</button>${reply.replace(/\n/g,'<br>')}`;
   }catch(e){out.innerHTML='Error al conectar con la IA.';}
@@ -3671,23 +4573,392 @@ async function gestionesCargarSupabase(){
     const data = await res.json();
     if(!Array.isArray(data)) return;
     // Mapear campos de Supabase al formato que usa renderSeguimientosAgenda()
-    gestiones = data.map(g=>({
-      id:                 g.id,
-      clienteId:          g.cliente_id || '',
-      clienteNombre:      g.cliente_nombre || g.cliente_id || 'Cliente',
-      ramo:               g.ramo || '',
-      poliza:             '',
-      tipo:               g.tipo,
-      resultado:          g.resultado,
-      freno_principal:    g.freno_principal    || null,
-      motivador_principal:g.motivador_principal|| null,
-      reaccion_cliente:   g.reaccion_cliente   ?? 3,
-      nota:               g.nota || '',
-      fechaSeg:           g.fecha_seguimiento || '',
-      fechaGestion:       (g.timestamp_trama||'').slice(0,10),
-    }));
+    gestiones = data.map(g=>{
+      let clienteId = g.cliente_id || '';
+      let clienteNombre = g.cliente_nombre || g.cliente_id || 'Cliente';
+      if (!clienteId && clienteNombre.includes('[') && clienteNombre.endsWith(']')) {
+        const idx = clienteNombre.lastIndexOf('[');
+        clienteId = clienteNombre.slice(idx + 1, -1);
+        clienteNombre = clienteNombre.slice(0, idx).trim();
+      }
+      return {
+        id:                 g.id,
+        clienteId:          clienteId,
+        clienteNombre:      clienteNombre,
+        ramo:               g.ramo || '',
+        poliza:             '',
+        tipo:               g.tipo,
+        resultado:          g.resultado,
+        freno_principal:    g.freno_principal    || null,
+        motivador_principal:g.motivador_principal|| null,
+        reaccion_cliente:   g.reaccion_cliente   ?? 3,
+        nota:               g.nota || '',
+        fechaSeg:           g.fecha_seguimiento || '',
+        fechaGestion:       (g.timestamp_trama||'').slice(0,10),
+        productor:          g.productor || getAssignedProductor(clienteId, clienteNombre),
+        registrado_por:     g.registrado_por || 'Gaby Admin'
+      };
+    });
     renderSeguimientosAgenda();
+    if (typeof renderRedDashboard === 'function') renderRedDashboard();
+    if (typeof renderRedActivityTicker === 'function') renderRedActivityTicker();
   }catch(e){ console.warn('Error cargando gestiones desde Supabase:',e); }
+}
+
+async function sincronizarCarteraDiaria() {
+  if (carteraActiva.length === 0) return;
+  
+  toast("⏳ Iniciando sincronización diaria con TRAMA...");
+  
+  try {
+    // 1. Agrupar carteraActiva en clientes únicos
+    const clientesMap = {};
+    carteraActiva.forEach(item => {
+      const key = item.id || item.cuit || item.nombre;
+      if (!clientesMap[key]) {
+        clientesMap[key] = {
+          id: key,
+          nombre: item.nombre,
+          cuit: item.cuit || '',
+          pf: item.pf !== undefined ? item.pf : true,
+          crossell: item.crossell || false,
+          vencMin: item.venc,
+          items: []
+        };
+      }
+      clientesMap[key].items.push(item);
+      if (item.venc) {
+        if (!clientesMap[key].vencMin || item.venc < clientesMap[key].vencMin) {
+          clientesMap[key].vencMin = item.venc;
+        }
+      }
+      if (item.crossell) {
+        clientesMap[key].crossell = true;
+      }
+    });
+
+    const unDiaMs = 24 * 60 * 60 * 1000;
+    const sortedClientes = Object.values(clientesMap).map(c => {
+      // Priority 1: Vencimiento en menos de 30 días
+      let diasVenc = null;
+      if (c.vencMin) {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const d = new Date(c.vencMin); d.setHours(0,0,0,0);
+        diasVenc = isNaN(d) ? null : Math.round((d - hoy) / unDiaMs);
+      }
+      const vence30 = (diasVenc !== null && diasVenc < 30);
+
+      // Priority 3: Sin contacto en más de 90 días
+      let sinContacto90 = false;
+      const clientGestiones = gestiones.filter(g => g.clienteId === c.id || g.clienteNombre === c.nombre);
+      if (clientGestiones.length === 0) {
+        sinContacto90 = true;
+      } else {
+        let ultFecha = null;
+        clientGestiones.forEach(g => {
+          if (g.fechaGestion) {
+            const d = new Date(g.fechaGestion);
+            if (!isNaN(d)) {
+              if (!ultFecha || d > ultFecha) ultFecha = d;
+            }
+          }
+        });
+        if (ultFecha) {
+          const diffDays = Math.round((new Date() - ultFecha) / unDiaMs);
+          if (diffDays > 90) sinContacto90 = true;
+        } else {
+          sinContacto90 = true;
+        }
+      }
+
+      return {
+        ...c,
+        vence30,
+        diasVenc,
+        sinContacto90
+      };
+    });
+
+    // 2. Orden de prioridad de TRAMA
+    sortedClientes.sort((a, b) => {
+      // 1° Pólizas que vencen en menos de 30 días
+      if (a.vence30 !== b.vence30) return a.vence30 ? -1 : 1;
+      // 2° Clientes sin Combinado (crossell=true)
+      if (a.crossell !== b.crossell) return a.crossell ? -1 : 1;
+      // 3° Clientes sin contacto en más de 90 días
+      if (a.sinContacto90 !== b.sinContacto90) return a.sinContacto90 ? -1 : 1;
+      // 4° Resto por orden alfabético
+      return (a.nombre || '').localeCompare(b.nombre || '');
+    });
+
+    // Tomar los primeros 30
+    const top30 = sortedClientes.slice(0, 30);
+    console.log('[Sync Diaria] Clientes seleccionados para sincronizar hoy:', top30);
+
+    let syncCont = 0;
+    const brokerId = getBrokerId();
+
+    for (let c of top30) {
+      try {
+        // Encontrar pólizas de Sancor Seguros
+        const param = c.id.length === 11 ? `cuit=${c.id}` : `dni=${c.id}`;
+        let SancorPols = [];
+        try {
+          const sRes = await fetchWithTimeout(`${SANCOR_WORKER}/policies?${param}`, {}, 10000);
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            SancorPols = sData.vigentes || [];
+          }
+        } catch (err) {
+          console.warn(`[Sync Diaria] Error buscando pólizas de Sancor para ${c.nombre}:`, err);
+        }
+
+        // Si Sancor no devolvió pólizas, podemos confeccionar una provisoria con la de la carteraActiva
+        if (SancorPols.length === 0 && c.items.length > 0) {
+          SancorPols = c.items.map(item => ({
+            referenceNumber: item.poliza,
+            branchCode: item.ramo,
+            branchName: RAMO_MAP[item.ramo] || `Ramo ${item.ramo}`,
+            certificateNumber: item.cert || 1,
+            endDate: item.venc,
+            isVigent: "true",
+            premio: item.premio || item.prima || 0
+          }));
+        }
+
+        // Upsert del cliente en Supabase
+        let dbClienteId = null;
+        try {
+          const clientBody = {
+            broker_id: brokerId,
+            nombre: c.nombre,
+            cliente_nombre: c.nombre,
+            dni: c.id.length !== 11 ? c.id : null,
+            cuit: c.id.length === 11 ? c.id : null,
+            pf: c.pf
+          };
+
+          const clientPostRes = await fetch(`${TRAMA_WORKER}/clientes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(clientBody)
+          });
+
+          if (clientPostRes.ok) {
+            const resultData = await clientPostRes.json();
+            const savedCli = Array.isArray(resultData) ? resultData[0] : resultData;
+            dbClienteId = savedCli?.id || savedCli?.cliente_id || null;
+          }
+        } catch (err) {
+          console.warn(`[Sync Diaria] Error guardando cliente ${c.nombre} en Supabase:`, err);
+        }
+
+        // Si no pudimos obtener UUID de respuesta en POST, hacer un fallback de búsqueda por DNI/CUIT
+        if (!dbClienteId) {
+          try {
+            const queryParam = c.id.length === 11 ? `cuit=${c.id}` : `dni=${c.id}`;
+            const seekCli = await fetch(`${TRAMA_WORKER}/clientes?broker_id=${brokerId}&${queryParam}`);
+            if (seekCli.ok) {
+              const seekData = await seekCli.json();
+              const foundCli = Array.isArray(seekData) ? seekData[0] : seekData;
+              dbClienteId = foundCli?.id || foundCli?.cliente_id || null;
+            }
+          } catch (err) {
+            console.warn(`[Sync Diaria] Error de fallback buscando cliente ${c.nombre}:`, err);
+          }
+        }
+
+        // Si tenemos ya el client_id de Supabase, hacemos upsert de las pólizas
+        if (dbClienteId) {
+          // Guardar client_id temporalmente para actualizar carteraActiva
+          c.dbClienteId = dbClienteId;
+          
+          const polPromises = SancorPols.map(async (p) => {
+            try {
+              const polBody = {
+                broker_id: brokerId,
+                cliente_id: dbClienteId,
+                numero_poliza: p.referenceNumber || p.poliza || '',
+                poliza: p.referenceNumber || p.poliza || '',
+                ramo: Number(p.branchCode) || Number(p.ramo) || 0,
+                numero_certificado: p.certificateNumber || p.cert || 0,
+                vencimiento: p.endDate || p.venc || null,
+                fecha_fin: p.endDate || p.venc || null,
+                fecha_inicio: p.startDate || null,
+                vigente: p.isVigent !== "false",
+                premio: p.premio || p.prima || 0,
+                premio_total: p.premio || p.prima || 0
+              };
+
+              await fetch(`${TRAMA_WORKER}/polizas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(polBody)
+              });
+            } catch (pErr) {
+              console.warn(`[Sync Diaria] error upserting poliza para ${c.nombre}:`, pErr);
+            }
+          });
+          await Promise.all(polPromises);
+          syncCont++;
+        }
+      } catch (clientErr) {
+        console.error(`[Sync Diaria] Error procesando cliente individual ${c.nombre}:`, clientErr);
+      }
+    }
+
+    // Actualizar carteraActiva local con los nuevos cliente_id obtenidos
+    let matchesActualizados = 0;
+    top30.forEach(c => {
+      if (c.dbClienteId) {
+        carteraActiva.forEach(item => {
+          if (item.id === c.id) {
+            item.cliente_id = c.dbClienteId;
+            matchesActualizados++;
+          }
+        });
+      }
+    });
+
+    if (matchesActualizados > 0) {
+      guardarCarteraLocal();
+    }
+
+    // Registrar la fecha de sincronización
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('trama_ultima_sync_diaria', hoyStr);
+
+    toast(`✅ ${syncCont} clientes sincronizados con TRAMA`);
+    await enriquecerAgendaConSupabase();
+  } catch (err) {
+    console.error('[Sync Diaria] Error crítico en sincronizarCarteraDiaria:', err);
+    toast("⚠️ Ocurrió un error al sincronizar con TRAMA");
+  }
+}
+
+async function enriquecerAgendaConSupabase() {
+  const brokerId = getBrokerId();
+  if (!brokerId) return;
+
+  try {
+    // 1. Consultar GET ${TRAMA_WORKER}/gestiones?broker_id=X
+    const resGestiones = await fetchWithTimeout(`${TRAMA_WORKER}/gestiones?broker_id=${brokerId}`, {}, 10000);
+    if (resGestiones.ok) {
+      const data = await resGestiones.json();
+      if (Array.isArray(data)) {
+        data.forEach(g => {
+          // Check if it already exists in gestiones Array by id to avoid duplicates
+          if (!gestiones.some(existing => existing.id === g.id)) {
+            let clienteId = g.cliente_id || '';
+            let clienteNombre = g.cliente_nombre || g.cliente_id || 'Cliente';
+            if (!clienteId && clienteNombre.includes('[') && clienteNombre.endsWith(']')) {
+              const idx = clienteNombre.lastIndexOf('[');
+              clienteId = clienteNombre.slice(idx + 1, -1);
+              clienteNombre = clienteNombre.slice(0, idx).trim();
+            }
+            gestiones.push({
+              id:                 g.id,
+              clienteId:          clienteId,
+              clienteNombre:      clienteNombre,
+              ramo:               g.ramo || '',
+              poliza:             '',
+              tipo:               g.tipo,
+              resultado:          g.resultado,
+              freno_principal:    g.freno_principal    || null,
+              motivador_principal:g.motivador_principal|| null,
+              reaccion_cliente:   g.reaccion_cliente   ?? 3,
+              nota:               g.nota || '',
+              fechaSeg:           g.fecha_seguimiento || '',
+              fechaGestion:       (g.timestamp_trama||'').slice(0,10),
+              productor:          g.productor || getAssignedProductor(clienteId, clienteNombre),
+              registrado_por:     g.registrado_por || (localStorage.getItem('broker_nombre') || 'Productor')
+            });
+          }
+        });
+      }
+    }
+
+    // 2. Consultar GET ${TRAMA_WORKER}/clientes?broker_id=X
+    const resClientes = await fetchWithTimeout(`${TRAMA_WORKER}/clientes?broker_id=${brokerId}`, {}, 10000);
+    let dbClientes = [];
+    if (resClientes.ok) {
+      const dbData = await resClientes.json();
+      dbClientes = Array.isArray(dbData) ? dbData : [];
+    }
+
+    // Para cada cliente en carteraActiva que tenga cliente_id (o por su ID de la cartera si coincide con un id de Supabase)
+    // actualizar los campos: reaccion_cliente promedio, fecha de último contacto, y freno_principal más frecuente.
+    carteraActiva.forEach(item => {
+      // Intentar obtener el cliente_id. Puede estar en item.cliente_id o podemos buscarlo por su ID original / CUIT en dbClientes
+      let cid = item.cliente_id;
+      if (!cid) {
+        const found = dbClientes.find(dbc => {
+          const dniCuit = dbc.dni || dbc.cuit;
+          return dniCuit && (String(dniCuit) === String(item.id) || String(dniCuit) === String(item.cuit));
+        });
+        if (found) {
+          cid = found.id || found.cliente_id;
+          item.cliente_id = cid; // Asociar el ID encontrado
+        }
+      }
+
+      if (!cid) return;
+
+      // Obtener todas las interacciones de este cliente en el array de gestiones actualizado
+      const clientGestiones = gestiones.filter(g => g.clienteId === cid || g.clienteId === item.id);
+
+      // A) reaccion_cliente promedio de sus interacciones
+      const reaccionesValidas = clientGestiones.filter(g => g.reaccion_cliente !== undefined && g.reaccion_cliente !== null);
+      if (reaccionesValidas.length > 0) {
+        const totalReaccion = reaccionesValidas.reduce((sum, g) => sum + Number(g.reaccion_cliente), 0);
+        item.reaccion_cliente = parseFloat((totalReaccion / reaccionesValidas.length).toFixed(1));
+      } else {
+        item.reaccion_cliente = 3; // Valor neutral por defecto
+      }
+
+      // B) fecha de último contacto real
+      let ultContacto = null;
+      clientGestiones.forEach(g => {
+        if (g.fechaGestion) {
+          const d = new Date(g.fechaGestion);
+          if (!isNaN(d)) {
+            if (!ultContacto || d > ultContacto) ultContacto = d;
+          }
+        }
+      });
+      if (ultContacto) {
+        item.ultimo_contacto = ultContacto.toISOString().slice(0, 10);
+      } else {
+        item.ultimo_contacto = null;
+      }
+
+      // C) freno_principal más frecuente
+      const frenos = clientGestiones.map(g => g.freno_principal).filter(f => f && f !== 'Ninguno' && f !== 'ninguno');
+      if (frenos.length > 0) {
+        const freqMap = {};
+        let maxCount = 0;
+        let mostFreq = null;
+        frenos.forEach(f => {
+          freqMap[f] = (freqMap[f] || 0) + 1;
+          if (freqMap[f] > maxCount) {
+            maxCount = freqMap[f];
+            mostFreq = f;
+          }
+        });
+        item.freno_principal = mostFreq;
+      } else {
+        item.freno_principal = null;
+      }
+    });
+
+    // Guardar cartera actualizada localmente con los ID enriquecidos si hubo cambios
+    guardarCarteraLocal();
+  } catch (err) {
+    console.error('[Enriquecer Agenda] Error al enriquecer con Supabase:', err);
+  } finally {
+    // 3. Al terminar — llamar a renderAgenda()
+    renderAgenda();
+  }
 }
 
 async function gestionesCargarDrive(){
@@ -3838,13 +5109,72 @@ function mostrarPulsoCard(clienteNombre, clienteId, resultado, reaccion){
   const total     = historial.length;
   const reacciones = historial.map(g => g.reaccion_cliente).filter(v => v != null);
   const prom = reacciones.length > 0
-    ? (reacciones.reduce((a,b)=>a+b,0) / reacciones.length).toFixed(1) : null;
+    ? parseFloat((reacciones.reduce((a,b)=>a+b,0) / reacciones.length).toFixed(1)) : 3.0;
 
   // Tendencia: compara últimas 3 con las 3 anteriores
   const trend = reacciones.length >= 4
     ? (reacciones.slice(-2).reduce((a,b)=>a+b,0)/2) > (reacciones.slice(0,2).reduce((a,b)=>a+b,0)/2)
       ? '↑ mejorando' : '↓ bajando'
     : null;
+
+  // --- Sprint 3: Cálculo Dinámico de Scores PULSO ---
+  // 1. Score de Momento (Fricción emocional de la interacción reciente)
+  let scoreMomento = 50;
+  if (reaccion === 5) scoreMomento = 100;
+  else if (reaccion === 4) scoreMomento = 80;
+  else if (reaccion === 3) scoreMomento = 60;
+  else if (reaccion === 2) scoreMomento = 40;
+  else if (reaccion === 1) scoreMomento = 20;
+
+  if (resultado === 'cerrado') scoreMomento = Math.min(100, scoreMomento + 10);
+  else if (resultado === 'interesado') scoreMomento = Math.min(95, scoreMomento + 5);
+  else if (resultado === 'no_contesto') scoreMomento = Math.max(20, scoreMomento - 15);
+  else if (resultado === 'rechazado') scoreMomento = Math.max(10, scoreMomento - 25);
+
+  // 2. Score de Lealtad (Predicción de retención basada en trayectoria)
+  let scoreLealtad = 60 + Math.round((prom - 3.0) * 15);
+  scoreLealtad += Math.min(20, total * 4); // El contacto frecuente fideliza
+  scoreLealtad = Math.max(10, Math.min(98, scoreLealtad));
+
+  // 3. Score de Potencial (Capacidad de venta cruzada)
+  // Contar cuántas pólizas activas tiene este cliente en cartera
+  const polizasCliente = carteraActiva.filter(r => r.id === clienteId || r.nombre === clienteNombre);
+  const tieneAuto = polizasCliente.some(r => r.ramo === 200 || r.ramo === 3100);
+  const tieneCombinado = polizasCliente.some(r => r.ramo === 1800);
+  const tieneVida = polizasCliente.some(r => r.ramo === 1720 || r.ramo === 1730);
+
+  let scorePotencial = 90; // Por defecto gran potencial
+  if (tieneAuto && tieneCombinado && tieneVida) scorePotencial = 25; // Ya está super cubierto
+  else if (tieneAuto && tieneCombinado) scorePotencial = 55;
+  else if (tieneAuto) scorePotencial = 85; // Enorme potencial de venta cruzada (Combinado o Vida)
+
+  // Renderizar los barómetros en el pc-scores
+  const pcScores = document.getElementById('pc-scores');
+  if (pcScores) {
+    pcScores.innerHTML = `
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Momento</div>
+        <div style="font-size:15px;font-weight:700;color:var(--gold-accent);margin:2px 0">${scoreMomento}%</div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+          <div style="width:${scoreMomento}%;height:100%;background:linear-gradient(90deg,var(--gold-accent),#00D4FF);border-radius:2px"></div>
+        </div>
+      </div>
+      <div style="flex:1;text-align:center;border-left:1px solid rgba(255,255,255,0.06);border-right:1px solid rgba(255,255,255,0.06);padding:0 4px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Lealtad</div>
+        <div style="font-size:15px;font-weight:700;color:${scoreLealtad > 70 ? 'var(--green)' : scoreLealtad > 40 ? 'var(--gold-accent)' : 'var(--rust)'};margin:2px 0">${scoreLealtad}%</div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+          <div style="width:${scoreLealtad}%;height:100%;background:${scoreLealtad > 70 ? 'var(--green)' : 'var(--gold-accent)'};border-radius:2px"></div>
+        </div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Potencial</div>
+        <div style="font-size:15px;font-weight:700;color:#a855f7;margin:2px 0">${scorePotencial}%</div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+          <div style="width:${scorePotencial}%;height:100%;background:#a855f7;border-radius:2px"></div>
+        </div>
+      </div>
+    `;
+  }
 
   // Sugerencia contextual basada en resultado y patrón
   const SUGERENCIAS = {
@@ -3921,9 +5251,12 @@ function abrirPerfilCliente(id){
       <div class="perfil-section-title">Prevención Retiro</div>
       ${retiroHtml}
     </div>
-    <div>
+    <div style="margin-bottom:20px">
       <div class="perfil-section-title">Oportunidades</div>
       ${opsHtml}
+    </div>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn btn-primary btn-sm" onclick="cerrarPerfil(); abrirModalGestion('${id}','${escOncl(nombre)}','${escOncl(pols[0] ? RAMO_MAP[pols[0].ramo] || 'Ramo ' + pols[0].ramo : 'Varios')}','')">📋 Registrar gestión</button>
     </div>`;
 
   document.getElementById('modal-perfil').classList.add('open');
@@ -3931,7 +5264,7 @@ function abrirPerfilCliente(id){
 
 let _precioConsecutivo = 0;
 
-async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, pregunta){
+async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, pregunta, estaVencida, endDate){
   const key = getKey(); if(!key) return;
   addBubble('user', `Póliza ${referenceNumber}`);
   document.getElementById('chat-loader').classList.add('show');
@@ -3943,14 +5276,21 @@ async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, 
     });
     const doc = await docRes.json();
     if(!doc.files?.[0]?.urlFile){ addBubble('ai','No pude obtener esa póliza.'); return; }
+    
+    let contextForIA = "";
+    if (estaVencida) {
+      const fec = endDate ? endDate.slice(0, 10).split('-').reverse().join('/') : '';
+      contextForIA = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
+    }
+
     const userContent = [
       { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${referenceNumber}` },
-      { type:'text', text: pregunta }
+      { type:'text', text: contextForIA + pregunta }
     ];
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+    const res = await fetch(STEEP_FOG_WORKER,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body: JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:getSistema(),messages:[{role:'user',content:userContent}]})
+      body: JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:[{role:'user',content:userContent}]})
     });
     const data = await res.json();
     const reply = data.content?.[0]?.text || 'Sin respuesta.';
@@ -3988,10 +5328,11 @@ async function guardarGestion(){
   if(esPrecio){
     _precioConsecutivo++;
     if(_precioConsecutivo >= 3){
-      const confirmar = confirm(
-        `Marcaste "Precio" como freno ${_precioConsecutivo} veces seguidas.\n\n` +
-        `¿Estás seguro? El precio raramente es el freno real.\n\n` +
-        `Confirmá solo si es genuinamente el caso.`
+      const confirmar = await customConfirm(
+        `Marcaste "Precio" como freno ${_precioConsecutivo} veces seguidas.<br><br>` +
+        `¿Estás seguro? El precio raramente es el freno real.<br><br>` +
+        `Confirmá solo si es genuinamente el caso.`,
+        'Atención'
       );
       if(!confirmar) return;
       _precioConsecutivo = 0;
@@ -4004,13 +5345,21 @@ async function guardarGestion(){
   btn.textContent='Guardando...';btn.disabled=true;
 
   try{
+    const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clienteId||'');
+    const dbClienteId = esUuid ? clienteId : null;
+    const dbClienteNombre = esUuid ? clienteNombre : (clienteId ? `${clienteNombre} [${clienteId}]` : clienteNombre);
+
+    const clienteRecord = carteraActiva.find(r => r.id === clienteId || r.nombre === clienteNombre);
+    const prodAsig = clienteRecord ? (clienteRecord.productor || getAssignedProductor(clienteId, clienteNombre)) : getAssignedProductor(clienteId, clienteNombre);
+    const regByLabel = getRoleLabel(currentTramaRole);
+
     const res = await fetch(`${TRAMA_WORKER}/gestiones`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         broker_id:           getBrokerId(),
-        cliente_id:          clienteId||null,
-        cliente_nombre:      clienteNombre||null,
+        cliente_id:          dbClienteId,
+        cliente_nombre:      dbClienteNombre,
         ramo:                ramo||null,
         tipo, resultado,
         reaccion_cliente:    reaccion,
@@ -4018,6 +5367,8 @@ async function guardarGestion(){
         motivador_principal: motivador,
         nota:                nota||null,
         fecha_seguimiento:   fechaSeg||null,
+        productor:           prodAsig,
+        registrado_por:      regByLabel
       })
     });
     const data = await res.json();
@@ -4029,13 +5380,26 @@ async function guardarGestion(){
       freno_principal:     freno,
       motivador_principal: motivador,
       reaccion_cliente:    reaccion,
-      fechaGestion:        new Date().toISOString().slice(0,10)
+      fechaGestion:        new Date().toISOString().slice(0,10),
+      productor:           prodAsig,
+      registrado_por:      regByLabel
     });
 
     cerrarModalGestion();
     renderSeguimientosAgenda();
     mostrarPulsoCard(clienteNombre, clienteId, resultado, reaccion);
     cargarStatsAgenda();
+
+    // Trigger dynamic dashboard refreshes
+    if (typeof renderRedDashboard === 'function') renderRedDashboard();
+    if (typeof renderRedActivityTicker === 'function') renderRedActivityTicker();
+
+    // Beautiful floating network replication toast
+    const destProductor = prodAsig === 'productor' ? 'Martín Giménez' : prodAsig === 'organizador' ? 'Sofía Valenzuela' : 'Roberto Gómez';
+    showSimulatedToast(
+      '📡 Base Sincronizada (Red)',
+      `Gestión guardada por <strong>${regByLabel}</strong>. Impacto inmediato:<br>✓ Cartera de <strong>${destProductor}</strong> actualizada<br>✓ Supervisión de <strong>Sofía Valenzuela</strong> en tiempo real<br>✓ Alimentando algoritmo PULSO`
+    );
   }catch(e){
     alert('Error: '+e.message);
   }finally{
@@ -4047,7 +5411,13 @@ function renderSeguimientosAgenda(){
   const el=document.getElementById('agenda-seguimientos');if(!el)return;
   const hoy=new Date().toISOString().slice(0,10);
   const enTresDias=new Date();enTresDias.setDate(enTresDias.getDate()+3);const tresDiasStr=enTresDias.toISOString().slice(0,10);
-  const pendientes=gestiones.filter(g=>g.fechaSeg).sort((a,b)=>a.fechaSeg.localeCompare(b.fechaSeg)).filter(g=>g.fechaSeg<=tresDiasStr);
+  
+  // Filter by role
+  let pendientes=gestiones.filter(g=>g.fechaSeg).sort((a,b)=>a.fechaSeg.localeCompare(b.fechaSeg)).filter(g=>g.fechaSeg<=tresDiasStr);
+  if (typeof currentTramaRole !== 'undefined' && currentTramaRole === 'productor') {
+    pendientes = pendientes.filter(g => g.productor === 'productor' || g.productor == null);
+  }
+
   if(!pendientes.length){el.innerHTML='';return;}
   const TIPO_ICON={llamado:'📞',whatsapp:'💬',mail:'✉️',visita:'🤝'};
   const RES_LABEL={contactado:'Contactado',no_contesto:'No contestó',interesado:'Interesado',cerrado:'Cerrado'};
@@ -4056,7 +5426,16 @@ function renderSeguimientosAgenda(){
     const dotCls=esVencido?'vencido':esHoy?'hoy':'proximo';
     const chipCls=esVencido?'vencido':esHoy?'hoy':'proximo';
     const chipTxt=esVencido?'⚠️ Vencido':esHoy?'📅 Hoy':`📅 ${g.fechaSeg}`;
-    return`<div class="seg-card"><div class="seg-dot ${dotCls}"></div><div class="seg-info"><div class="seg-nombre">${esc(g.clienteNombre)}</div><div class="seg-meta">${TIPO_ICON[g.tipo]||'📋'} ${esc(g.tipo)} · ${esc(RES_LABEL[g.resultado]||g.resultado)} · ${esc(g.fechaGestion)}</div>${g.nota?`<div class="seg-nota">"${esc(g.nota)}"</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="seg-fecha-chip ${chipCls}">${chipTxt}</span><button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="abrirModalGestion('${g.clienteId}','${escOncl(g.clienteNombre)}','${escOncl(g.ramo)}','${escOncl(g.poliza)}')">📋 Nueva</button></div></div>`;
+    
+    let labelOwner = '';
+    if (typeof currentTramaRole !== 'undefined' && currentTramaRole !== 'productor' && g.productor) {
+      const color = g.productor === 'productor' ? 'var(--green-fg)' : g.productor === 'organizador' ? 'var(--gold-accent)' : '#c084fc';
+      const name = g.productor === 'productor' ? 'Martín G.' : g.productor === 'organizador' ? 'Sofía V.' : 'Roberto G.';
+      labelOwner = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 700; background: rgba(255,255,255,0.06); color:${color}; margin-left: 6px">${name}</span>`;
+    }
+    const regSfx = g.registrado_por ? ` <span style="font-size: 10px; color: rgba(255,255,255,0.45)">· por ${esc(g.registrado_por)}</span>` : '';
+
+    return`<div class="seg-card"><div class="seg-dot ${dotCls}"></div><div class="seg-info"><div class="seg-nombre">${esc(g.clienteNombre)}${labelOwner}</div><div class="seg-meta">${TIPO_ICON[g.tipo]||'📋'} ${esc(g.tipo)} · ${esc(RES_LABEL[g.resultado]||g.resultado)} · ${esc(g.fechaGestion)}${regSfx}</div>${g.nota?`<div class="seg-nota">"${esc(g.nota)}"</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="seg-fecha-chip ${chipCls}">${chipTxt}</span><button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="abrirModalGestion('${g.clienteId}','${escOncl(g.clienteNombre)}','${escOncl(g.ramo)}','${escOncl(g.poliza)}')">📋 Nueva</button></div></div>`;
   }).join('');
   el.innerHTML=`<div class="seg-section"><div class="seg-section-title">🔔 Seguimientos pendientes <span style="background:var(--rust);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px">${pendientes.length}</span></div>${items}</div>`;
 }
@@ -4357,10 +5736,10 @@ Tono amigable, de igual a igual. Sin markdown. Terminá con una pregunta abierta
 Firmá como ${nombreProductor}.`;
 
   try {
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev',{
+    const res = await fetch(STEEP_FOG_WORKER,{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:300,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     xslMsgActual = data.content?.[0]?.text||'Sin respuesta.';
@@ -4743,10 +6122,10 @@ async function crsGenerarMensaje(key, tipoOp, labelOp){
   loaderEl.scrollIntoView({behavior:'smooth', block:'nearest'});
 
   try {
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
+    const res = await fetch(STEEP_FOG_WORKER, {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,messages:[{role:'user',content:crsBuildPrompt(cli,tipoOp,labelOp)}]})
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model: CLAUDE_MODEL,max_tokens:200,messages:[{role:'user',content:crsBuildPrompt(cli,tipoOp,labelOp)}]})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
@@ -5028,11 +6407,11 @@ Solo devolvé el JSON, sin texto extra ni backticks.`;
     // PASO 3 — llamada a la API
     setAnlStep(3, 65);
 
-    const res = await fetch('https://steep-fog-c622.mgmg050382.workers.dev', {
+    const res = await fetch(STEEP_FOG_WORKER, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key,'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: CLAUDE_MODEL,
         max_tokens: 3000,
         messages: [{
           role: 'user',
@@ -5268,9 +6647,82 @@ const LOCK_LOCKOUT_MS    = 60000;
 let lockMode = 'login'; // 'setup' | 'confirm' | 'login'
 let lockPendingPin = '';
 
+function customConfirm(message, title = '¿Confirmás?', emoji = '⚠️') {
+  return new Promise((resolve) => {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').innerHTML = message;
+    document.getElementById('confirm-emoji').textContent = emoji;
+    
+    const modal = document.getElementById('modal-confirm');
+    modal.classList.add('open');
+    
+    const btnOk = document.getElementById('confirm-btn-ok');
+    const btnCancel = document.getElementById('confirm-btn-cancel');
+    
+    function cleanup() {
+      modal.classList.remove('open');
+      btnOk.onclick = null;
+      btnCancel.onclick = null;
+    }
+    
+    btnOk.onclick = () => {
+      cleanup();
+      resolve(true);
+    };
+    btnCancel.onclick = () => {
+      cleanup();
+      resolve(false);
+    };
+  });
+}
+
+function customAlert(message, title = 'Atención', emoji = '⚠️') {
+  return new Promise((resolve) => {
+    document.getElementById('alert-title').textContent = title;
+    document.getElementById('alert-message').innerHTML = message;
+    document.getElementById('alert-emoji').textContent = emoji;
+    
+    const modal = document.getElementById('modal-alert');
+    modal.classList.add('open');
+    
+    const btnClose = document.getElementById('alert-btn-close');
+    
+    btnClose.onclick = () => {
+      modal.classList.remove('open');
+      resolve();
+    };
+  });
+}
+
+// Redirigir la función alert estándar del navegador a nuestra versión premium
+window.alert = function(msg) {
+  customAlert(msg);
+};
+
 async function hashPin(pin) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + LOCK_SALT));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function pressLockKey(key) {
+  const input = document.getElementById('lock-pin-input');
+  if (!input || input.disabled) return;
+  let val = input.value;
+  if (key === 'clear') {
+    val = '';
+  } else if (key === 'back') {
+    val = val.slice(0, -1);
+  } else {
+    if (val.length < 6) {
+      val += key;
+    }
+  }
+  input.value = val;
+  lockUpdateBoxes(val);
+  lockSetError('');
+  if (val.length === 6) {
+    setTimeout(lockSubmit, 150);
+  }
 }
 
 function lockUpdateBoxes(val) {
@@ -5333,6 +6785,7 @@ async function lockSubmit() {
     localStorage.setItem(LOCK_HASH_KEY, hash);
     sessionStorage.setItem(LOCK_SESSION_KEY, '1');
     document.getElementById('lock-screen').classList.add('hidden');
+    switchUserRole(selectedLockRole);
     checkHonorCode();
     return;
   }
@@ -5345,6 +6798,7 @@ async function lockSubmit() {
     sessionStorage.removeItem(LOCK_ATTEMPTS_KEY);
     sessionStorage.removeItem(LOCK_UNTIL_KEY);
     document.getElementById('lock-screen').classList.add('hidden');
+    switchUserRole(selectedLockRole);
     checkHonorCode();
   } else {
     const att = parseInt(sessionStorage.getItem(LOCK_ATTEMPTS_KEY)||'0') + 1;
@@ -5360,7 +6814,7 @@ async function lockSubmit() {
   }
 }
 
-function lockSecAction() {
+async function lockSecAction() {
   if (lockMode === 'confirm') {
     lockMode = 'setup';
     document.getElementById('lock-subtitle').textContent = 'Creá tu PIN de acceso (6 dígitos)';
@@ -5371,7 +6825,8 @@ function lockSecAction() {
     return;
   }
   // "Olvidé mi PIN" — advertir que borra todos los datos
-  if (confirm('Para restablecer el PIN se borrarán TODOS los datos guardados en este navegador (cartera, comisiones, retiro).\n\n¿Confirmás?')) {
+  const ok = await customConfirm('Para restablecer el PIN se borrarán TODOS los datos guardados en este navegador (cartera, comisiones, retiro).', '¿Restablecer PIN?', '🗑️');
+  if (ok) {
     localStorage.clear();
     sessionStorage.clear();
     lockMode = 'setup';
@@ -5395,6 +6850,16 @@ function lockApp() {
 }
 
 function initLockScreen() {
+  // Cargar dinámicamente los nombres de perfiles desde localStorage
+  const cardProductor = document.querySelector('#lpc-productor .role-txt-lbl');
+  if (cardProductor) cardProductor.textContent = localStorage.getItem('broker_nombre') || 'Productor';
+
+  const cardOrganizador = document.querySelector('#lpc-organizador .role-txt-lbl');
+  if (cardOrganizador) cardOrganizador.textContent = localStorage.getItem('org_nombre') || 'Organizador';
+
+  const cardEmpleado = document.querySelector('#lpc-empleado .role-txt-lbl');
+  if (cardEmpleado) cardEmpleado.textContent = localStorage.getItem('empleado_nombre') || 'Personal';
+
   const input = document.getElementById('lock-pin-input');
   input.addEventListener('input', () => {
     input.value = input.value.replace(/\D/g,'').slice(0,6);
@@ -5405,12 +6870,42 @@ function initLockScreen() {
     if (e.key === 'Enter' && input.value.length === 6) lockSubmit();
   });
 
+  // Global keydown handler to let them use physical keyboard without needing to focus the hidden input field!
+  window.addEventListener('keydown', e => {
+    const lockScreen = document.getElementById('lock-screen');
+    if (!lockScreen || lockScreen.classList.contains('hidden')) return;
+    
+    // Ignore keypresses if any overlay modal (like confirm or alert) is open
+    const modalConfirm = document.getElementById('modal-confirm');
+    const modalAlert = document.getElementById('modal-alert');
+    if ((modalConfirm && modalConfirm.classList.contains('open')) || 
+        (modalAlert && modalAlert.classList.contains('open'))) {
+      return;
+    }
+
+    if (e.key >= '0' && e.key <= '9') {
+      pressLockKey(e.key);
+    } else if (e.key === 'Backspace') {
+      pressLockKey('back');
+    } else if (e.key === 'Escape' || e.key === 'Delete') {
+      pressLockKey('clear');
+    } else if (e.key === 'Enter') {
+      const pin = document.getElementById('lock-pin-input').value;
+      if (pin.length === 6) {
+        lockSubmit();
+      }
+    }
+  });
+
   const hasPin     = !!localStorage.getItem(LOCK_HASH_KEY);
   const isUnlocked = sessionStorage.getItem(LOCK_SESSION_KEY) === '1';
 
+  const startRole = localStorage.getItem('trama_activo_role') || 'productor';
+  setTimeout(() => selectLockProfile(startRole), 50);
+
   if (!hasPin) {
     lockMode = 'setup';
-    document.getElementById('lock-subtitle').textContent = 'Creá tu PIN de acceso (6 dígitos)';
+    document.getElementById('lock-subtitle').innerHTML = `Creá tu PIN para <strong style="color:#FFF">${getRoleLabel(startRole)}</strong> (6 dígitos)`;
     document.getElementById('lock-btn').textContent = 'Continuar';
     document.getElementById('lock-btn-sec').textContent = '';
     document.getElementById('lock-screen').classList.remove('hidden');
@@ -5420,7 +6915,7 @@ function initLockScreen() {
     checkHonorCode();
   } else {
     lockMode = 'login';
-    document.getElementById('lock-subtitle').textContent = 'Ingresá tu PIN para continuar';
+    document.getElementById('lock-subtitle').innerHTML = `Hola <strong style="color:#FFF">${getRoleLabel(startRole)}</strong>, ingresá tu PIN para continuar`;
     document.getElementById('lock-btn').textContent = 'Ingresar';
     document.getElementById('lock-btn-sec').textContent = 'Olvidé mi PIN';
     lockCheckLockout();
@@ -5455,11 +6950,729 @@ async function aceptarHonor(){
 }
 
 // ═══════════════════════════════════════════════════════════
+// SPRINT 4: MULTIUSUARIO, SUPERVISIÓN Y CELULAR CLIENTE
+// ═══════════════════════════════════════════════════════════
+let currentTramaRole = 'productor';
+let selectedLockRole = 'productor'; // Selector desde Login
+
+function selectLockProfile(role) {
+  selectedLockRole = role;
+  
+  // Resaltar tarjeta seleccionada en UI
+  document.querySelectorAll('.lock-profile-card').forEach(card => {
+    card.style.borderColor = 'rgba(255,255,255,0.1)';
+    card.style.background = 'rgba(255,255,255,0.03)';
+    const textEl = card.querySelector('.role-txt-lbl');
+    if (textEl) textEl.style.color = 'rgba(255,255,255,0.6)';
+  });
+  
+  const targetCard = document.getElementById('lpc-' + role);
+  if (targetCard) {
+    let color = 'var(--green)';
+    if (role === 'organizador') color = 'var(--gold-accent)';
+    if (role === 'empleado') color = '#c084fc';
+    
+    targetCard.style.borderColor = color;
+    targetCard.style.background = 'rgba(255, 255, 255, 0.05)';
+    const textEl = targetCard.querySelector('.role-txt-lbl');
+    if (textEl) textEl.style.color = color;
+  }
+  
+  // Actualizar subtítulo con nombre personalizado de perfil
+  const sub = document.getElementById('lock-subtitle');
+  if (sub) {
+    if (lockMode === 'setup') {
+      sub.innerHTML = `Creá tu PIN para <strong style="color:#FFF">${getRoleLabel(role)}</strong> (6 dígitos)`;
+    } else if (lockMode === 'confirm') {
+      sub.innerHTML = `Confirmá tu PIN para <strong style="color:#FFF">${getRoleLabel(role)}</strong>`;
+    } else {
+      sub.innerHTML = `Hola <strong style="color:#FFF">${getRoleLabel(role)}</strong>, ingresá tu PIN para continuar`;
+    }
+  }
+}
+
+function getRoleLabel(role) {
+  if (role === 'productor') 
+    return localStorage.getItem('broker_nombre') || 'Productor';
+  if (role === 'organizador') 
+    return localStorage.getItem('org_nombre') || 'Organizador';
+  return localStorage.getItem('empleado_nombre') || 'Personal';
+}
+
+function switchUserRole(role) {
+  currentTramaRole = role;
+  localStorage.setItem('trama_activo_role', role);
+  
+  const selDropdown = document.getElementById('user-role-selector');
+  if(selDropdown) selDropdown.value = role;
+  
+  const badg = document.getElementById('role-badge');
+  const badgText = document.getElementById('role-badge-text');
+  
+  // Elements to toggle for Employee / Organizer role
+  const chatNode = document.getElementById('nav-item-chat');
+  const anlNode = document.getElementById('nav-item-analizador');
+  const rtrNode = document.getElementById('nav-item-retiro');
+  const mailNode = document.getElementById('nav-item-mail');
+  const infNode = document.getElementById('nav-item-informe');
+  const comNode = document.getElementById('nav-item-comercial');
+  const cmsNode = document.getElementById('nav-item-comisiones');
+  const cfgNode = document.getElementById('nav-item-config');
+  const cmdSec = document.getElementById('nav-sec-herramientas');
+  const cfgSec = document.getElementById('nav-sec-config');
+  
+  const redSec = document.getElementById('nav-sec-supervision');
+  const redItem = document.getElementById('nav-item-red');
+
+  // Reset all hides
+  const allNodes = [chatNode, anlNode, rtrNode, mailNode, infNode, comNode, cmsNode, cfgNode, cmdSec, cfgSec];
+  allNodes.forEach(n => { if(n) n.style.display = ''; });
+  
+  const prodSelectEl = document.getElementById('f-productor');
+
+  if (role === 'productor') {
+    if(redSec) redSec.style.display = 'none';
+    if(redItem) redItem.style.display = 'none';
+    if(badg) { badg.style.color = 'var(--green-fg)'; }
+    if(badgText) badgText.textContent = 'Acceso Completo';
+    
+    // Hide producer selector, force "productor" (Martín) filter
+    if (prodSelectEl) {
+      prodSelectEl.style.display = 'none';
+      prodSelectEl.value = 'productor';
+    }
+  } else if (role === 'organizador') {
+    if(redSec) redSec.style.display = '';
+    if(redItem) redItem.style.display = 'flex';
+    if(badg) { badg.style.color = 'var(--gold-accent)'; }
+    if(badgText) badgText.textContent = 'Supervisión Activa';
+    
+    // Show producer selector, default to entire organization
+    if (prodSelectEl) {
+      prodSelectEl.style.display = '';
+      prodSelectEl.value = 'all';
+    }
+  } else if (role === 'empleado') {
+    // Hide administrative/business settings modules
+    const hideNodes = [chatNode, anlNode, rtrNode, mailNode, infNode, comNode, cmsNode, cfgNode, cmdSec, cfgSec];
+    hideNodes.forEach(n => { if(n) n.style.display = 'none'; });
+    
+    if(redSec) redSec.style.display = 'none';
+    if(redItem) redItem.style.display = 'none';
+    
+    if(badg) { badg.style.color = '#c084fc'; }
+    if(badgText) badgText.textContent = 'Personal de Oficina';
+    
+    // Show producer selector for the employee (can see entire portfolio)
+    if (prodSelectEl) {
+      prodSelectEl.style.display = '';
+      prodSelectEl.value = 'all';
+    }
+
+    // Redirect off hidden panels
+    const activeNav = document.querySelector('.nav-item.active');
+    if (activeNav) {
+      const p = activeNav.dataset.panel;
+      if (['chat', 'analizador', 'retiro', 'mail', 'informe', 'comercial', 'comisiones', 'config', 'red-organizacion'].includes(p)) {
+        const agItem = document.querySelector('.nav-item[data-panel="agenda"]');
+        if (agItem) agItem.click();
+      }
+    }
+  }
+
+  // Trigger real-time view updates
+  filtrar();
+  renderSeguimientosAgenda();
+  
+  if (typeof renderRedDashboard === 'function') renderRedDashboard();
+  if (typeof renderRedActivityTicker === 'function') renderRedActivityTicker();
+}
+
+function enviarSugerenciaIA(productor, defaultMsg) {
+  const notaVal = prompt(`Capacitación IA TRAMA\n\nEscribí tu mensaje de coaching estratégico para enviar a la oficina de ${productor}:`, defaultMsg);
+  if (notaVal === null) return;
+  alert(`✓ Canal de TRAMA establecido.\nSugerencia enviada con éxito a la terminal diaria de ${productor}.`);
+}
+
+async function renderRedDashboard() {
+  const el = document.getElementById('tbl-red-organizacion');
+  if(!el) return;
+
+  el.innerHTML = `<tr><td colspan="6" style="padding:20px;
+    text-align:center;color:var(--muted)">
+    ⏳ Cargando red...
+  </td></tr>`;
+
+  try {
+    const brokerId = getBrokerId();
+    const res = await fetchWithTimeout(
+      `${TRAMA_WORKER}/resumen-organizador?organizador_id=${brokerId}`,
+      {}, 10000
+    );
+
+    if (!res.ok) throw new Error('Sin datos');
+    const data = await res.json();
+    const brokers = Array.isArray(data) ? data : [data];
+
+    if (!brokers.length) {
+      el.innerHTML = `<tr><td colspan="6" style="padding:20px;
+        text-align:center;color:var(--muted)">
+        Sin productores en tu red todavía.
+      </td></tr>`;
+      return;
+    }
+
+    el.innerHTML = brokers.map(b => `
+      <tr style="border-bottom:1px solid var(--border-light)">
+        <td style="padding:14px 18px">
+          <strong style="color:var(--text-main)">${b.nombre || 'Productor'}</strong>
+          <div style="font-size:11px;color:var(--muted)">${b.ciudad || ''}</div>
+        </td>
+        <td style="padding:14px 18px">
+          ${b.total_polizas || 0} pólizas
+        </td>
+        <td style="padding:14px 18px;color:var(--green-fg);font-weight:600">
+          $${Math.round((b.produccion_total||0)/1000).toLocaleString('es-AR')}K
+        </td>
+        <td style="padding:14px 18px">
+          ${Math.round((b.tasa_renovacion||0)*100)}%
+        </td>
+        <td style="padding:14px 18px">
+          —
+        </td>
+        <td style="padding:14px 18px;text-align:right">
+          <span style="font-size:11px;color:var(--muted)">
+            ${b.total_brokers || 1} productor(es)
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch(err) {
+    console.error('[Red Dashboard]', err);
+    el.innerHTML = `<tr><td colspan="6" style="padding:20px;
+      text-align:center;color:var(--muted)">
+      Sin datos disponibles todavía.
+    </td></tr>`;
+  }
+}
+
+function renderRedActivityTicker() {
+  const el = document.getElementById('red-activity-ticker');
+  if(!el) return;
+  
+  // Take last 5 gestiones
+  const recent = gestiones.slice(0, 5);
+  if(!recent.length) {
+    el.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted); font-size:12.5px;">No se registraron gestiones recientemente en el canal consolidado.</div>`;
+    return;
+  }
+  
+  const RESULT_LABELS = {
+    cerrado: '🟢 Cerrado/Éxito',
+    interesado: '🟡 Interesado',
+    no_contesto: '⚪ No contestó',
+    rechazado: '🔴 Rechazado',
+    contactado: '🔵 Contactado'
+  };
+  
+  const RESULT_STYLES = {
+    cerrado: 'background:rgba(16,185,129,0.1); color:var(--green-fg); border:1px solid rgba(16,185,129,0.2)',
+    interesado: 'background:rgba(245,158,11,0.1); color:#fcd34d; border:1px solid rgba(245,158,11,0.2)',
+    no_contesto: 'background:rgba(255,255,255,0.04); color:var(--text-muted); border:1px solid rgba(255,255,255,0.06)',
+    rechazado: 'background:rgba(239,68,68,0.1); color:var(--red-fg); border:1px solid rgba(239,68,68,0.2)',
+    contactado: 'background:rgba(0,212,255,0.1); color:var(--blue-fg); border:1px solid rgba(0,212,255,0.2)'
+  };
+  
+  el.innerHTML = recent.map(g => {
+    const ownerName = g.productor === 'productor' ? 'Martín Giménez' : g.productor === 'organizador' ? 'Sofía Valenzuela' : 'Roberto Gómez';
+    const regBy = g.registrado_por || 'Gaby Admin (Oficina)';
+    const resultLabel = RESULT_LABELS[g.resultado] || g.resultado;
+    const resultStyle = RESULT_STYLES[g.resultado] || 'background:rgba(255,255,255,0.04); color:#fff';
+    
+    return `
+      <div style="background:rgba(255,255,255,0.012); border:1px solid var(--border-light); border-radius:8px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; font-size:12.5px; margin-bottom: 2px">
+        <div style="display:flex; flex-direction:column; gap:4px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-weight:600; color:var(--text-main)">${esc(g.clienteNombre)}</span>
+            <span style="font-size:10px; padding:1px 5px; border-radius:4px; font-weight:600; background:rgba(255,255,255,0.06); color:var(--text-muted)">Propietario: ${esc(ownerName)}</span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted)">
+            Gestión de ramo: <strong style="color:var(--text-main)">${esc(g.ramo || 'Automotor')}</strong>${g.nota ? ` · "${esc(g.nota)}"` : ''}
+          </div>
+        </div>
+        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px">
+          <span style="font-size:11px; ${resultStyle}; padding:2px 8px; border-radius:6px; font-weight:700">${resultLabel}</span>
+          <span style="font-size:10px; color:var(--text-muted)">Registrado por <span style="color:var(--gold-accent); font-weight:600">${esc(regBy)}</span></span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Interacciones automáticas del Celular del Cliente
+function reiniciarChatCliente() {
+  const area = document.getElementById('sim-chat-area');
+  if(!area) return;
+  area.innerHTML = `
+    <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+      ¡Hola! Soy tu asistente de seguros de <strong>Martín Giménez Broker</strong> (Sancor).
+      <br><br>
+      ¿En qué puedo ayudarte hoy? Podés pedirme pólizas, consultar por coberturas o sacarte dudas.
+    </div>
+  `;
+}
+
+function showSimulatedToast(title, text) {
+  // Create beautiful popup toast
+  const t = document.createElement('div');
+  t.style.position = 'fixed';
+  t.style.bottom = '24px';
+  t.style.right = '24px';
+  t.style.zIndex = '99999';
+  t.style.background = '#0d1b2e';
+  t.style.border = '2px solid var(--gold-accent)';
+  t.style.borderRadius = '12px';
+  t.style.padding = '16px';
+  t.style.maxWidth = '340px';
+  t.style.color = '#fff';
+  t.style.boxShadow = '0 10px 30px rgba(0,212,255,0.3)';
+  t.style.animation = 'slideIn .4s cubic-bezier(0.16, 1, 0.3, 1)';
+  t.innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px">
+      <span style="font-size:20px; animation:pulse 1s infinite">📡</span>
+      <strong style="color:var(--gold-accent); font-size:13px">${title}</strong>
+    </div>
+    <div style="font-size:12px; color:#e2e8f0; line-height:1.4">${text}</div>
+  `;
+  document.body.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity .5s ease';
+    setTimeout(() => t.remove(), 500);
+  }, 5500);
+}
+
+function updateMiriCard(avatar, name, info, badgeText, badgeColor, phone) {
+  const av = document.getElementById('miri-avatar');
+  const nm = document.getElementById('miri-client-name');
+  const inf = document.getElementById('miri-client-info');
+  const ph = document.getElementById('miri-phone-indicator');
+  const bdg = document.getElementById('miri-status-badge');
+  
+  if(av) av.textContent = avatar;
+  if(nm) nm.textContent = name;
+  if(inf) inf.textContent = info;
+  if(ph) ph.textContent = phone;
+  if(bdg) {
+    bdg.textContent = badgeText;
+    bdg.style.color = badgeColor;
+    bdg.style.background = badgeColor === 'var(--green)' ? 'rgba(16,185,129,0.15)' : (badgeColor === '#f87171' ? 'rgba(248,113,113,0.15)' : 'rgba(0,212,255,0.15)');
+  }
+}
+
+function simularSocioDesconocidoNLP() {
+  const area = document.getElementById('sim-chat-area');
+  if(!area) return;
+  
+  updateMiriCard('❓', 'Hugo L. (Desconocido)', 'Mensaje entrante de teléfono desconocido', 'RECONOCIMIENTO ACTIVO', '#f87171', '+54 9 280 4555111');
+  
+  area.innerHTML = `
+    <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+      Hola, soy Hugo, quería saber si mi póliza de Combinado de Sancor ya venció, porque no me acuerdo si me la cobran este mes.
+    </div>
+  `;
+  area.scrollTop = area.scrollHeight;
+  
+  const ts = document.createElement('div');
+  ts.id = 'typing-indicator';
+  ts.style.alignSelf = 'flex-start';
+  ts.style.background = '#fff';
+  ts.style.color = 'var(--muted)';
+  ts.style.padding = '6px 10px';
+  ts.style.borderRadius = '8px';
+  ts.style.fontSize = '11px';
+  ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+  area.appendChild(ts);
+  area.scrollTop = area.scrollHeight;
+  
+  document.getElementById('sim-backstage-logs').innerHTML = `
+    <span style="color:#f87171">⚠ Teléfono No Sincronizado:</span> +54 9 280 4555111.<br>
+    <span style="color:var(--gold-accent)">⚡ NLP Activado:</span> Gatillando protocolo RECONOCIMIENTO_SOCIO.<br>
+    <span style="color:rgba(255,255,255,0.7)">Esperando respuesta de datos filiatorios del cliente...</span>
+  `;
+  
+  setTimeout(() => {
+    if(ts) ts.remove();
+    area.innerHTML += `
+      <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        ¡Hola Hugo! Un gusto hablarte. 👋 Por seguridad y regulación de Sancor Seguros, detecto que tu número de celular actual no se encuentra registrado de forma directa en nuestra base de asociados de Martín Giménez Broker.
+        <br><br>
+        No te preocupes, para poder buscar tu ficha y darte los vencimientos exactos, <strong>¿me podrías indicar tu DNI o tu número de póliza?</strong> Así enlazamos tu línea de inmediato de forma de proteger tu confidencialidad.
+      </div>
+    `;
+    
+    area.innerHTML += `
+      <div id="miri-choice-dns" style="display:flex; justify-content:center; margin-top:8px">
+        <button onclick="completarNLPVerificacionSocio()" class="btn btn-secondary btn-sm" style="border:1.5px solid var(--gold-accent); background:rgba(212,163,89,0.15); color:#fff; font-size:11px; cursor:pointer; padding:8px 16px; border-radius:24px;">
+          🔑 Proveer DNI de Carlos G. (DNI 18306003)
+        </button>
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    showSimulatedToast('Auto-Verificación Trama', 'El Asistente inició el protocolo de verificación por lenguaje natural porque el teléfono no estaba en la base.');
+  }, 1200);
+}
+
+function completarNLPVerificacionSocio() {
+  const btnDiv = document.getElementById('miri-choice-dns');
+  if(btnDiv) btnDiv.remove();
+  
+  const area = document.getElementById('sim-chat-area');
+  if(!area) return;
+  
+  area.innerHTML += `
+    <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+      Mi DNI es 18306003
+    </div>
+  `;
+  area.scrollTop = area.scrollHeight;
+  
+  const ts = document.createElement('div');
+  ts.id = 'typing-indicator';
+  ts.style.alignSelf = 'flex-start';
+  ts.style.background = '#fff';
+  ts.style.color = 'var(--muted)';
+  ts.style.padding = '6px 10px';
+  ts.style.borderRadius = '8px';
+  ts.style.fontSize = '11px';
+  ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+  area.appendChild(ts);
+  area.scrollTop = area.scrollHeight;
+  
+  document.getElementById('sim-backstage-logs').innerHTML = `
+    <span style="color:var(--green)">✓ Extracción de Entidad:</span> DNI: 18306003. <br>
+    <span style="color:var(--green)">✓ Base Comercial:</span> Match OK con carlos_g_18306.<br>
+    <span style="color:var(--gold-accent)">⚡ Vinculación Activa:</span> Asociando número +54 9 280 4555111 a Carlos G.<br>
+    <span style="color:var(--green)">✓ Estado:</span> Socio Vinculado e Identificado.
+  `;
+  
+  setTimeout(() => {
+    if(ts) ts.remove();
+    area.innerHTML += `
+      <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        ¡Excelente Hugo! ✨ DNI recibido y validado. Encontré tu ficha: estás registrado bajo el nombre legal de <strong>Carlos G.</strong> en la base del Broker.
+        <br><br>
+        He enlazado este número de celular de forma segura a tu legajo de Sancor para que a partir de ahora te identifiquemos automáticamente al instante.
+        <br><br>
+        Veo que tenés vigente un **Combinado Familiar de Sancor** (al día, débito automático). Vence recién el 31 de este mes y la cuota ya está procesada. ¿Te quedás tranquilo o querés que le pida a Martín que verifique algún amparo de incendio?
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    updateMiriCard('👴', 'Carlos G. (Hugo L. Vinculado)', 'Enlazado por DNI 18306003 en vivo', 'VINCULADO POR DNI', 'var(--green)', '+54 9 280 4555111');
+    
+    simulatedPulsoAlertas.push({
+      id: Date.now(),
+      time: 'Hace un instante',
+      cliente: 'Carlos G.',
+      clienteId: '18306003',
+      ramo: 'Combinado Familiar',
+      intencion: 'Vinculación de nueva línea WhatsApp y validación de vencimiento',
+      accion: 'Verificar la correcta vinculación en la ficha de Carlos y saludarlo por canal prioritario.'
+    });
+    
+    cargarAlertasZona();
+    actualizarBadgeAgenda();
+    
+    showSimulatedToast('Vinculación Completa', 'Socio identificado y vinculado correctamente por DNI. Alerta de Agenda creada.');
+  }, 1400);
+}
+
+function clickSimularEscenario(key) {
+  const area = document.getElementById('sim-chat-area');
+  if(!area) return;
+  
+  if (key === 'juan') {
+    updateMiriCard('👤', 'Juan Bautista', 'Socio Activo · Hogar Premium + Auto', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4968962');
+    
+    // Append client message
+    area.innerHTML += `
+      <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        ¿El seguro de mi casa me cubre si me roban el iPhone 15 Pro en la calle?
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    // Typing state
+    const ts = document.createElement('div');
+    ts.id = 'typing-indicator';
+    ts.style.alignSelf = 'flex-start';
+    ts.style.background = '#fff';
+    ts.style.color = 'var(--muted)';
+    ts.style.padding = '6px 10px';
+    ts.style.borderRadius = '8px';
+    ts.style.fontSize = '11px';
+    ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+    area.appendChild(ts);
+    area.scrollTop = area.scrollHeight;
+    
+    setTimeout(() => {
+      if(ts) ts.remove();
+      area.innerHTML += `
+        <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+          ¡Hola Juan! 👋 Sí, te confirmo que con tu póliza de <strong>Combinado Familiar Premium</strong> de Sancor, tu iPhone 15 Pro tiene cobertura internacional ante Robo en la vía pública (cláusula de Objetos Diversos del Hogar).
+          <br><br>
+          Recordá que cubre robo (falta con violencia); hurto simple en la calle o descuidos no están amparados. ¿Querés que le pida a Martín que verifique la suma asegurada declarada hoy para asegurarnos de que cubra el costo real de reposición?
+        </div>
+      `;
+      area.scrollTop = area.scrollHeight;
+      
+      // Push alert
+      simulatedPulsoAlertas.push({
+        id: Date.now(),
+        time: 'Hace un instante',
+        cliente: 'Juan Bautista',
+        clienteId: '29689628',
+        ramo: 'Combinado Familiar',
+        intencion: 'Análisis de cobertura para iPhone 15 Pro (Inquietud de cross-selling)',
+        accion: 'Llamarlo para proponer endoso o revisar suma asegurada declarada en su Hogar Premium.'
+      });
+      
+      // Update badg and logs
+      cargarAlertasZona();
+      actualizarBadgeAgenda();
+      
+      document.getElementById('sim-backstage-logs').innerHTML = `
+        <span style="color:var(--green)">✓ Intención Sencargada</span> Hogar vs Dispositivos.<br>
+        <span style="color:var(--green)">✓ Score PULSO:</span> 84/100 para Cross-Selling.<br>
+        <span style="color:var(--gold-accent)">⚡ Inyección de Alerta:</span> Transferido a la Agenda de Martín.
+      `;
+      
+      showSimulatedToast('PULSO: Señal Capturada', 'Juan Bautista consultó por cobertura de celular. Alerta conductual inyectada exitosamente en tu Agenda.');
+    }, 1200);
+    
+  } else if (key === 'maria') {
+    updateMiriCard('👩', 'María Laura', 'Socio Activo · Auto Todo Riesgo', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4313334');
+    
+    area.innerHTML += `
+      <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        ¿Por qué me aumentó tanto el seguro de Sancor este mes? Es una locura.
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    const ts = document.createElement('div');
+    ts.id = 'typing-indicator';
+    ts.style.alignSelf = 'flex-start';
+    ts.style.background = '#fff';
+    ts.style.color = 'var(--muted)';
+    ts.style.padding = '6px 10px';
+    ts.style.borderRadius = '8px';
+    ts.style.fontSize = '11px';
+    ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+    area.appendChild(ts);
+    area.scrollTop = area.scrollHeight;
+    
+    setTimeout(() => {
+      if(ts) ts.remove();
+      area.innerHTML += `
+        <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+          Hola María Laura, entiendo perfectamente la preocupación, hoy cada aumento asusta. 🙏
+          <br><br>
+          En Sancor las sumas límites se actualizan según la inflación automotriz mensual. Esto evita que en caso de siniestro total tu auto quede "subasegurado" y pierdas dinero. Acompaña el valor real para proteger tu patrimonio.
+          <br><br>
+          De todas formas, si sentís que impacta mucho en tu presupuesto, Martín puede analizar readecuaciones sin perder lo más urgente (ej: deducibles opcionales). ¿Querés que lo agende con él?
+        </div>
+      `;
+      area.scrollTop = area.scrollHeight;
+      
+      simulatedPulsoAlertas.push({
+        id: Date.now(),
+        time: 'Hace un instante',
+        cliente: 'María Laura',
+        clienteId: '31334145',
+        ramo: 'Automotores',
+        intencion: 'Objeción por incremento de premium (Riesgo moderado de Churn)',
+        accion: 'Contactarla antes de fin de mes para proponer adecuación de plan o verificar bonificación antes de que considere rescindir.'
+      });
+      
+      cargarAlertasZona();
+      actualizarBadgeAgenda();
+      
+      document.getElementById('sim-backstage-logs').innerHTML = `
+        <span style="color:var(--rust)">⚠ Alerta de Churn</span> Objeción de precio / shock inflacionario.<br>
+        <span style="color:var(--green)">✓ Score de Retención:</span> 42/100 (Riesgo Crítico).<br>
+        <span style="color:var(--gold-accent)">⚡ Inyección de Alerta:</span> Martín tiene una sugerencia preventiva de retención.
+      `;
+      
+      showSimulatedToast('PULSO: Alerta de Churn', 'María Laura declaró shock inflacionario de cuota. Alerta preventiva agregada a tu Agenda.');
+    }, 1200);
+    
+  } else if (key === 'carlos') {
+    updateMiriCard('👴', 'Carlos G.', 'Socio Activo · Combinado Familiar', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4183060');
+    
+    area.innerHTML += `
+      <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        Hola, me podés pasar el PDF de mi póliza de Combinado Familiar?
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    const ts = document.createElement('div');
+    ts.id = 'typing-indicator';
+    ts.style.alignSelf = 'flex-start';
+    ts.style.background = '#fff';
+    ts.style.color = 'var(--muted)';
+    ts.style.padding = '6px 10px';
+    ts.style.borderRadius = '8px';
+    ts.style.fontSize = '11px';
+    ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+    area.appendChild(ts);
+    area.scrollTop = area.scrollHeight;
+    
+    setTimeout(() => {
+      if(ts) ts.remove();
+      area.innerHTML += `
+        <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+          ¡Hola Carlos! Sí, de toque. Adjunto tu póliza digitalizada lista para descargar:
+          <br><br>
+          📄 <strong>Poliza_COMB_1800_Sancor.pdf</strong><br>
+          <span style="font-size:10px; color:var(--muted)">Vigente y al día con débito automático</span>
+          <br><br>
+          Aprovecho para recordarte que tenés bonificada la Asistencia Express 24hs (cerrajería, plomería de emergencia). Guardate el WhatsApp directo de Sancor Emergencias: 0800-444-5700. Un abrazo!
+        </div>
+      `;
+      area.scrollTop = area.scrollHeight;
+      
+      simulatedPulsoAlertas.push({
+        id: Date.now(),
+        time: 'Hace un instante',
+        cliente: 'Carlos G.',
+        clienteId: '18306003',
+        ramo: 'Combinado Familiar',
+        intencion: 'Análisis activo de condiciones de póliza Combinado (Lectura activa)',
+        accion: 'Llamarlo para validar si está conforme, si mudó bienes o si necesita cambiar algún amparo de su Hogar.'
+      });
+      
+      cargarAlertasZona();
+      actualizarBadgeAgenda();
+      
+      document.getElementById('sim-backstage-logs').innerHTML = `
+        <span style="color:var(--green)">✓ Intención Capturada</span> Solicitud de póliza / Lectura activa.<br>
+        <span style="color:var(--green)">✓ Score PULSO:</span> 72/100 de fidelización activa.<br>
+        <span style="color:var(--gold-accent)">⚡ Inyección de Alerta:</span> Registrado en la Agenda diaria de contactos.
+      `;
+      
+      showSimulatedToast('PULSO: Reporte de Alerta', 'Carlos G. solicitó póliza. Alerta conductual pasiva agregada a tu panel.');
+    }, 1200);
+  }
+}
+
+function enviarMensajeClienteCustom() {
+  const inp = document.getElementById('sim-user-input');
+  const area = document.getElementById('sim-chat-area');
+  if(!inp || !area || !inp.value.trim()) return;
+  
+  const text = inp.value.trim();
+  inp.value = '';
+  
+  area.innerHTML += `
+    <div style="align-self:flex-end; background:#d9fdd3; color:#111b21; padding:8px 10px; border-radius:8px; border-top-right-radius:0; max-width:85%; font-size:11.5px; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+      ${esc(text)}
+    </div>
+  `;
+  area.scrollTop = area.scrollHeight;
+  
+  const ts = document.createElement('div');
+  ts.id = 'typing-indicator';
+  ts.style.alignSelf = 'flex-start';
+  ts.style.background = '#fff';
+  ts.style.color = 'var(--muted)';
+  ts.style.padding = '6px 10px';
+  ts.style.borderRadius = '8px';
+  ts.style.fontSize = '11px';
+  ts.textContent = '🤖 Sancor Asistente está escribiendo...';
+  area.appendChild(ts);
+  area.scrollTop = area.scrollHeight;
+  
+  setTimeout(() => {
+    ts.remove();
+    area.innerHTML += `
+      <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+        ¡Hola! He recibido tu consulta: "<em>${esc(text)}</em>". Martín y su equipo adscripto están procesando esto ahora mismo para brindarte una respuesta personalizada. Te escribiremos enseguida. ¡Muchas gracias!
+      </div>
+    `;
+    area.scrollTop = area.scrollHeight;
+    
+    // Low risk alert
+    simulatedPulsoAlertas.push({
+      id: Date.now(),
+      time: 'Hace un instante',
+      cliente: 'Contacto Web',
+      clienteId: '',
+      ramo: 'General',
+      intencion: `Consulta libre simulada: "${text}"`,
+      accion: 'Verificar la consulta entrante y responder vía canal secundario.'
+    });
+    
+    cargarAlertasZona();
+    actualizarBadgeAgenda();
+    
+    document.getElementById('sim-backstage-logs').innerHTML = `
+      <span style="color:var(--green)">✓ Entrada Libre</span> procesada por WhatsApp.<br>
+      <span style="color:var(--gold-accent)">⚡ Alerta de Canal:</span> Cargada como gestión pendiente general.
+    `;
+    
+    showSimulatedToast('PULSO: Mensaje Libre', 'Consulta capturada del simulador. Alerta cargada exitosamente.');
+  }, 1000);
+}
+
+function eliminarAlertaSimulada(id) {
+  const index = simulatedPulsoAlertas.findIndex(x => x.id === id);
+  if (index >= 0) {
+    simulatedPulsoAlertas.splice(index, 1);
+    cargarAlertasZona();
+    actualizarBadgeAgenda();
+  }
+}
+
+function iniciarGestionDesdeAlertaSimulada(clienteId, clienteNombre, ramo) {
+  if (typeof abrirModalGestion === 'function') {
+    // We open the existing standard modal
+    abrirModalGestion(clienteId, clienteNombre, ramo);
+    // Find the closest dialog modal or trigger
+  } else {
+    alert(`Iniciando gestión directa con ${clienteNombre} por el ramo ${ramo}.`);
+  }
+}
+
+function actualizarBadgeAgenda() {
+  const badge = document.getElementById('badge-agenda');
+  if (badge) {
+    const originalCount = 3; // base agenda count
+    const totalCount = originalCount + simulatedPulsoAlertas.length;
+    badge.textContent = totalCount;
+    badge.style.display = totalCount > 0 ? 'inline-block' : 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
   document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
 initLockScreen();
 cargarCfg();
+
+// Sprint 4 inicializar rol de usuario activo
+const savedRole = localStorage.getItem('trama_activo_role') || 'productor';
+const selectorEl = document.getElementById('user-role-selector');
+if(selectorEl) {
+  selectorEl.value = savedRole;
+  switchUserRole(savedRole);
+}
+
 initCartera([]);
 cargarComisionesLocal();
 cargarCarteraLocal();
@@ -5470,6 +7683,20 @@ gestionesCargarSupabase();
 renovEstadosCargarSupabase();
 cargarStatsAgenda();
 cargarAlertasZona();
+
+setTimeout(() => {
+  if (carteraActiva.length > 0) {
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    const ultimaSync = localStorage.getItem('trama_ultima_sync_diaria');
+    if (ultimaSync !== hoyStr) {
+      sincronizarCarteraDiaria();
+    }
+  }
+}, 3000);
+
+setTimeout(() => {
+  updateMiriCard('👤', 'Juan Bautista', 'Socio Activo · Hogar Premium + Auto', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4968962');
+}, 500);
 </script>
 </body>
 </html>
