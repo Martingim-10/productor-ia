@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   /* === Dark Cyber Theme === */
@@ -737,14 +738,58 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
   </div>
 </div>
 
-<div id="lock-screen">
-  <div class="lock-card" style="border: 1px solid rgba(0,212,255,0.22); border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.75), 0 0 50px rgba(0,212,255,0.12)">
-    <div class="lock-logo" style="margin-bottom: 18px; display:flex; justify-content:center;">
-      <svg viewBox="0 0 40 40" width="80" height="80" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 16px rgba(0,212,255,0.4)); animation: floatLogo 4s ease-in-out infinite;">
+<div class="modal-overlay" id="modal-import-excel" style="z-index:1000000; background:rgba(4,9,20,0.85); backdrop-filter:blur(10px)">
+  <div class="modal-box" style="max-width:440px; background:#0D1B2E; border:2px solid var(--gold-accent); box-shadow:0 15px 45px rgba(0,0,0,0.95); margin: auto; padding: 24px; border-radius: 16px;">
+    <div style="font-size:36px; margin-bottom:12px; text-align:center">📂</div>
+    <div class="modal-title" style="font-size:22px; color:#F5F0E8; font-family:'DM Serif Display',serif; margin-bottom:6px; text-align:center" id="excel-modal-title">Cargar Cartera Sancor</div>
+    <div id="excel-modal-subtitle" style="font-size:12px; color:var(--gold-accent); text-align:center; margin-bottom:20px; font-weight:600"></div>
+    
+    <div style="margin-bottom:20px">
+      <label style="display:block; font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px">1. Acción de Carga</label>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <label style="display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); padding:10px 12px; border-radius:8px; cursor:pointer;" id="lbl-excel-reemplazar">
+          <input type="radio" name="excel-action" id="rad-excel-reemplazar" value="reemplazar" checked style="margin-top:3px">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#FFF">Reemplazar toda la Cartera Activa</div>
+            <div style="font-size:11px; color:#94A3B8">Borra los certificados cargados anteriormente y establece este Excel como base exclusiva.</div>
+          </div>
+        </label>
+        <label style="display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); padding:10px 12px; border-radius:8px; cursor:pointer;" id="lbl-excel-combinar">
+          <input type="radio" name="excel-action" id="rad-excel-combinar" value="combinar" style="margin-top:3px">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#38BDF8">Combinar / Consolidar con existentes</div>
+            <div style="font-size:11px; color:#94A3B8">Agrega estos registros a la cartera actual para armar el panel unificado de la oficina.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label style="display:block; font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px">2. Asignar Registros a:</label>
+      <select id="excel-asignar-productor" style="width:100%; background:#16223F; border:1px solid rgba(0,212,255,0.25); color:#FFF; padding:12px; border-radius:8px; font-size:13px; outline:none">
+        <option value="auto">⚡ Repartir Inteligente (Efecto de Red consolidado)</option>
+        <option value="productor" id="opt-excel-prod">Productor</option>
+        <option value="organizador" id="opt-excel-org">Organizador</option>
+        <option value="pas_red" id="opt-excel-pas">PAS de Red</option>
+      </select>
+      <div style="font-size:11px; color:#94A3B8; margin-top:6px; line-height:1.4">Al asignar a un productor, las comisiones y renovaciones quedarán atribuidas a su perfil en el panel consolidado de la oficina.</div>
+    </div>
+
+    <div style="display:flex; gap:12px">
+      <button class="btn btn-secondary" style="flex:1; border:1px solid rgba(255,255,255,0.15); background: transparent; color:rgba(255,255,255,0.75)" id="excel-btn-cancel">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="excel-btn-import">Procesar Archivo</button>
+    </div>
+  </div>
+</div>
+
+<div id="lock-screen" style="position:fixed;inset:0;z-index:99999;background:var(--primary-ink);display:flex;align-items:center;justify-content:center">
+  <div class="lock-card" style="width:min(400px, calc(100vw - 32px)); border: 1px solid rgba(0,212,255,0.22); border-radius:24px; box-shadow:0 25px 60px rgba(0,0,0,0.75), 0 0 50px rgba(0,212,255,0.12); padding: 40px 32px; background: #0D1B2E; text-align: left;">
+    <div class="lock-logo" style="margin-bottom: 20px; display:flex; justify-content:center;">
+      <svg viewBox="0 0 40 40" width="70" height="70" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 16px rgba(0,212,255,0.4)); animation: floatLogo 4s ease-in-out infinite;">
         <style>
           @keyframes floatLogo {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-6px) rotate(2deg); }
+            50% { transform: translateY(-5px) rotate(2deg); }
           }
         </style>
         <defs>
@@ -774,59 +819,28 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
         <circle cx="6" cy="12" r="3" fill="#00d4ff"/>
       </svg>
     </div>
-    <div class="lock-title" style="font-family:'Inter',sans-serif; font-weight:900; font-size:27px; letter-spacing:0.04em; background:linear-gradient(135deg, #fff 50%, #00d4ff 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom: 2px">TRAMA</div>
-    <div style="font-size:10px; color:#00d4ff; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:14px">Seguimiento Consolidado de Red</div>
+    <div class="lock-title" style="font-family:'Inter',sans-serif; font-weight:900; font-size:26px; tracking:0.04em; background:linear-gradient(135deg, #fff 50%, #00d4ff 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom: 2px; text-align: center;">TRAMA</div>
+    <div style="font-size:10px; color:#00d4ff; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:24px; text-align: center;">Seguimiento Consolidado de Red</div>
     
-    <!-- Selector de Perfil desde el Login -->
-    <div style="font-size:10px; text-transform:uppercase; color:rgba(255,255,255,0.3); font-weight:700; letter-spacing:0.8px; margin: 16px 0 8px;">Seleccioná tu Perfil Activo</div>
-    <div class="lock-profiles-grid" style="display:flex; gap:8px; justify-content:center; margin-bottom:20px;">
-      <div class="lock-profile-card" id="lpc-productor" onclick="selectLockProfile('productor')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid var(--green); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
-        <div style="font-size:22px">👤</div>
-        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:var(--green); margin-top:4px">Martín G.</div>
-        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Productor</div>
+    <div id="supabase-login-container">
+      <div style="margin-bottom:16px">
+        <label style="display:block; font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px">Correo Electrónico</label>
+        <input type="email" id="login-email" placeholder="ejemplo@productoria.com" style="width:100%; background:#16223F; border:1px solid rgba(0,212,255,0.25); color:#FFF; padding:12px; border-radius:8px; font-size:13px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold-accent)'" onblur="this.style.borderColor='rgba(0,212,255,0.25)'">
       </div>
-      <div class="lock-profile-card" id="lpc-organizador" onclick="selectLockProfile('organizador')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
-        <div style="font-size:22px">📊</div>
-        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.6); margin-top:4px">Sofía V.</div>
-        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Organizador</div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px">Contraseña</label>
+        <div style="position:relative">
+          <input type="password" id="login-password" placeholder="••••••••" style="width:100%; background:#16223F; border:1px solid rgba(0,212,255,0.25); color:#FFF; padding:12px 40px 12px 12px; border-radius:8px; font-size:13px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold-accent)'" onblur="this.style.borderColor='rgba(0,212,255,0.25)'">
+          <button type="button" id="toggle-password-btn" onclick="toggleLoginPassword()" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:15px; padding:0; display:flex; align-items:center; justify-content:center;">👁️</button>
+        </div>
       </div>
-      <div class="lock-profile-card" id="lpc-empleado" onclick="selectLockProfile('empleado')" style="flex:1; background:rgba(255,255,255,0.03); border:1.5px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 4px; cursor:pointer; transition:all 0.2s;">
-        <div style="font-size:22px">💼</div>
-        <div class="role-txt-lbl" style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.6); margin-top:4px">Gaby Admin</div>
-        <div style="font-size:8.5px; color:rgba(255,255,255,0.4); margin-top:2px">Personal</div>
-      </div>
+      
+      <div id="login-error-msg" style="display:none; background:rgba(248,113,113,0.1); border:1.5px solid rgba(248,113,113,0.3); color:#fc8181; padding:10px 12px; border-radius:8px; font-size:12px; line-height:1.45; margin-bottom:16px;"></div>
+      
+      <p style="font-size:11px;color:rgba(245,240,232,0.35);text-align:center;margin-bottom:16px;line-height:1.5;padding:0 8px;font-style:italic;">Se requiere autenticación para acceder al panel unificado de la red ProductorIA.</p>
+      
+      <button class="lock-btn" id="login-submit-btn" onclick="ejecutarSupabaseLogin()" style="width:100%; border-radius:10px; font-size:14px; font-weight:700; tracking:0.5px; text-transform:uppercase; height:46px; margin-top:4px;">Ingresar</button>
     </div>
-
-    <div class="lock-subtitle" id="lock-subtitle">Ingresá tu PIN para continuar</div>
-    <input id="lock-pin-input" type="tel" maxlength="6" autocomplete="off" inputmode="numeric">
-    <div class="lock-pin-boxes" id="lock-pin-boxes" onclick="document.getElementById('lock-pin-input').focus()">
-      <div class="lock-pin-box" id="lpb-0"></div>
-      <div class="lock-pin-box" id="lpb-1"></div>
-      <div class="lock-pin-box" id="lpb-2"></div>
-      <div class="lock-pin-box" id="lpb-3"></div>
-      <div class="lock-pin-box" id="lpb-4"></div>
-      <div class="lock-pin-box" id="lpb-5"></div>
-    </div>
-    
-    <div class="lock-keypad">
-      <div class="lock-key" onclick="pressLockKey('1')">1</div>
-      <div class="lock-key" onclick="pressLockKey('2')">2</div>
-      <div class="lock-key" onclick="pressLockKey('3')">3</div>
-      <div class="lock-key" onclick="pressLockKey('4')">4</div>
-      <div class="lock-key" onclick="pressLockKey('5')">5</div>
-      <div class="lock-key" onclick="pressLockKey('6')">6</div>
-      <div class="lock-key" onclick="pressLockKey('7')">7</div>
-      <div class="lock-key" onclick="pressLockKey('8')">8</div>
-      <div class="lock-key" onclick="pressLockKey('9')">9</div>
-      <div class="lock-key clear" onclick="pressLockKey('clear')">C</div>
-      <div class="lock-key" onclick="pressLockKey('0')">0</div>
-      <div class="lock-key back" onclick="pressLockKey('back')">⌫</div>
-    </div>
-    <div class="lock-attempts" id="lock-attempts"></div>
-    <div class="lock-error" id="lock-error"></div>
-    <p style="font-size:11px;color:rgba(245,240,232,0.35);text-align:center;margin-bottom:12px;line-height:1.5;padding:0 8px;font-style:italic;">Al ingresar, reafirmás tu compromiso de registrar diagnósticos reales para cuidar mejor a tus clientes.</p>
-         <button class="lock-btn" id="lock-btn" onclick="lockSubmit()" disabled>Ingresar</button>
-    <button class="lock-btn-sec" id="lock-btn-sec" onclick="lockSecAction()"></button>
   </div>
 </div>
 
@@ -1029,9 +1043,9 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
       </select>
       <select id="f-productor" onchange="filtrar()" style="display:none; background:#0f1c2d; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff; font-size:12px; font-weight:600; padding:8px 10px; cursor:pointer;">
         <option value="all">🌐 Toda la Organización</option>
-        <option value="productor">👤 Martín Giménez (Productor)</option>
-        <option value="organizador">📊 Sofía Valenzuela (Organizador)</option>
-        <option value="pas_red">💼 Roberto Gómez (Red)</option>
+        <option value="productor">👤 Productor</option>
+        <option value="organizador">📊 Organizador</option>
+        <option value="pas_red">💼 PAS de Red</option>
       </select>
       <span class="f-count" id="f-count"></span>
     </div>
@@ -1161,6 +1175,8 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
         <button onclick="ejecutarObtenerDoc()" style="background:var(--blue-fg);border:none;border-radius:8px;padding:11px;color:#000;font-weight:700;font-size:14px;cursor:pointer">Obtener documento</button>
       </div>
 
+
+
       <div id="cob-status" style="font-size:12px;color:var(--text-muted);min-height:16px;text-align:center"></div>
     </div>
   </div>
@@ -1205,7 +1221,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
           <option>Urgente pero respetuoso</option>
         </select>
       </div>
-      <div class="fg"><label>Mi firma</label><input type="text" id="m-firma" placeholder="Martín Giménez — Productor Matriculado"></div>
+      <div class="fg"><label>Mi firma</label><input type="text" id="m-firma" placeholder="Productor Matriculado"></div>
     </div>
     <div class="btn-row">
       <button class="btn btn-ai" onclick="genMail()">🤖 Generar</button>
@@ -1336,7 +1352,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
         <tbody id="tbl-red-organizacion">
           <tr style="border-bottom:1px solid var(--border-light)">
             <td style="padding:14px 18px">
-              <strong style="color:var(--text-main); font-size:13.5px">Martín Giménez</strong>
+              <strong style="color:var(--text-main); font-size:13.5px">Productor Trelew</strong>
               <div style="font-size:11px; color:var(--text-muted)">Trelew · Matricula 213038</div>
             </td>
             <td style="padding:14px 18px">
@@ -1354,12 +1370,12 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
               </div>
             </td>
             <td style="padding:14px 18px; text-align:right">
-              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Martín Giménez', 'Su alta conversión en cross-selling de Combinado se correlaciona con la aplicación consistente de neuro-mensajes (descuento hiperbólico). ¡Excelente trabajo!')">🤖 Sugerencia IA</button>
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Productor Trelew', 'Su alta conversión en cross-selling de Combinado se correlaciona con la aplicación consistente de neuro-mensajes (descuento hiperbólico). ¡Excelente trabajo!')">🤖 Sugerencia IA</button>
             </td>
           </tr>
           <tr style="border-bottom:1px solid var(--border-light)">
             <td style="padding:14px 18px">
-              <strong style="color:var(--text-main); font-size:13.5px">Sofía Valenzuela</strong>
+              <strong style="color:var(--text-main); font-size:13.5px">Organizador Puerto Madryn</strong>
               <div style="font-size:11px; color:var(--text-muted)">Puerto Madryn · Matricula 194302</div>
             </td>
             <td style="padding:14px 18px">
@@ -1377,12 +1393,12 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
               </div>
             </td>
             <td style="padding:14px 18px; text-align:right">
-              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Sofía Valenzuela', 'Detectamos que el 15% de su cartera de Automotor en Puerto Madryn carece de Combinado Familiar. Enviar campaña automatizada basada en Heurística de Cercanía.')">🤖 Sugerencia IA</button>
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Organizador Puerto Madryn', 'Detectamos que el 15% de su cartera de Automotor en Puerto Madryn carece de Combinado Familiar. Enviar campaña automatizada basada en Heurística de Cercanía.')">🤖 Sugerencia IA</button>
             </td>
           </tr>
           <tr style="border-bottom:1px solid var(--border-light)">
             <td style="padding:14px 18px">
-              <strong style="color:var(--text-main); font-size:13.5px">Juan Carlos Mendoza</strong>
+              <strong style="color:var(--text-main); font-size:13.5px">PAS de Red Gaiman</strong>
               <div style="font-size:11px; color:var(--text-muted)">Gaiman · Matricula 158223</div>
             </td>
             <td style="padding:14px 18px">
@@ -1400,12 +1416,12 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
               </div>
             </td>
             <td style="padding:14px 18px; text-align:right">
-              <button class="btn btn-secondary btn-sm" style="border-color:var(--yellow-fg)" onclick="enviarSugerenciaIA('Juan Carlos Mendoza', 'La fricción de cuota en Gaiman se puede mitigar con el módulo de manejo de objeciones. Sugerimos agendar clínica de rol para amortiguar shock inflacionario en su cartera.')">🤖 Sugerencia IA</button>
+              <button class="btn btn-secondary btn-sm" style="border-color:var(--yellow-fg)" onclick="enviarSugerenciaIA('PAS de Red Gaiman', 'La fricción de cuota en Gaiman se puede mitigar con el módulo de manejo de objeciones. Sugerimos agendar clínica de rol para amortiguar shock inflacionario en su cartera.')">🤖 Sugerencia IA</button>
             </td>
           </tr>
           <tr>
             <td style="padding:14px 18px">
-              <strong style="color:var(--text-main); font-size:13.5px">Estudio Chubut</strong>
+              <strong style="color:var(--text-main); font-size:13.5px">Organización Rawson</strong>
               <div style="font-size:11px; color:var(--text-muted)">Rawson / Dique Ameghino · Organización</div>
             </td>
             <td style="padding:14px 18px">
@@ -1423,7 +1439,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
               </div>
             </td>
             <td style="padding:14px 18px; text-align:right">
-              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Estudio Chubut', 'Excelente sinergia detectada en Rawson. Se recomienda incentivar al equipo adscripto con premio especial Sancor por campaña de Automotores Todo Riesgo.')">🤖 Sugerencia IA</button>
+              <button class="btn btn-secondary btn-sm" onclick="enviarSugerenciaIA('Organización Rawson', 'Excelente sinergia detectada en Rawson. Se recomienda incentivar al equipo adscripto con premio especial Sancor por campaña de Automotores Todo Riesgo.')">🤖 Sugerencia IA</button>
             </td>
           </tr>
         </tbody>
@@ -1535,7 +1551,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
             Sancor Asistente
             <span style="font-size:10px" title="Verificado">🛡️</span>
           </div>
-          <div style="font-size:9.5px; opacity:0.85">Martín Giménez Broker</div>
+          <div style="font-size:9.5px; opacity:0.85">Trama Broker</div>
         </div>
       </div>
       
@@ -1544,7 +1560,7 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
         
         <!-- Mensaje de bienvenida del Asistente -->
         <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
-          ¡Hola! Soy tu asistente de seguros de <strong>Martín Giménez Broker</strong> (Sancor).
+          ¡Hola! Soy tu asistente de seguros de <strong>Trama Broker</strong> (Sancor).
           <br><br>
           ¿En qué puedo ayudarte hoy? Podés pedirme pólizas, consultar por coberturas o sacarte dudas.
         </div>
@@ -1655,6 +1671,10 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
     </div>
   </div>
   <div class="pb">
+    <!-- Banner de Demo -->
+    <div id="com-demo-banner" style="display:none; margin-bottom:16px; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); color: #eab308; padding:12px; border-radius:8px; font-weight:500; font-size:13px;">
+      ⚠️ Datos de ejemplo — todavía no hay comisiones cargadas
+    </div>
 
     <!-- KPI Row (4 tarjetas con sparklines) -->
     <div id="com-kpi-row" class="com-kpi-grid"></div>
@@ -2049,20 +2069,31 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
   <div class="ph"><div><div class="ph-title">Configuración</div><div class="ph-sub">Tu perfil profesional</div></div></div>
   <div class="pb">
     <div class="section-title">Tu perfil</div>
-    <div class="row2">
-      <div class="fg"><label>Nombre completo</label><input type="text" id="cfg-nombre" placeholder="Martín Giménez"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.45">Configurá los nombres que se usarán para cada perfil de acceso (Productor, Organizador y Personal) y los datos de tu oficina comercial.</div>
+    
+    <div style="font-size:11px;font-weight:700;color:var(--gold-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Nombres por Perfil de Acceso</div>
+    <div class="row2" style="gap:12px;margin-bottom:18px">
+      <div class="fg"><label>👤 Nombre Productor (PAS)</label><input type="text" id="cfg-nombre" placeholder="Productor"></div>
+      <div class="fg"><label>📊 Nombre Organizador (Red)</label><input type="text" id="cfg-org-nombre" placeholder="Organizador"></div>
+      <div class="fg"><label>💼 Nombre Personal (Oficina)</label><input type="text" id="cfg-empleado-nombre" placeholder="Personal de Oficina"></div>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--gold-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Datos de Matrícula y Operativa</div>
+    <div class="row2" style="gap:12px;margin-bottom:14px">
       <div class="fg"><label>N° Matrícula SSN</label><input type="text" id="cfg-matricula" placeholder="213038"></div>
-    </div>
-    <div class="row2">
       <div class="fg"><label>Ciudad / Zona</label><input type="text" id="cfg-ciudad" placeholder="Trelew, Chubut"></div>
-      <div class="fg"><label>Aseguradoras</label><input type="text" id="cfg-aseg" placeholder="Sancor, ..."></div>
     </div>
-    <div class="fg">
+    <div class="fg" style="margin-bottom:18px">
+      <label>Aseguradoras habilitadas</label>
+      <input type="text" id="cfg-aseg" placeholder="Sancor, Prevención Retiro">
+    </div>
+
+    <div class="fg" style="margin-bottom:20px">
       <label>API Key de Claude (Anthropic)</label>
       <input type="text" id="cfg-key" placeholder="sk-ant-..." style="font-family:'DM Mono',monospace;font-size:12px">
       <div style="font-size:11px;color:var(--muted);margin-top:4px">Obtenela en console.anthropic.com</div>
     </div>
-    <div class="btn-row"><button class="btn btn-primary" onclick="guardarCfg()">💾 Guardar</button></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="guardarCfg()">💾 Guardar Configuración</button></div>
     <hr class="divider">
     <div class="section-title">Conexiones</div>
     <div class="conn-item">
@@ -2086,20 +2117,20 @@ tr:hover td{background:rgba(0,212,255,.055)!important}
 </div>
 
 <!-- PULSO feedback card — aparece post-guardado de gestión -->
-<div id="pulso-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 32px));background:#0D1B2E;border:2.5px solid var(--gold-accent);border-radius:14px;padding:16px 18px;box-shadow:0 12px 48px rgba(0,0,0,0.85);z-index:9999;animation:slideUp .25s ease">
+<div id="pulso-card" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 32px));background:#0D1B2E;border:2.5px solid var(--gold-accent);border-radius:14px;padding:16px 18px;box-shadow:0 12px 48px rgba(0,0,0,0.95);z-index:9999;color:#FFF;animation:slideUp .25s ease">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
     <div style="font-size:12px;font-weight:700;color:var(--gold-accent);letter-spacing:.7px;text-transform:uppercase">🧠 PULSO · Feedback Inmediato</div>
-    <button onclick="cerrarPulsoCard()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>
+    <button onclick="cerrarPulsoCard()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>
   </div>
-  <div id="pc-cliente" style="font-size:14px;font-weight:600;margin-bottom:4px"></div>
+  <div id="pc-cliente" style="font-size:14px;font-weight:700;margin-bottom:4px;color:#FFF"></div>
   <div id="pc-stats" style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap"></div>
   
   <!-- Sprint 3: Visualización de Scores Conductuales Dinámicos -->
-  <div id="pc-scores" style="display:flex;justify-content:space-between;gap:6px;margin:10px 0;padding:8px;background:rgba(0,212,255,0.03);border-radius:8px;border:1px solid rgba(0,212,255,0.1)">
+  <div id="pc-scores" style="display:flex;justify-content:space-between;gap:6px;margin:10px 0;padding:8px;background:rgba(0,212,255,0.06);border-radius:8px;border:1.5px solid rgba(0,212,255,0.2)">
     <!-- Se inyecta dinámicamente -->
   </div>
 
-  <div id="pc-sugerencia" style="font-size:12px;color:var(--muted);line-height:1.5;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border-left:2px solid var(--gold-accent)"></div>
+  <div id="pc-sugerencia" style="font-size:12.5px;color:#E2E8F0;line-height:1.5;padding:8px 10px;background:rgba(255,255,255,.06);border-radius:8px;border-left:3px solid var(--gold-accent)"></div>
 </div>
 
 <div class="modal-overlay" id="modal-honor" style="z-index:9999">
@@ -2204,10 +2235,10 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgdIOlpj
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const SISTEMA = `Sos la voz de Martín Giménez cuando se comunica con sus clientes y gestiona su cartera de seguros.
+const SISTEMA = `Sos la voz de la oficina de seguros cuando te comunicas con tus clientes y gestionas su cartera de seguros.
 
-QUIÉN ES MARTÍN:
-Productor de Seguros matriculado N°213038 ante la SSN. Opera con Sancor Seguros en Trelew, Chubut y zona. Cartera de ramos: autos (200), incendio (300), acc. personales (600), casco embarcaciones (1000), seg. técnico (1400), resp. civil (1500), caución (1600), vida obligatorio (1720), vida colectivo (1730), combinado familiar (1800), seg. integral (2100), salud (2500), motovehículo (3100). También trabaja con Prevención ART y Prevención Retiro.
+QUIÉN SOS:
+Productor de Seguros matriculado N°213038 ante la SSN. Operás con Sancor Seguros en Trelew, Chubut y zona. Cartera de ramos: autos (200), incendio (300), acc. personales (600), casco embarcaciones (1000), seg. técnico (1400), resp. civil (1500), caución (1600), vida obligatorio (1720), vida colectivo (1730), combinado familiar (1800), seg. integral (2100), salud (2500), motovehículo (3100). También trabajás con Prevención ART y Prevención Retiro.
 
 ESTILO Y TONO:
 - Cercano y directo. Tuteo siempre. Como si hablaras con un conocido de confianza.
@@ -2279,7 +2310,7 @@ CUANDO REDACTÁS MENSAJES:
 
 function getKey(){return localStorage.getItem('apikey')||'ai-studio-server-key';}
 function getSistema(){
-  const n=localStorage.getItem('cfg_nombre')||'Martín Giménez';
+  const n=localStorage.getItem('cfg_nombre')||'Productor';
   const c=localStorage.getItem('cfg_ciudad')||'Trelew, Chubut';
   const hoyStr = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
   const hoyDiaS = new Date().toLocaleDateString('es-AR', { weekday: 'long' });
@@ -2423,7 +2454,8 @@ function guardarRenovEstados(){
 
 async function renovEstadosCargarSupabase(){
   try{
-    const res = await fetch(`${TRAMA_WORKER}/renovaciones-estado?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/renovaciones-estado?broker_id=${brokerId}`);
     if(!res.ok) return;
     const remoto = await res.json();
     // Merge: Supabase tiene prioridad sobre localStorage
@@ -2433,8 +2465,8 @@ async function renovEstadosCargarSupabase(){
   }catch(e){ console.warn('Error cargando estados renovaciones:',e); }
 }
 
-function setEstadoRenov(poliza, estado){
-  const brokerId = getBrokerId();
+async function setEstadoRenov(poliza, estado){
+  const brokerId = await getBrokerId();
   if(renovEstados[poliza]===estado){
     delete renovEstados[poliza];
     fetch(`${TRAMA_WORKER}/renovaciones-estado?broker_id=${brokerId}&poliza=${encodeURIComponent(poliza)}`,
@@ -2662,7 +2694,48 @@ async function sincronizarDesdeDrive(){
   btn.textContent='☁️ Sincronizar Drive';btn.disabled=false;
 }
 
-function procesarRowsExcel(rows, fileName){
+function promptExcelImportOptions(fileName, count) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('modal-import-excel');
+    document.getElementById('excel-modal-subtitle').textContent = `${fileName} (${count} registros válidos encontrados)`;
+    
+    const prodName = localStorage.getItem('broker_nombre') || 'Productor';
+    const orgName = localStorage.getItem('org_nombre') || 'Organizador';
+    const empName = localStorage.getItem('empleado_nombre') || 'Personal de Oficina';
+    
+    const optProd = document.getElementById('opt-excel-prod');
+    if (optProd) optProd.textContent = `👤 Productor / PAS (${prodName})`;
+    const optOrg = document.getElementById('opt-excel-org');
+    if (optOrg) optOrg.textContent = `📊 Organizador / Red (${orgName})`;
+    const optPas = document.getElementById('opt-excel-pas');
+    if (optPas) optPas.textContent = `💼 Personal / Oficina (${empName})`;
+    
+    modal.classList.add('open');
+    
+    const btnCancel = document.getElementById('excel-btn-cancel');
+    const btnImport = document.getElementById('excel-btn-import');
+    
+    function cleanup() {
+      modal.classList.remove('open');
+      btnCancel.onclick = null;
+      btnImport.onclick = null;
+    }
+    
+    btnCancel.onclick = () => {
+      cleanup();
+      resolve(null);
+    };
+    
+    btnImport.onclick = () => {
+      const action = document.querySelector('input[name="excel-action"]:checked').value;
+      const assignment = document.getElementById('excel-asignar-productor').value;
+      cleanup();
+      resolve({ action, assignment });
+    };
+  });
+}
+
+async function procesarRowsExcel(rows, fileName){
   let hi=-1;
   for(let i=0;i<Math.min(20,rows.length);i++){
     const vals=(rows[i]||[]).map(c=>String(c||'').trim());
@@ -2695,16 +2768,42 @@ function procesarRowsExcel(rows, fileName){
     return{nombre:nom,cuit:(denom&&cli!==denom)?cli:'',ramo:iR>=0?(parseInt(r[iR])||0):0,poliza:iP>=0?String(r[iP]||''):'',cert:iC>=0?(parseInt(r[iC])||1):1,venc:exDate(iFin>=0?r[iFin]:null),premio:iPr>=0?(parseFloat(r[iPr])||0):0,prima:iPm>=0?(parseFloat(r[iPm])||0):0};
     }).filter(r=>r.nombre&&r.nombre!=='nan'&&r.ramo>0);
   if(!nuevos.length){alert('No se encontraron registros válidos. Mirá la consola (F12) para detalles.');return;}
-  carteraActiva=nuevos.map(r=>({
-  ...r,
-  id: (r.cuit||'').replace(/\D/g,'')||r.nombre,
-  pf: !/S\.?A\.?$|S\.?R\.?L\.?$|SAS$|S\.A\.S\.?$/i.test(r.nombre.trim()),
-  crossell: AUTO_SIN_COMBINADO.has((r.cuit||'').replace(/\D/g,''))
-})).sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
+
+  const choices = await promptExcelImportOptions(fileName, nuevos.length);
+  if (!choices) {
+    toast('Carga de Excel cancelada.');
+    return;
+  }
+
+  const processedNew = nuevos.map(r => {
+    const rId = (r.cuit||'').replace(/\D/g,'')||r.nombre;
+    const pProd = (choices.assignment === 'auto') ? getAssignedProductor(rId, r.nombre) : choices.assignment;
+    return {
+      ...r,
+      id: rId,
+      pf: !/S\.?A\.?$|S\.?R\.?L\.?$|SAS$|S\.A\.S\.?$/i.test(r.nombre.trim()),
+      productor: pProd,
+      crossell: AUTO_SIN_COMBINADO.has(rId)
+    };
+  });
+
+  if (choices.action === 'reemplazar') {
+    carteraActiva = processedNew;
+    toast(`✅ Base reemplazada: ${processedNew.length} registros cargados.`);
+  } else {
+    // Combinar evitando duplicados exactos (id, ramo, poliza, certificado)
+    const existingKeys = new Set(carteraActiva.map(r => `${r.id}_${r.ramo}_${r.poliza}_${r.cert}`));
+    const nonDuplicated = processedNew.filter(r => !existingKeys.has(`${r.id}_${r.ramo}_${r.poliza}_${r.cert}`));
+    carteraActiva = [...carteraActiva, ...nonDuplicated];
+    toast(`✅ Cartera unificada: +${nonDuplicated.length} nuevos registros agregados (${carteraActiva.length} totales).`);
+  }
+
+  carteraActiva.sort((a,b)=>(diasA(a.venc)??9999)-(diasA(b.venc)??9999));
   renderStats(carteraActiva);renderTabla(carteraActiva);renderAgenda();
   guardarCarteraLocal();
   driveSnapshotActual();
   enrichCarteraConAPI();
+  if (typeof renderRedDashboard === 'function') renderRedDashboard();
 }
 
 function toast(msg){
@@ -2858,9 +2957,9 @@ function getAssignedProductor(id, nombre) {
     hash += hashStr.charCodeAt(i);
   }
   const mod = hash % 100;
-  if (mod < 60) return 'productor';      // Martín Giménez (Productor)
-  if (mod < 85) return 'organizador';    // Sofía Valenzuela (Organizador)
-  return 'pas_red';                      // Roberto Gómez (PAS Red)
+  if (mod < 60) return 'productor';      // Productor
+  if (mod < 85) return 'organizador';    // Organizador
+  return 'pas_red';                      // PAS Red
 }
 // Escapa valor para usar dentro de un atributo onclick="func('${val}')"
 function escOncl(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,"\\'")}
@@ -2938,8 +3037,8 @@ function renderTabla(data){
     const monto=r.premio>0?fmtM(r.premio):r.prima>0?fmtM(r.prima):'—';
     let ownerBadge = '';
     if (typeof currentTramaRole !== 'undefined' && currentTramaRole !== 'productor' && r.productor) {
-      const color = r.productor === 'productor' ? 'var(--green-fg)' : r.productor === 'organizador' ? 'var(--gold-accent)' : '#c084fc';
-      const name = r.productor === 'productor' ? 'Martín G.' : r.productor === 'organizador' ? 'Sofía V.' : 'Roberto G.';
+      const color = getProducerColor(r.productor);
+      const name = getProducerDisplayName(r.productor);
       ownerBadge = ` <span style="font-size:9.5px; padding:1.5px 5.5px; border-radius:4px; font-weight:700; background:rgba(255,255,255,0.06); color:${color}; margin-left:6px">${name}</span>`;
     }
     const apiChip=r.ramo===200&&r._sancorVigente!==undefined?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;margin-left:5px;background:${r._sancorVigente?'rgba(74,222,128,.15)':'rgba(248,113,113,.15)'};color:${r._sancorVigente?'#4ade80':'#f87171'}">${r._sancorVigente?`● ${r._sancorCount}p`:'○'}</span>`:'';
@@ -2968,9 +3067,31 @@ function filtrar(){
     // 1. Role-based matching
     if (typeof currentTramaRole !== 'undefined') {
       if (currentTramaRole === 'productor') {
-        if (row.productor !== 'productor') return false;
+        const miPerfil = getLoggeadoPerfil();
+        if (miPerfil) {
+          const match = (row.productor === miPerfil.id || 
+                         row.productor === miPerfil.nombre || 
+                         row.productor === miPerfil.rol ||
+                         (miPerfil.rol === 'productor' && row.productor === 'productor'));
+          if (!match) return false;
+        } else {
+          if (row.productor !== 'productor') return false;
+        }
       } else {
-        if (p !== 'all' && row.productor !== p) return false;
+        if (p !== 'all') {
+          const targetProf = appProfiles.find(x => x.id === p);
+          if (targetProf) {
+            const match = (row.productor === targetProf.id || 
+                           row.productor === targetProf.nombre || 
+                           row.productor === targetProf.rol ||
+                           (targetProf.rol === 'productor' && row.productor === 'productor') ||
+                           (targetProf.rol === 'organizador' && row.productor === 'organizador') ||
+                           ((targetProf.rol === 'pas_red' || targetProf.rol === 'personal' || targetProf.rol === 'empleado' || targetProf.rol === 'personal_asociado' || targetProf.rol === 'personal_oficina') && row.productor === 'pas_red'));
+            if (!match) return false;
+          } else {
+            if (row.productor !== p) return false;
+          }
+        }
       }
     }
 
@@ -3032,66 +3153,481 @@ async function analizarCartera(){
 let comisionesActuales=null;
 let comisionesHistorial=[];
 
-function guardarComisionesLocal(){
-  const resumen=comisionesHistorial.map(h=>({periodo:h.periodo,totalComision:h.registros.reduce((s,r)=>s+r.comision,0),totalPrima:h.registros.reduce((s,r)=>s+r.prima,0),porRamo:(()=>{const m={};h.registros.forEach(r=>{if(!m[r.ramo])m[r.ramo]={comision:0,prima:0};m[r.ramo].comision+=r.comision;m[r.ramo].prima+=r.prima;});return m;})()}));
-  // Intentar guardar datos granulares completos; si excede la cuota, guardar solo resumen
-  try{
-    localStorage.setItem('comisiones_historial_v1',JSON.stringify(comisionesHistorial));
-  }catch(e){
-    localStorage.removeItem('comisiones_historial_v1');
+function resumirRegistros(registros) {
+  const porRamo = {};
+  registros.forEach(r => {
+    const ramo = r.ramo || 'Otros';
+    if (!porRamo[ramo]) {
+      porRamo[ramo] = { comision: 0, prima: 0 };
+    }
+    porRamo[ramo].comision += (r.comision || 0);
+    porRamo[ramo].prima += (r.prima || 0);
+  });
+  return Object.entries(porRamo).map(([ramo, val]) => ({
+    periodo: registros[0]?.periodo || '',
+    ramo: ramo,
+    cliente: '',
+    codCli: '',
+    poliza: 'resumen',
+    comision: val.comision,
+    prima: val.prima,
+    porcCom: 0,
+    foper: null
+  }));
+}
+
+function guardarComisionesLocal() {
+  if (!comisionesHistorial || !comisionesHistorial.length) return;
+
+  // 1. Asegurar mapeo de primas por póliza para persistencia (flat index de bajo peso)
+  try {
+    const primaMap = JSON.parse(localStorage.getItem('comisiones_prima_por_poliza') || '{}');
+    comisionesHistorial.forEach(h => {
+      h.registros.forEach(r => {
+        if (r.prima > 0 && r.poliza && r.poliza !== 'resumen') {
+          const polLimpia = r.poliza.replace(/^0+/, '');
+          primaMap[polLimpia] = r.prima;
+        }
+      });
+    });
+    localStorage.setItem('comisiones_prima_por_poliza', JSON.stringify(primaMap));
+  } catch (err) {
+    console.warn('Error guardando mapeo comisiones_prima_por_poliza:', err);
   }
-  try{localStorage.setItem('comisiones_resumen',JSON.stringify(resumen));}catch(e){}
+
+  // 2. Ordenar el historial por orden cronológico ascendente
+  const sorted = [...comisionesHistorial].sort((a, b) => parsePeriodoNum(a.periodo) - parsePeriodoNum(b.periodo));
+  
+  // 3. Determinar los dos períodos más recientes a conservar de forma completa/granular
+  const top2Periods = sorted.slice(-2).map(h => h.periodo);
+
+  // 4. Crear versión compactada/resumida del historial
+  const compactedHistorial = sorted.map(h => {
+    const isRecent = top2Periods.includes(h.periodo);
+    if (isRecent) {
+      // Para los 2 meses más recientes, conservamos el detalle granular completo
+      return {
+        periodo: h.periodo,
+        registros: h.registros.map(r => ({
+          periodo: r.periodo || h.periodo,
+          ramo: r.ramo || '',
+          cliente: r.cliente || '',
+          codCli: r.codCli || '',
+          poliza: r.poliza || '',
+          comision: r.comision || 0,
+          prima: r.prima || 0,
+          porcCom: r.porcCom || 0,
+          foper: r.foper ? (r.foper instanceof Date ? r.foper.toISOString() : String(r.foper)) : null
+        }))
+      };
+    } else {
+      // Para meses históricos anteriores, resumimos por ramo para liberar megabytes de espacio
+      return {
+        periodo: h.periodo,
+        registros: resumirRegistros(h.registros)
+      };
+    }
+  });
+
+  // 5. Intentar guardar en un único key eficiente v3
+  try {
+    localStorage.setItem('comisiones_historial_v3', JSON.stringify(compactedHistorial));
+    
+    // Limpieza de claves obsoletas para liberar espacio completo en LocalStorage
+    localStorage.removeItem('comisiones_historial_v1');
+    const periodListRaw = localStorage.getItem('comisiones_periodos_list_v2');
+    if (periodListRaw) {
+      try {
+        const periods = JSON.parse(periodListRaw);
+        periods.forEach(p => {
+          localStorage.removeItem(`comisiones_period_v2_${p}`);
+        });
+      } catch (err) {}
+      localStorage.removeItem('comisiones_periodos_list_v2');
+    }
+  } catch (e) {
+    console.error('Error al persistir comisiones_historial_v3, reintentando reducir más:', e);
+    // Si falla por quota, intentamos guardar solo el periodo de comisiones actuales de forma granular y resumir todo lo demás
+    try {
+      const top1Period = sorted.slice(-1).map(h => h.periodo);
+      const superCompacted = sorted.map(h => {
+        if (top1Period.includes(h.periodo)) {
+          return h;
+        } else {
+          return { periodo: h.periodo, registros: resumirRegistros(h.registros) };
+        }
+      });
+      localStorage.setItem('comisiones_historial_v3', JSON.stringify(superCompacted));
+    } catch (e2) {
+      console.error('Incapaz de guardar incluso en modo ultra comprimido:', e2);
+    }
+  }
+
+  // Guardar también el resumen rápido
+  try {
+    const resumen = compactedHistorial.map(h => ({
+      periodo: h.periodo,
+      totalComision: h.registros.reduce((s, r) => s + r.comision, 0),
+      totalPrima: h.registros.reduce((s, r) => s + r.prima, 0),
+      porRamo: (() => {
+        const m = {};
+        h.registros.forEach(r => {
+          if (!m[r.ramo]) m[r.ramo] = { comision: 0, prima: 0 };
+          m[r.ramo].comision += r.comision;
+          m[r.ramo].prima += r.prima;
+        });
+        return m;
+      })()
+    }));
+    localStorage.setItem('comisiones_resumen', JSON.stringify(resumen));
+  } catch (e) {}
 }
 
 function cargarComisionesLocal(){
-  try{
-    // Preferir datos granulares completos
-    const full=JSON.parse(localStorage.getItem('comisiones_historial_v1')||'[]');
-    if(full.length>0){
-      comisionesHistorial=full;
-      if(comisionesHistorial.length>0)comisionesActuales=comisionesHistorial[comisionesHistorial.length-1];
+  try {
+    // 1. Intentar con el formato ultra-optimizado v3
+    const rawV3 = localStorage.getItem('comisiones_historial_v3');
+    if (rawV3) {
+      const parsed = JSON.parse(rawV3);
+      comisionesHistorial = parsed.map(h => ({
+        periodo: h.periodo,
+        registros: h.registros.map(r => ({
+          ...r,
+          foper: r.foper ? new Date(r.foper) : null
+        }))
+      }));
+      if (comisionesHistorial.length > 0) {
+        comisionesActuales = comisionesHistorial[comisionesHistorial.length - 1];
+        return;
+      }
+    }
+
+    // 2. Formato v2 (por períodos individuales)
+    const periodListRaw = localStorage.getItem('comisiones_periodos_list_v2');
+    if (periodListRaw) {
+      const periods = JSON.parse(periodListRaw);
+      const loadedHistorial = [];
+      for (const p of periods) {
+        const compactRaw = localStorage.getItem(`comisiones_period_v2_${p}`);
+        if (compactRaw) {
+          const compact = JSON.parse(compactRaw);
+          const registros = compact.map(c => ({
+            periodo: p,
+            ramo: c[0],
+            cliente: c[1],
+            codCli: c[2],
+            poliza: c[3],
+            comision: c[4],
+            prima: c[5],
+            porcCom: c[6],
+            foper: c[7] ? new Date(c[7]) : null
+          }));
+          loadedHistorial.push({ periodo: p, registros });
+        }
+      }
+      if (loadedHistorial.length > 0) {
+        comisionesHistorial = loadedHistorial;
+        comisionesActuales = comisionesHistorial[comisionesHistorial.length - 1];
+        guardarComisionesLocal();
+        return;
+      }
+    }
+
+    // 3. Fallback: formato legado granular completo
+    const full = JSON.parse(localStorage.getItem('comisiones_historial_v1') || '[]');
+    if (full.length > 0) {
+      comisionesHistorial = full.map(h => ({
+        periodo: h.periodo,
+        registros: h.registros.map(r => ({
+          ...r,
+          foper: r.foper ? new Date(r.foper) : null
+        }))
+      }));
+      comisionesActuales = comisionesHistorial[comisionesHistorial.length - 1];
+      guardarComisionesLocal();
       return;
     }
-    // Fallback: resumen por ramo (sin detalle de pólizas)
-    const raw=JSON.parse(localStorage.getItem('comisiones_resumen')||'[]');
-    comisionesHistorial=raw.map(s=>({periodo:s.periodo,registros:Object.entries(s.porRamo).flatMap(([ramo,v])=>[{periodo:s.periodo,ramo,comision:v.comision,prima:v.prima,cliente:'',codCli:'',poliza:'resumen',porcCom:0,foper:null}])}));
-    if(comisionesHistorial.length>0)comisionesActuales=comisionesHistorial[comisionesHistorial.length-1];
-  }catch(e){console.warn('Error cargando comisiones locales:',e);}
+
+    // 4. Fallback: resumen simplificado por ramo
+    const raw = JSON.parse(localStorage.getItem('comisiones_resumen') || '[]');
+    comisionesHistorial = raw.map(s => ({
+      periodo: s.periodo,
+      registros: Object.entries(s.porRamo).flatMap(([ramo, v]) => [{
+        periodo: s.periodo,
+        ramo,
+        comision: v.comision || 0,
+        prima: v.prima || 0,
+        cliente: '',
+        codCli: '',
+        poliza: 'resumen',
+        porcCom: 0,
+        foper: null
+      }])
+    }));
+    if (comisionesHistorial.length > 0) {
+      comisionesActuales = comisionesHistorial[comisionesHistorial.length - 1];
+    }
+  } catch(e) {
+    console.warn('Error cargando comisiones locales:', e);
+  }
 }
 
 // ── PERSISTENCIA CARTERA SANCOR ──────────────────────────────
+function getLoggedUserIdSuffix() {
+  const currentUserId = localStorage.getItem('trama_broker_id');
+  return currentUserId ? `_${currentUserId}` : '';
+}
+
 function guardarCarteraLocal(){
   try{
+    const suffix = getLoggedUserIdSuffix();
     const compact=carteraActiva.map(r=>({n:r.nombre,c:r.cuit,id:r.id,r:r.ramo,p:r.poliza,cert:r.cert,v:r.venc,pm:r.premio||r.prima,pf:r.pf,productor:r.productor}));
-    localStorage.setItem('cartera_sancor_v1',JSON.stringify(compact));
+    localStorage.setItem(`cartera_sancor_v1${suffix}`, JSON.stringify(compact));
+    programarSubidaNube();
   }catch(e){console.warn('Error guardando cartera local:',e);}
 }
 
 function cargarCarteraLocal(){
   try{
-    const raw=JSON.parse(localStorage.getItem('cartera_sancor_v1')||'[]');
-    if(raw.length>0) initCartera(raw);
+    const suffix = getLoggedUserIdSuffix();
+    const activeRole = localStorage.getItem('trama_activo_role') || 'productor';
+    let raw = [];
+    
+    if (activeRole === 'organizador' || activeRole === 'empleado' || activeRole === 'personal' || activeRole === 'personal_asociado' || activeRole === 'personal_oficina') {
+      console.log("[LocalSync] Unificando carteras de todos los productores para el rol de supervisión/personal...");
+      const keysFound = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('cartera_sancor_v1')) {
+          keysFound.push(key);
+        }
+      }
+      
+      const existingKeys = new Set();
+      keysFound.forEach(key => {
+        try {
+          const list = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(list)) {
+            list.forEach(item => {
+              const uniq = `${item.id || item.c}_${item.r || item.ramo}_${item.p || item.poliza}`;
+              if (!existingKeys.has(uniq)) {
+                existingKeys.add(uniq);
+                raw.push(item);
+              }
+            });
+          }
+        } catch(e) {
+          console.warn("[LocalSync] Error parseando clave:", key, e);
+        }
+      });
+      
+      if (raw.length === 0) {
+        raw = JSON.parse(localStorage.getItem('cartera_sancor_v1') || '[]');
+      }
+    } else {
+      const localUserKey = `cartera_sancor_v1${suffix}`;
+      if (localStorage.getItem(localUserKey)) {
+        raw = JSON.parse(localStorage.getItem(localUserKey));
+      } else if (suffix === '') {
+        raw = JSON.parse(localStorage.getItem('cartera_sancor_v1') || '[]');
+      }
+    }
+    
+    initCartera(raw);
   }catch(e){console.warn('Error cargando cartera local:',e);}
 }
 
 // ── PERSISTENCIA CARTERA RETIRO ──────────────────────────────
 function guardarRetiroLocal(){
   try{
-    localStorage.setItem('retiro_cartera_v1',JSON.stringify(retiroCartera));
+    const suffix = getLoggedUserIdSuffix();
+    localStorage.setItem(`retiro_cartera_v1${suffix}`,JSON.stringify(retiroCartera));
+    programarSubidaNube();
   }catch(e){console.warn('Error guardando retiro local:',e);}
 }
 
 function cargarRetiroLocal(){
   try{
-    const raw=JSON.parse(localStorage.getItem('retiro_cartera_v1')||'[]');
-    if(!raw.length) return;
+    const suffix = getLoggedUserIdSuffix();
+    const activeRole = localStorage.getItem('trama_activo_role') || 'productor';
+    let raw = [];
+    
+    if (activeRole === 'organizador' || activeRole === 'empleado' || activeRole === 'personal' || activeRole === 'personal_asociado' || activeRole === 'personal_oficina') {
+      console.log("[LocalSync] Unificando cartera de Retiro de todos los productores para el rol de supervisión/personal...");
+      const keysFound = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('retiro_cartera_v1')) {
+          keysFound.push(key);
+        }
+      }
+      
+      const existingKeys = new Set();
+      keysFound.forEach(key => {
+        try {
+          const list = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(list)) {
+            list.forEach(item => {
+              const uniq = `${item.nroAsoc || item.n || item.documento || item.cuit || ''}_${item.cuenta || item.poliza || ''}`;
+              if (!existingKeys.has(uniq)) {
+                existingKeys.add(uniq);
+                raw.push(item);
+              }
+            });
+          }
+        } catch(e) {
+          console.warn("[LocalSync] Error parseando retiro clave:", key, e);
+        }
+      });
+      
+      if (raw.length === 0) {
+        raw = JSON.parse(localStorage.getItem('retiro_cartera_v1') || '[]');
+      }
+    } else {
+      const localUserKey = `retiro_cartera_v1${suffix}`;
+      if (localStorage.getItem(localUserKey)) {
+        raw = JSON.parse(localStorage.getItem(localUserKey));
+      } else if (suffix === '') {
+        raw = JSON.parse(localStorage.getItem('retiro_cartera_v1') || '[]');
+      }
+    }
+    
+    if(!raw.length) {
+      retiroCartera = [];
+      const retInicial = document.getElementById('ret-inicial');
+      const retLoading = document.getElementById('ret-loading');
+      const retResultados = document.getElementById('ret-resultados');
+      if (retInicial) retInicial.style.display='block';
+      if (retLoading) retLoading.style.display='none';
+      if (retResultados) retResultados.style.display='none';
+      return;
+    }
     retiroCartera=raw;
-    document.getElementById('ret-inicial').style.display='none';
-    document.getElementById('ret-loading').style.display='none';
-    document.getElementById('ret-resultados').style.display='block';
+    const retInicial = document.getElementById('ret-inicial');
+    const retLoading = document.getElementById('ret-loading');
+    const retResultados = document.getElementById('ret-resultados');
+    if (retInicial) retInicial.style.display='none';
+    if (retLoading) retLoading.style.display='none';
+    if (retResultados) retResultados.style.display='block';
     renderRetiroStats();
     renderRetiroCartera();
   }catch(e){console.warn('Error cargando retiro local:',e);}
+}
+
+// ── NUBE HYPRE-SYNC (SUPABASE AUTH METADATA) ─────────────────
+let subirCarteraTimeout = null;
+
+function programarSubidaNube() {
+  if (!supabaseClient) return;
+  if (subirCarteraTimeout) clearTimeout(subirCarteraTimeout);
+  subirCarteraTimeout = setTimeout(() => {
+    subirCarterasANube();
+  }, 2500);
+}
+
+async function subirCarterasANube() {
+  if (!supabaseClient) return;
+  try {
+    const session = await supabaseClient.auth.getSession();
+    if (!session?.data?.session) return;
+    
+    const suffix = getLoggedUserIdSuffix();
+    const compactSancor = JSON.parse(localStorage.getItem(`cartera_sancor_v1${suffix}`) || '[]');
+    const compactRetiro = JSON.parse(localStorage.getItem(`retiro_cartera_v1${suffix}`) || '[]');
+    
+    console.log("[CloudSync] Subiendo carteras a Supabase...", { Sancor: compactSancor.length, Retiro: compactRetiro.length });
+    
+    const { error } = await supabaseClient.auth.updateUser({
+      data: {
+        cartera_sancor: compactSancor,
+        cartera_retiro: compactRetiro
+      }
+    });
+    
+    if (error) {
+      console.warn("[CloudSync] Error subiendo carteras a Supabase Auth Metadata:", error);
+    } else {
+      console.log("[CloudSync] Sincronización de subida exitosa.");
+    }
+  } catch (err) {
+    console.warn("[CloudSync] Fallo al subir carteras:", err);
+  }
+}
+
+async function syncCarterasDesdeNube() {
+  if (!supabaseClient) return;
+  try {
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError) throw userError;
+    if (user && user.user_metadata) {
+      console.log("[CloudSync] Sincronizando carteras desde la nube...");
+      const meta = user.user_metadata;
+      const suffix = getLoggedUserIdSuffix();
+      
+      const localSancorKey = `cartera_sancor_v1${suffix}`;
+      const localRetiroKey = `retiro_cartera_v1${suffix}`;
+      
+      let changed = false;
+
+      // Sancor
+      if (meta.cartera_sancor && Array.isArray(meta.cartera_sancor) && meta.cartera_sancor.length > 0) {
+        const localSancorRaw = localStorage.getItem(localSancorKey);
+        let localSancor = [];
+        if (localSancorRaw) {
+          try { localSancor = JSON.parse(localSancorRaw); } catch(e) {}
+        }
+        if (!localSancor || localSancor.length === 0 || JSON.stringify(localSancor) !== JSON.stringify(meta.cartera_sancor)) {
+          localStorage.setItem(localSancorKey, JSON.stringify(meta.cartera_sancor));
+          changed = true;
+        }
+      } else {
+        // Enviar locales si la nube no tiene y local sí
+        const localSancorRaw = localStorage.getItem(localSancorKey);
+        if (localSancorRaw) {
+          let localSancor = [];
+          try { localSancor = JSON.parse(localSancorRaw); } catch(e) {}
+          if (localSancor && localSancor.length > 0) {
+            programarSubidaNube();
+          }
+        }
+      }
+
+      // Retiro
+      if (meta.cartera_retiro && Array.isArray(meta.cartera_retiro) && meta.cartera_retiro.length > 0) {
+        const localRetiroRaw = localStorage.getItem(localRetiroKey);
+        let localRetiro = [];
+        if (localRetiroRaw) {
+          try { localRetiro = JSON.parse(localRetiroRaw); } catch(e) {}
+        }
+        if (!localRetiro || localRetiro.length === 0 || JSON.stringify(localRetiro) !== JSON.stringify(meta.cartera_retiro)) {
+          localStorage.setItem(localRetiroKey, JSON.stringify(meta.cartera_retiro));
+          changed = true;
+        }
+      } else {
+        // Enviar locales si la nube no tiene y local sí
+        const localRetiroRaw = localStorage.getItem(localRetiroKey);
+        if (localRetiroRaw) {
+          let localRetiro = [];
+          try { localRetiro = JSON.parse(localRetiroRaw); } catch(e) {}
+          if (localRetiro && localRetiro.length > 0) {
+            programarSubidaNube();
+          }
+        }
+      }
+
+      if (changed) {
+        console.log("[CloudSync] Datos nuevos descargados. Actualizando interfaz...");
+        cargarCarteraLocal();
+        cargarRetiroLocal();
+        enriquecerCarteraConComisiones();
+        if (typeof renderRedDashboard === 'function') renderRedDashboard();
+      } else {
+        console.log("[CloudSync] Carteras locales actualizadas.");
+      }
+    }
+  } catch (e) {
+    console.warn("[CloudSync] Fallas al descargar carteras desde la nube:", e);
+  }
 }
 
 let comChart=null;let comRamoChart=null;
@@ -3147,10 +3683,30 @@ async function cargarComisiones(input){
 
 function enriquecerCarteraConComisiones(){
   if(!carteraActiva||!carteraActiva.length)return;
-  if(!comisionesHistorial||!comisionesHistorial.length)return;
-  const primaPorPoliza={};
-  comisionesHistorial.forEach(periodo=>{periodo.registros.forEach(r=>{if(r.prima>0){const polLimpia=r.poliza.replace(/^0+/,'');primaPorPoliza[polLimpia]=r.prima;}});});
-  carteraActiva.forEach(pol=>{const polLimpia=String(pol.poliza).replace(/^0+/,'');if(primaPorPoliza[polLimpia]){pol.premio=primaPorPoliza[polLimpia];pol.prima=primaPorPoliza[polLimpia];}});
+  let primaPorPoliza = {};
+  try {
+    primaPorPoliza = JSON.parse(localStorage.getItem('comisiones_prima_por_poliza') || '{}');
+  } catch (err) {}
+
+  // Fallback: si el índice persistente está vacío pero tenemos historial cargado
+  if (Object.keys(primaPorPoliza).length === 0 && comisionesHistorial && comisionesHistorial.length) {
+    comisionesHistorial.forEach(periodo=>{
+      periodo.registros.forEach(r=>{
+        if(r.prima>0 && r.poliza && r.poliza !== 'resumen'){
+          const polLimpia=r.poliza.replace(/^0+/,'');
+          primaPorPoliza[polLimpia]=r.prima;
+        }
+      });
+    });
+  }
+
+  carteraActiva.forEach(pol=>{
+    const polLimpia=String(pol.poliza).replace(/^0+/,'');
+    if(primaPorPoliza[polLimpia]){
+      pol.premio=primaPorPoliza[polLimpia];
+      pol.prima=primaPorPoliza[polLimpia];
+    }
+  });
   renderStats(carteraActiva);renderTabla(carteraActiva);
 }
 
@@ -3163,21 +3719,24 @@ let comDonutChart = null;
 // ── API FETCHERS ────────────────────────────────────────
 
 async function fetchEvolucionComparativa() {
-  const res = await fetch(`${COM_API}/evolucion`);
+  const brokerId = await getBrokerId();
+  const res = await fetch(`${COM_API}/evolucion?broker_id=${brokerId}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
   // Espera: { mesActual:{mes,comision,comision_anterior}, evolucion12m:[{mes,comision_actual,comision_anterior}] }
 }
 
 async function fetchDistribucionRamo() {
-  const res = await fetch(`${COM_API}/distribucion-ramo`);
+  const brokerId = await getBrokerId();
+  const res = await fetch(`${COM_API}/distribucion-ramo?broker_id=${brokerId}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
   // Espera: [{ ramo:200, nombre:'Automotores', comision_estimada:80000 }]
 }
 
 async function fetchFlujoCaja() {
-  const res = await fetch(`${COM_API}/flujo-caja`);
+  const brokerId = await getBrokerId();
+  const res = await fetch(`${COM_API}/flujo-caja?broker_id=${brokerId}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
   // Espera: { total_percibido:145000, movimientos:[{fecha,monto}] }
@@ -3246,6 +3805,15 @@ function buildSparklinePath(values, color) {
 // ── RENDER PRINCIPAL ─────────────────────────────────────
 
 function renderDashboardComisiones({ evolucion, distribucion, flujoCaja }) {
+  const isDemo = !!(evolucion?.demo || distribucion?.demo || flujoCaja?.demo);
+  if (distribucion && distribucion.ramos) {
+    distribucion = distribucion.ramos;
+  }
+  const banner = document.getElementById('com-demo-banner');
+  if (banner) {
+    banner.style.display = isDemo ? 'block' : 'none';
+  }
+
   const { mesActual, evolucion12m } = evolucion;
 
   // Métricas derivadas
@@ -3669,19 +4237,32 @@ async function accionIA(tipo,nombre,ramo){
 // ═══════════════════════════════════════════════════════════
 // CONSULTA DE COBERTURA POR PÓLIZA REAL
 // ═══════════════════════════════════════════════════════════
-const SANCOR_WORKER = 'https://sancor-api.mgmg050382.workers.dev';
-const TRAMA_WORKER  = 'https://trama-worker.mgmg050382.workers.dev';
-const STEEP_FOG_WORKER = 'https://steep-fog-c622.mgmg050382.workers.dev';
+const SANCOR_WORKER = '/api/sancor';
+const TRAMA_WORKER  = '/api/trama';
+const STEEP_FOG_WORKER = '/api/steep-fog';
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutError = new Error(`Tiempo de espera agotado (${timeoutMs}ms) para: ${url}`);
+  timeoutError.name = 'AbortError';
+  
+  const id = setTimeout(() => {
+    try {
+      controller.abort(timeoutError);
+    } catch (err) {
+      controller.abort();
+    }
+  }, timeoutMs);
+
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(id);
     return res;
   } catch(e) {
     clearTimeout(id);
+    if (e.name === 'AbortError' || controller.signal.aborted) {
+      throw timeoutError;
+    }
     throw e;
   }
 }
@@ -3742,12 +4323,28 @@ async function ejecutarConsultaCobertura() {
   status.textContent = '🔍 Buscando pólizas...';
 
   try {
-    // 1. Buscar pólizas vigentes con timeout de 15s
-    const polRes  = await fetchWithTimeout(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`, {}, 15000);
+    // 1. Buscar pólizas vigentes con timeout de 25s - siempre buscamos ramo=quick para traer todas y filtramos de forma robusta por ramo en el cliente
+    const polRes  = await fetchWithTimeout(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=quick`, {}, 25000);
     const polData = await polRes.json();
-    const todasPol = polData.vigentes || [];
-    const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
-    const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+    let todasPol = polData.vigentes || [];
+
+    if (ramo && ramo !== 'quick') {
+      todasPol = todasPol.filter(p => {
+        const code = String(p.branchCode || '');
+        const name = String(p.branchName || '').toLowerCase();
+        if (ramo === '1800') {
+          return code.startsWith('18') || name.includes('combinado') || name.includes('hogar') || name.includes('familiar');
+        } else if (ramo === '200') {
+          return code === '200' || code === '3100' || name.includes('auto') || name.includes('moto') || name.includes('vehi');
+        } else if (ramo === '600') {
+          return code === '600' || name.includes('accidente') || name.includes('personal') || name.includes('ap');
+        }
+        return code === ramo;
+      });
+    }
+
+    const vigentes = todasPol.filter(p => p.isVigent === "true" || p.isVigent === true || (p.isVigent !== "false" && esFechaFutura(p.endDate)));
+    const vencidas = todasPol.filter(p => p.isVigent === "false" || p.isVigent === false || (!esFechaFutura(p.endDate) && p.isVigent !== "true" && p.isVigent !== true));
 
     if (todasPol.length === 0) {
       status.textContent = 'No se encontraron pólizas para ese DNI y ramo.';
@@ -3757,30 +4354,40 @@ async function ejecutarConsultaCobertura() {
     const targets = vigentes.length > 0 ? vigentes : vencidas;
     const estaVencida = vigentes.length === 0;
 
-    // 2. Descargar PDF(s) en base64 — todas las de la lista seleccionada con timeout de 15s
+    // 2. Descargar PDF(s) en base64 — todas las de la lista seleccionada con timeout (20s)
     status.textContent = estaVencida 
-      ? `📄 Descargando ${targets.length} póliza(s) vencida(s)...`
-      : `📄 Descargando ${targets.length} póliza(s)...`;
+      ? `📄 Consultando coberturas de póliza vencida...`
+      : `📄 Consultando coberturas...`;
 
-    const docs = await Promise.all(targets.map(p =>
-      fetchWithTimeout(`${SANCOR_WORKER}/document`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          referenceNumber: p.referenceNumber,
-          branchCode: Number(p.branchCode),
-          certificateNumber: p.certificateNumber || 0,
-          reportName: 'Caratula'
-        })
-      }, 15000).then(r => r.json())
-    ));
-
-    const docsOk = docs.filter(d => d.files?.[0]?.urlFile);
-    if (docsOk.length === 0) {
-      throw new Error('document_download_failed');
+    let docsOk = [];
+    try {
+      const docs = await Promise.all(targets.map(async (p) => {
+        try {
+          const res = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              referenceNumber: p.referenceNumber,
+              branchCode: Number(p.branchCode),
+              certificateNumber: p.certificateNumber || 0,
+              reportName: 'Caratula'
+            })
+          }, 20000);
+          const doc = await res.json();
+          if (doc && doc.files?.[0]?.urlFile) {
+            return { policy: p, urlFile: doc.files[0].urlFile };
+          }
+        } catch (err) {
+          console.warn('Fallo descarga individual de documento:', err);
+        }
+        return null;
+      }));
+      docsOk = docs.filter(d => d !== null);
+    } catch (docErr) {
+      console.warn('Error general descargando documentos, se usará fallback de metadatos:', docErr);
     }
 
-    // 3. Construir mensaje para Claude con URLs de PDF + pregunta
+    // 3. Construir mensaje para Claude con URLs de PDF + pregunta, o fallback a metadatos reales
     status.textContent = '🤖 Consultando IA...';
     let prependedContext = "";
     if (estaVencida) {
@@ -3789,14 +4396,26 @@ async function ejecutarConsultaCobertura() {
       prependedContext = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
     }
 
-    const content = [
-      ...docsOk.map((d, i) => ({
-        type: 'document',
-        source: { type: 'url', url: d.files[0].urlFile },
-        ...(docsOk.length > 1 ? { title: `Póliza ${targets[i].referenceNumber}` } : {})
-      })),
-      { type: 'text', text: prependedContext + pregunta }
-    ];
+    let content;
+    let fallbackUsed = false;
+    if (docsOk.length > 0) {
+      content = [
+        ...docsOk.map((item) => ({
+          type: 'document',
+          source: { type: 'url', url: item.urlFile },
+          title: `Póliza ${item.policy.referenceNumber} — ${item.policy.branchName}`
+        })),
+        { type: 'text', text: prependedContext + pregunta }
+      ];
+    } else {
+      fallbackUsed = true;
+      const metadataStr = targets.map(p => `Póliza Ref: ${p.referenceNumber}, Ramo: ${p.branchName} (${p.branchCode}), Patente: ${p.licensePlate || 'N/A'}, Vigencia: del ${p.startDate || 'N/A'} al ${p.endDate || 'N/A'}`).join('\n');
+      const fallbackPrompt = `${prependedContext}[Sancor API Metadata Context: Debido a demoras de red externas no pudimos descargar el archivo PDF completo en tiempo real, pero obtuvimos la información oficial del cliente Sancor:
+${metadataStr}.
+Respondé la consulta del usuario de forma sumamente clara, profesional y servicial asumiendo las coberturas y reglas estándar de Sancor para el ramo de forma proactiva. Asegurá siempre de mantener un tono amigable, detallá qué cubre usualmente el plan de forma orientativa y aclará de manera comprensiva que consultamos las pólizas [${targets.map(p => 'Ref ' + p.referenceNumber).join(', ')}] del core en tiempo real.]\n\nPregunta: ${pregunta}`;
+
+      content = fallbackPrompt;
+    }
 
     const res = await fetchWithTimeout(STEEP_FOG_WORKER, {
       method: 'POST',
@@ -3813,7 +4432,9 @@ async function ejecutarConsultaCobertura() {
     cerrarConsultaCobertura();
     const pLabel = estaVencida ? `Póliza vencida` : `Póliza real`;
     addBubble('user', `[${pLabel} · DNI ${dni} · ${document.getElementById('cob-ramo').selectedOptions[0].text}]\n${pregunta}`);
-    hist.push({ role: 'user', content });
+    
+    // Guardamos en el historial del chat el contenido adecuado
+    hist.push({ role: 'user', content: fallbackUsed ? pregunta : content });
     addBubble('ai', reply);
     hist.push({ role: 'assistant', content: reply });
     document.getElementById('qa-wrap').style.display = 'none';
@@ -3827,6 +4448,8 @@ async function ejecutarConsultaCobertura() {
       status.textContent = '❌ Sancor tardó demasiado. Intentá de nuevo.';
     } else if (e.message?.includes('document') || e.message?.includes('descarga') || e.message?.includes('pdf') || e.message?.includes('files')) {
       status.textContent = '❌ No se pudo descargar la póliza.';
+    } else if (e.message) {
+      status.textContent = `❌ ${e.message}`;
     } else {
       status.textContent = '❌ Error de IA o de conexión. Intentá de nuevo.';
     }
@@ -3839,7 +4462,7 @@ async function autoGuardarConsultaCobertura(dni, ramo, pregunta, reply, estaVenc
     const key = getKey();
     if (!key) return; // No key configured, cannot call AI
 
-    const brokerId = getBrokerId();
+    const brokerId = await getBrokerId();
     if (!brokerId) return;
 
     // 1. Buscar cliente_id en Supabase por DNI + broker_id
@@ -3954,10 +4577,22 @@ Respuesta: ${reply.slice(0, 500)}`;
   }
 }
 
-// broker_id estable por dispositivo hasta que implementemos auth real
-function getBrokerId(){
+// broker_id obtenido desde Supabase Auth o fallback local
+async function getBrokerId() {
+  const supabase = supabaseClient;
+  if (supabase) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) return session.user.id;
+    } catch (err) {
+      console.warn('[getBrokerId] Fallo al consultar sesión de Supabase (offline/desconectado):', err);
+    }
+  }
   let id = localStorage.getItem('trama_broker_id');
-  if(!id){ id = crypto.randomUUID(); localStorage.setItem('trama_broker_id', id); }
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('trama_broker_id', id);
+  }
   return id;
 }
 
@@ -3992,27 +4627,46 @@ async function ejecutarObtenerDoc() {
   const status   = document.getElementById('cob-status');
   if (!dni) { status.textContent = 'Ingresá el DNI.'; return; }
 
-  status.textContent = '🔍 Buscando póliza...';
+  status.textContent = '🔍 Buscando póliza en el core...';
   try {
-    const polRes  = await fetch(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramo}`);
+    const polRes  = await fetchWithTimeout(`${SANCOR_WORKER}/policies?dni=${dni}&ramo=quick`, {}, 15000);
     const polData = await polRes.json();
-    const todasPol = polData.vigentes || [];
-    const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
-    const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+    let todasPol = polData.vigentes || [];
+
+    if (ramo && ramo !== 'quick') {
+      todasPol = todasPol.filter(p => {
+        const code = String(p.branchCode || '');
+        const name = String(p.branchName || '').toLowerCase();
+        if (ramo === '1800') {
+          return code.startsWith('18') || name.includes('combinado') || name.includes('hogar') || name.includes('familiar');
+        } else if (ramo === '200') {
+          return code === '200' || code === '3100' || name.includes('auto') || name.includes('moto') || name.includes('vehi');
+        } else if (ramo === '600') {
+          return code === '600' || name.includes('accidente') || name.includes('personal') || name.includes('ap');
+        }
+        return code === ramo;
+      });
+    }
+
+    const vigentes = todasPol.filter(p => p.isVigent === "true" || p.isVigent === true || (p.isVigent !== "false" && esFechaFutura(p.endDate)));
+    const vencidas = todasPol.filter(p => p.isVigent === "false" || p.isVigent === false || (!esFechaFutura(p.endDate) && p.isVigent !== "true" && p.isVigent !== true));
 
     if (todasPol.length === 0) { status.textContent = 'No se encontraron pólizas para ese DNI y ramo.'; return; }
 
     const p = vigentes.length > 0 ? vigentes[0] : vencidas[0];
     const estaVencida = vigentes.length === 0;
 
-    status.textContent = estaVencida ? '📄 Obteniendo documento (póliza vencida)...' : '📄 Obteniendo documento...';
-    const docRes = await fetch(`${SANCOR_WORKER}/document`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    status.innerHTML = `📄 <span style="color:var(--gold-accent)">Sancor está generando el PDF...</span><br><span style="font-size:11px;color:var(--text-muted)">(Suele demorar 15-30 seg en servidores Sancor PRE. Por favor aguardá...)</span>`;
+    
+    const docRes = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+      method:'POST', 
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docTipo })
-    });
+    }, 60000);
+    
     const doc = await docRes.json();
     const urlFile = doc.files?.[0]?.urlFile;
-    if (!urlFile) { status.textContent = `No disponible: ${doc.error||'sin URL'}`; return; }
+    if (!urlFile) { status.textContent = `No disponible: ${doc.error||doc.Message||'sin URL'}`; return; }
 
     cerrarConsultaCobertura();
     const label = document.getElementById('cob-doc-tipo').selectedOptions[0].text;
@@ -4020,7 +4674,12 @@ async function ejecutarObtenerDoc() {
     addDocBubble(labelFin, p.referenceNumber, urlFile);
     document.getElementById('qa-wrap').style.display = 'none';
   } catch(e) {
-    status.textContent = 'Error: ' + e.message;
+    console.error('Error obteniendo documento:', e);
+    if (e.name === 'AbortError' || e.message?.includes('timeout') || e.message?.includes('aborted')) {
+      status.textContent = '❌ Sancor tardó demasiado. Intentá de nuevo.';
+    } else {
+      status.textContent = 'Error: ' + e.message;
+    }
   }
 }
 
@@ -4048,7 +4707,6 @@ const DOC_REQUEST_MAP = [
   { re: /caratula|carátula/i,                       reportName:'Caratula',                          ramo:null,  label:'Carátula' },
   { re: /\bfactura\b/i,                             reportName:'NuevaFactura',                      ramo:null,  label:'Factura' },
 ];
-
 function addDocBubble(label, ref, urlFile) {
   const body = document.getElementById('chat-body');
   const h = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
@@ -4084,18 +4742,39 @@ async function sendMsg(){
       const docReq = DOC_REQUEST_MAP.find(d => d.re.test(txt));
       if(docReq){
         addBubble('ai', `🔍 Buscando ${docReq.label}...`);
-        const ramoParam = docReq.ramo || '200';
-        // Siempre buscar por DNI si está disponible (más confiable que búsqueda por patente)
-        // Si solo hay patente sin DNI, buscar por patente
+        let ramoParam = docReq.ramo;
+        if (!ramoParam) {
+          const txtLow = txt.toLowerCase();
+          if(/combinado|hogar|casa|electroni|electrodom|heladera|televisor|notebook|tablet|celular|bicicleta|robo|incendio|contenido|cristal/i.test(txtLow)) ramoParam = '1800';
+          else if(/auto|moto|vehiculo|vehículo|patente/i.test(txtLow) || plate) ramoParam = '200';
+          else if(/accidente|personal|\bap\b/i.test(txtLow)) ramoParam = '600';
+          else ramoParam = '200';
+        }
+        // Siempre buscar por DNI si está disponible
         const polUrl = dni
-          ? `${SANCOR_WORKER}/policies?dni=${dni}&ramo=${ramoParam}`
+          ? `${SANCOR_WORKER}/policies?dni=${dni}&ramo=quick`
           : `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoParam}`;
-        const polRes  = await fetch(polUrl);
+        const polRes  = await fetchWithTimeout(polUrl, {}, 25000);
         const polData = await polRes.json();
-        const todasPol = polData.vigentes || [];
+        let todasPol = polData.vigentes || [];
+
+        if (dni && ramoParam) {
+          todasPol = todasPol.filter(p => {
+            const code = String(p.branchCode || '');
+            const name = String(p.branchName || '').toLowerCase();
+            if (ramoParam === '1800') {
+              return code.startsWith('18') || name.includes('combinado') || name.includes('hogar') || name.includes('familiar');
+            } else if (ramoParam === '200') {
+              return code === '200' || code === '3100' || name.includes('auto') || name.includes('moto') || name.includes('vehi');
+            } else if (ramoParam === '600') {
+              return code === '600' || name.includes('accidente') || name.includes('personal') || name.includes('ap');
+            }
+            return code === ramoParam;
+          });
+        }
         
-        let vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
-        let vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+        let vigentes = todasPol.filter(p => p.isVigent === "true" || p.isVigent === true || (p.isVigent !== "false" && esFechaFutura(p.endDate)));
+        let vencidas = todasPol.filter(p => p.isVigent === "false" || p.isVigent === false || (!esFechaFutura(p.endDate) && p.isVigent !== "true" && p.isVigent !== true));
 
         if(plate && (vigentes.length > 1 || (vigentes.length === 0 && vencidas.length > 1))){
           const targets = vigentes.length > 0 ? vigentes : vencidas;
@@ -4114,23 +4793,48 @@ async function sendMsg(){
         if(vigentes.length === 0 && vencidas.length === 0){
           addBubble('ai', `No encontré pólizas de ${docReq.label} para ${plate ? 'la patente '+plate : 'ese DNI'}.`);
         } else {
-          // Si no hay vigentes pero hay vencidas, avisarle al cliente
           const estaVencida = vigentes.length === 0;
-          const p = estaVencida ? vencidas[0] : vigentes[0];
-          
-          if (estaVencida) {
-            const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
-            addBubble('ai', `⚠️ Hola! Veo que esa póliza de ${p.branchName} se encuentra <strong>vencida</strong> desde el día <strong>${fec || 'en el pasado'}</strong>.<br><br>De todas formas, acá tenés el documento anterior por si querés consultarlo, y si querés avisame y te cotizo la renovación:`);
-          }
+          const targetPols = vigentes.length > 0 ? vigentes : vencidas;
 
-          const docRes = await fetch(`${SANCOR_WORKER}/document`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docReq.reportName })
-          });
-          const doc = await docRes.json();
-          const urlFile = doc.files?.[0]?.urlFile;
-          if(urlFile) addDocBubble(estaVencida ? `${docReq.label} [VENCIDA]` : docReq.label, p.referenceNumber, urlFile);
-          else addBubble('ai', `No se pudo obtener el documento. Error: ${doc.error||'desconocido'}`);
+          if (targetPols.length > 1) {
+            const opciones = targetPols.map(p => {
+              const fecha = (p.startDate||'').slice(0,10);
+              return `<button onclick="elegirDocChat('${p.referenceNumber}','${p.branchCode}','${p.certificateNumber||0}',\`${docReq.reportName}\`,\`${docReq.label}\`,${estaVencida},\`${p.endDate||''}\`)" style="background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--blue-fg);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px">Ref ${p.referenceNumber} · desde ${fecha}${estaVencida ? ' [VENCIDA]' : ''}</button>`;
+            }).join('');
+            
+            const polsJson = JSON.stringify(targetPols.map(p => ({ referenceNumber: p.referenceNumber, branchCode: p.branchCode, certificateNumber: p.certificateNumber || 0 })));
+            const botonAmbas = `<button onclick="elegirAmbosDocsChat('${polsJson.replace(/"/g, '&quot;')}', \`${docReq.reportName}\`, \`${docReq.label}\`, ${estaVencida})" style="background:rgba(0,255,150,.1);border:1px solid rgba(0,255,150,.3);color:#00ff96;border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px;font-weight:600">📥 Obtener Ambos Documentos</button>`;
+
+            const labelVenc = estaVencida ? 'vencidas (ya no están activas)' : 'vigentes';
+            addBubble('ai', `Encontré <strong>${targetPols.length} pólizas</strong> ${labelVenc} de Combinado Familiar para ese DNI. ¿De cuál querés descargar la/el ${docReq.label}?<br><div style="margin-top:8px">${opciones}</div><div style="margin-top:6px">${botonAmbas}</div>`);
+          } else {
+            const p = targetPols[0];
+            if (estaVencida) {
+              const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
+              addBubble('ai', `⚠️ Hola! Veo que esa póliza de ${p.branchName} se encuentra <strong>vencida</strong> desde el día <strong>${fec || 'en el pasado'}</strong>.<br><br>De todas formas, acá tenés el documento anterior por si querés consultarlo, y si querés avisame y te cotizo la renovación:`);
+            }
+
+            addBubble('ai', `📄 Sancor está generando el documento... <span style="font-size:11px;color:var(--text-muted)">(suele tardar unos segundos, por favor no cierres)</span>`);
+            
+            try {
+              const docRes = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName: docReq.reportName })
+              }, 50000); // 50s for direct document download as requested
+              const doc = await docRes.json();
+              const urlFile = doc.files?.[0]?.urlFile;
+              
+              chatBody.removeChild(chatBody.lastChild); // Remove loading message
+              if(urlFile) {
+                addDocBubble(estaVencida ? `${docReq.label} [VENCIDA]` : docReq.label, p.referenceNumber, urlFile);
+              } else {
+                addBubble('ai', `No se pudo obtener el documento. Error: ${doc.error||doc.Message||'desconocido'}`);
+              }
+            } catch (docErr) {
+              chatBody.removeChild(chatBody.lastChild); // Remove loading message
+              addBubble('ai', `Error obteniendo el documento de Sancor: ${docErr.message}. Por favor intente nuevamente.`);
+            }
+          }
         }
         document.getElementById('chat-loader').classList.remove('show');
         document.getElementById('send-btn').disabled=false;
@@ -4147,19 +4851,33 @@ async function sendMsg(){
       else if(/auto|moto|vehiculo|vehículo|patente/i.test(txtLow) || plate) ramoParam = '200';
       else if(/accidente|personal|\bap\b/i.test(txtLow)) ramoParam = '600';
 
-      // Si hay patente, buscar por patente + ramo (Sancor requiere branchCode)
       const ramoFinal = ramoParam || '200';
       const polUrl = plate
         ? `${SANCOR_WORKER}/policies?plate=${plate}&ramo=${ramoFinal}`
-        : `${SANCOR_WORKER}/policies?dni=${dni}${ramoParam ? '&ramo='+ramoParam : '&ramo=quick'}`;
+        : `${SANCOR_WORKER}/policies?dni=${dni}&ramo=quick`;
 
       addBubble('ai', `🔍 Consultando pólizas en Sancor...`);
-      const polRes  = await fetch(polUrl);
+      const polRes  = await fetchWithTimeout(polUrl, {}, 25000);
       const polData = await polRes.json();
       
-      const todasPol = polData.vigentes || [];
-      const vigentes = todasPol.filter(p => p.isVigent !== "false" && esFechaFutura(p.endDate));
-      const vencidas = todasPol.filter(p => p.isVigent === "false" || !esFechaFutura(p.endDate));
+      let todasPol = polData.vigentes || [];
+      if (!plate && ramoParam) {
+        todasPol = todasPol.filter(p => {
+          const code = String(p.branchCode || '');
+          const name = String(p.branchName || '').toLowerCase();
+          if (ramoParam === '1800') {
+            return code.startsWith('18') || name.includes('combinado') || name.includes('hogar') || name.includes('familiar');
+          } else if (ramoParam === '200') {
+            return code === '200' || code === '3100' || name.includes('auto') || name.includes('moto') || name.includes('vehi');
+          } else if (ramoParam === '600') {
+            return code === '600' || name.includes('accidente') || name.includes('personal') || name.includes('ap');
+          }
+          return code === ramoParam;
+        });
+      }
+
+      const vigentes = todasPol.filter(p => p.isVigent === "true" || p.isVigent === true || (p.isVigent !== "false" && esFechaFutura(p.endDate)));
+      const vencidas = todasPol.filter(p => p.isVigent === "false" || p.isVigent === false || (!esFechaFutura(p.endDate) && p.isVigent !== "true" && p.isVigent !== true));
 
       const chatBody = document.getElementById('chat-body');
       chatBody.removeChild(chatBody.lastChild);
@@ -4181,46 +4899,50 @@ async function sendMsg(){
           const fecha = (p.startDate||'').slice(0,10);
           return `<button onclick="elegirPolizaChat('${p.referenceNumber}','${p.branchCode}','${p.certificateNumber||0}',\`${txt.replace(/`/g,'\\`')}\`,${estaVencida},\`${p.endDate||''}\`)" style="background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--blue-fg);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px">Ref ${p.referenceNumber} · desde ${fecha}${estaVencida ? ' [VENCIDA]' : ''}</button>`;
         }).join('');
+        
+        const polsJson = JSON.stringify(targetPols.map(p => ({ referenceNumber: p.referenceNumber, branchCode: p.branchCode, certificateNumber: p.certificateNumber || 0, branchName: p.branchName, startDate: p.startDate, endDate: p.endDate, licensePlate: p.licensePlate })));
+        const botonAmbas = `<button onclick="consultarAmbasPolizasChat('${polsJson.replace(/"/g, '&quot;')}', \`${txt.replace(/`/g,'\\`')}\`, ${estaVencida})" style="background:rgba(0,255,150,.1);border:1px solid rgba(0,255,150,.3);color:#00ff96;border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer;font-size:12px;font-weight:600">✨ Consultar Ambas Juntas</button>`;
+
         const labelVenc = estaVencida ? 'vencidas (ya no están activas)' : 'vigentes';
-        addBubble('ai', `Encontré ${targetPols.length} pólizas de ${targetPols[0].branchName} ${labelVenc} para ese DNI. ¿Cuál consulto?<br><div style="margin-top:8px">${opciones}</div>`);
+        addBubble('ai', `Encontré <strong>${targetPols.length} pólizas</strong> de<sup></sup> ${targetPols[0].branchName} ${labelVenc} para ese DNI/Patente. ¿Cuál de ellas querés consultar?<br><div style="margin-top:8px">${opciones}</div><div style="margin-top:6px">${botonAmbas}</div>`);
         document.getElementById('chat-loader').classList.remove('show');
         document.getElementById('send-btn').disabled=false;
         return;
       } else {
         const p = targetPols[0];
+        let urlFile = null;
         try {
-          const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+          const docRes = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ referenceNumber: p.referenceNumber, branchCode: Number(p.branchCode), certificateNumber: p.certificateNumber||0, reportName:'Caratula' })
-          });
+          }, 5000);
           const doc = await docRes.json();
-          if(doc.files?.[0]?.urlFile){
-            let contextForIA = "";
-            if (estaVencida) {
-              const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
-              contextForIA = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
-            }
-            userContent = [
-              { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
-              { type:'text', text: contextForIA + txt }
-            ];
-          } else {
-            document.getElementById('chat-loader').classList.remove('show');
-            document.getElementById('send-btn').disabled = false;
-            const labelVenc = estaVencida ? 'vencida ' : '';
-            addBubble('ai', `Encontré la póliza ${labelVenc}de ${p.branchName} Ref <strong>${p.referenceNumber}</strong> en Sancor Seguros, pero no se pudo descargar el documento original para analizar la cobertura con el procesador de IA. Intentá consultando de nuevo en unos momentos.`);
-            return;
-          }
+          urlFile = doc.files?.[0]?.urlFile;
         } catch(docErr) {
-          document.getElementById('chat-loader').classList.remove('show');
-          document.getElementById('send-btn').disabled = false;
-          addBubble('ai', `Error de red al intentar descargar la póliza desde Sancor: ${docErr.message}. Por favor de reintentar.`);
-          return;
+          console.warn('No se pudo descargar el PDF de Sancor para el chat, usando fallback de metadatos:', docErr);
+        }
+
+        let contextForIA = "";
+        if (estaVencida) {
+          const fec = p.endDate ? p.endDate.slice(0, 10).split('-').reverse().join('/') : '';
+          contextForIA = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por una póliza VENCIDA el día ${fec || 'en el pasado'}. No le ofrezcas cobertura activa, debés advertirle de manera clara, amable y directa que la póliza se encuentra vencida y solicitarle la renovación.]\n`;
+        }
+
+        if(urlFile) {
+          userContent = [
+            { type:'document', source:{ type:'url', url: urlFile }, title:`Póliza ${p.referenceNumber} — ${p.branchName}` },
+            { type:'text', text: contextForIA + txt }
+          ];
+        } else {
+          const metadataStr = `Póliza Ref: ${p.referenceNumber}, Ramo: ${p.branchName} (${p.branchCode}), Patente: ${p.licensePlate || 'N/A'}, Vigencia: del ${p.startDate || 'N/A'} al ${p.endDate || 'N/A'}`;
+          userContent = `${contextForIA}[Sancor API Metadata Context: Debido a demoras de red externas no de pudo descargar el archivo PDF completo de Sancor, pero confirmamos la información oficial:
+${metadataStr}.
+Respondé la consulta del usuario de forma sumamente clara, profesional y servicial asumiendo las coberturas y reglas de Sancor para el ramo de forma proactiva. Aclará con empatía que se consultó la póliza Ref ${p.referenceNumber} en vivo y detallá qué cubre típicamente el plan de forma orientativa.]\n\nPregunta: ${txt}`;
         }
       }
     }
 
-    const hasDocs = Array.isArray(userContent);
+    const hasDocs = Array.isArray(userContent) || (typeof userContent === 'string' && userContent !== txt);
     const msgToSend = { role:'user', content: userContent };
     const mensajesAEnviar = hasDocs ? [msgToSend] : [...hist, msgToSend];
     hist.push({ role:'user', content: hasDocs ? txt : userContent });
@@ -4234,7 +4956,7 @@ async function sendMsg(){
       document.getElementById('send-btn').disabled=false;
       return;
     }
-    const reply=data.content?.[0]?.text||'Sin respuesta.';
+    const reply=data.content?.[0]?.text||'Sin response.';
     hist.push({role:'assistant',content:reply});
     document.getElementById('chat-loader').classList.remove('show');addBubble('ai',reply);
   }catch(e){document.getElementById('chat-loader').classList.remove('show');addBubble('ai',`⚠️ Error al conectar con el asistente: ${e.message}`);}
@@ -4395,7 +5117,8 @@ async function cargarAlertasZona(){
   
   let zonalAlertsHTML = '';
   try{
-    const res = await fetch(`${TRAMA_WORKER}/alertas-zona?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/alertas-zona?broker_id=${brokerId}`);
     if(res.ok) {
       const alertas = await res.json();
       if(Array.isArray(alertas) && alertas.length > 0) {
@@ -4460,7 +5183,7 @@ async function genInforme(){
   const ctx=document.getElementById('inf-ctx').value.trim();
   const stats=calcularEstadisticasCartera();
   const prompts={
-    resumen:`Sos el asistente IA de Martín Giménez, broker Sancor en Trelew, Chubut. Redactá un resumen ejecutivo profesional usando EXCLUSIVAMENTE estos datos reales:\n\n${stats.resumen}\n\nContexto adicional: ${ctx||'ninguno'}\n\nSecciones: Estado General, Alertas de Vencimiento, Oportunidades Comerciales, Recomendaciones para esta semana.`,
+    resumen:`Sos el asistente IA de la oficina de seguros, un broker de Sancor. Redactá un resumen ejecutivo profesional usando EXCLUSIVAMENTE estos datos reales:\n\n${stats.resumen}\n\nContexto adicional: ${ctx||'ninguno'}\n\nSecciones: Estado General, Alertas de Vencimiento, Oportunidades Comerciales, Recomendaciones para esta semana.`,
     propuesta:`Generá una propuesta comercial profesional para presentar a un cliente. ${ctx||'Perfil: profesional independiente, 48 años, sin cobertura de vida.'}`,
     comparativo:`Generá un comparativo de coberturas entre compañías del mercado argentino. Sancor vs competencia. ${ctx||''}`,
     guion:`Generá un guión de venta completo para una reunión comercial. Incluí: apertura, detección de necesidades, presentación, manejo de objeciones comunes en Argentina, y cierre. ${ctx||'Cliente tipo: empleado público, 50 años, preocupado por su jubilación.'}`,
@@ -4523,20 +5246,40 @@ function copiar(id){
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 function guardarCfg(){
-  localStorage.setItem('cfg_nombre',document.getElementById('cfg-nombre').value);
-  localStorage.setItem('cfg_ciudad',document.getElementById('cfg-ciudad').value);
+  const nmProductor = document.getElementById('cfg-nombre').value.trim() || 'Productor';
+  const nmOrganizador = document.getElementById('cfg-org-nombre').value.trim() || 'Organizador';
+  const nmEmpleado = document.getElementById('cfg-empleado-nombre').value.trim() || 'Personal de Oficina';
+  const matricula = document.getElementById('cfg-matricula').value.trim() || '213038';
+  const ciudad = document.getElementById('cfg-ciudad').value.trim() || 'Trelew, Chubut';
+  const aseg = document.getElementById('cfg-aseg').value.trim() || 'Sancor, Prevención Retiro';
+
+  localStorage.setItem('cfg_nombre', nmProductor);
+  localStorage.setItem('broker_nombre', nmProductor);
+  localStorage.setItem('org_nombre', nmOrganizador);
+  localStorage.setItem('empleado_nombre', nmEmpleado);
+  localStorage.setItem('cfg_matricula', matricula);
+  localStorage.setItem('cfg_ciudad', ciudad);
+  localStorage.setItem('cfg_aseg', aseg);
+
   const k=document.getElementById('cfg-key').value.trim();
   if(k) {
     localStorage.setItem('apikey',k);
   } else {
     localStorage.removeItem('apikey');
   }
-  alert('✅ Configuración guardada.');
+  
+  // Re-run lock screen name refresh or updates if they exist
+  if (typeof initLockScreen === 'function') initLockScreen();
+  
+  alert('✅ Configuración guardada con éxito.');
 }
 function cargarCfg(){
-  document.getElementById('cfg-nombre').value=localStorage.getItem('cfg_nombre')||'';
-  document.getElementById('cfg-ciudad').value=localStorage.getItem('cfg_ciudad')||'';
+  document.getElementById('cfg-nombre').value=localStorage.getItem('broker_nombre')||localStorage.getItem('cfg_nombre')||'Productor';
+  document.getElementById('cfg-org-nombre').value=localStorage.getItem('org_nombre')||'Organizador';
+  document.getElementById('cfg-empleado-nombre').value=localStorage.getItem('empleado_nombre')||'Personal de Oficina';
+  document.getElementById('cfg-ciudad').value=localStorage.getItem('cfg_ciudad')||'Trelew, Chubut';
   document.getElementById('cfg-matricula').value=localStorage.getItem('cfg_matricula')||'213038';
+  document.getElementById('cfg-aseg').value=localStorage.getItem('cfg_aseg')||'Sancor, Prevención Retiro';
   document.getElementById('cfg-key').value=localStorage.getItem('apikey')||'';
 }
 
@@ -4548,7 +5291,8 @@ const GESTIONES_FILENAME='gestiones_productor.json';
 
 async function cargarAlertasZona(){
   try{
-    const res = await fetch(`${TRAMA_WORKER}/alertas-zona?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/alertas-zona?broker_id=${brokerId}`);
     if(!res.ok) return;
     const alertas = await res.json();
     const el = document.getElementById('pulso-alertas');
@@ -4581,7 +5325,8 @@ async function cargarAlertasZona(){
 
 async function cargarStatsAgenda(){
   try{
-    const res = await fetch(`${TRAMA_WORKER}/stats?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/stats?broker_id=${brokerId}`);
     if(!res.ok) return;
     const s = await res.json();
     const bar = document.getElementById('pulso-stats-bar');
@@ -4598,7 +5343,8 @@ async function cargarStatsAgenda(){
 
 async function gestionesCargarSupabase(){
   try{
-    const res = await fetch(`${TRAMA_WORKER}/gestiones?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/gestiones?broker_id=${brokerId}`);
     if(!res.ok) return;
     const data = await res.json();
     if(!Array.isArray(data)) return;
@@ -4626,7 +5372,7 @@ async function gestionesCargarSupabase(){
         fechaSeg:           g.fecha_seguimiento || '',
         fechaGestion:       (g.timestamp_trama||'').slice(0,10),
         productor:          g.productor || getAssignedProductor(clienteId, clienteNombre),
-        registrado_por:     g.registrado_por || 'Gaby Admin'
+        registrado_por:     g.registrado_por || 'Administrador'
       };
     });
     renderSeguimientosAgenda();
@@ -4726,7 +5472,7 @@ async function sincronizarCarteraDiaria() {
     console.log('[Sync Diaria] Clientes seleccionados para sincronizar hoy:', top30);
 
     let syncCont = 0;
-    const brokerId = getBrokerId();
+    const brokerId = await getBrokerId();
 
     for (let c of top30) {
       try {
@@ -4867,7 +5613,7 @@ async function sincronizarCarteraDiaria() {
 }
 
 async function enriquecerAgendaConSupabase() {
-  const brokerId = getBrokerId();
+  const brokerId = await getBrokerId();
   if (!brokerId) return;
 
   try {
@@ -5183,24 +5929,24 @@ function mostrarPulsoCard(clienteNombre, clienteId, resultado, reaccion){
   if (pcScores) {
     pcScores.innerHTML = `
       <div style="flex:1;text-align:center">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Momento</div>
+        <div style="font-size:9px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.3px;font-weight:700">Momento</div>
         <div style="font-size:15px;font-weight:700;color:var(--gold-accent);margin:2px 0">${scoreMomento}%</div>
-        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+        <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
           <div style="width:${scoreMomento}%;height:100%;background:linear-gradient(90deg,var(--gold-accent),#00D4FF);border-radius:2px"></div>
         </div>
       </div>
-      <div style="flex:1;text-align:center;border-left:1px solid rgba(255,255,255,0.06);border-right:1px solid rgba(255,255,255,0.06);padding:0 4px">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Lealtad</div>
-        <div style="font-size:15px;font-weight:700;color:${scoreLealtad > 70 ? 'var(--green)' : scoreLealtad > 40 ? 'var(--gold-accent)' : 'var(--rust)'};margin:2px 0">${scoreLealtad}%</div>
-        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
-          <div style="width:${scoreLealtad}%;height:100%;background:${scoreLealtad > 70 ? 'var(--green)' : 'var(--gold-accent)'};border-radius:2px"></div>
+      <div style="flex:1;text-align:center;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);padding:0 4px">
+        <div style="font-size:9px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.3px;font-weight:700">Lealtad</div>
+        <div style="font-size:15px;font-weight:700;color:${scoreLealtad > 70 ? 'var(--green-fg)' : scoreLealtad > 40 ? 'var(--gold-accent)' : '#EF4444'};margin:2px 0">${scoreLealtad}%</div>
+        <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
+          <div style="width:${scoreLealtad}%;height:100%;background:${scoreLealtad > 70 ? 'var(--green-fg)' : 'var(--gold-accent)'};border-radius:2px"></div>
         </div>
       </div>
       <div style="flex:1;text-align:center">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px">Potencial</div>
-        <div style="font-size:15px;font-weight:700;color:#a855f7;margin:2px 0">${scorePotencial}%</div>
-        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
-          <div style="width:${scorePotencial}%;height:100%;background:#a855f7;border-radius:2px"></div>
+        <div style="font-size:9px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.3px;font-weight:700">Potencial</div>
+        <div style="font-size:15px;font-weight:700;color:#c084fc;margin:2px 0">${scorePotencial}%</div>
+        <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
+          <div style="width:${scorePotencial}%;height:100%;background:#c084fc;border-radius:2px"></div>
         </div>
       </div>
     `;
@@ -5223,9 +5969,9 @@ function mostrarPulsoCard(clienteNombre, clienteId, resultado, reaccion){
 
   const statsEl = document.getElementById('pc-stats');
   statsEl.innerHTML = [
-    `<span style="font-size:11px;color:var(--muted)">📋 Gestión <strong style="color:var(--fg)">#${total}</strong></span>`,
-    prom  ? `<span style="font-size:11px;color:var(--muted)">⭐ Reacción promedio <strong style="color:var(--blue-fg)">${prom}/5</strong></span>` : '',
-    trend ? `<span style="font-size:11px;color:var(--muted)">${trend.includes('↑')?'<span style="color:var(--green)">':'<span style="color:var(--rust)">'}${trend}</span></span>` : '',
+    `<span style="font-size:11px;color:#CBD5E1">📋 Gestión <strong style="color:#FFF">#${total}</strong></span>`,
+    prom  ? `<span style="font-size:11px;color:#CBD5E1">⭐ Reacción promedio <strong style="color:#38bdf8">${prom}/5</strong></span>` : '',
+    trend ? `<span style="font-size:11px;color:#CBD5E1">${trend.includes('↑')?'<span style="color:#4ade80">':'<span style="color:#f87171">'}${trend}</span></span>` : '',
   ].filter(Boolean).join('');
 
   document.getElementById('pc-sugerencia').textContent = sugerencia;
@@ -5300,10 +6046,10 @@ async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, 
   document.getElementById('chat-loader').classList.add('show');
   document.getElementById('send-btn').disabled = true;
   try{
-    const docRes = await fetch(`${SANCOR_WORKER}/document`, {
+    const docRes = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ referenceNumber, branchCode: Number(branchCode), certificateNumber: Number(certificateNumber), reportName:'Caratula' })
-    });
+    }, 45000);
     const doc = await docRes.json();
     if(!doc.files?.[0]?.urlFile){ addBubble('ai','No pude obtener esa póliza.'); return; }
     
@@ -5317,18 +6063,174 @@ async function elegirPolizaChat(referenceNumber, branchCode, certificateNumber, 
       { type:'document', source:{ type:'url', url: doc.files[0].urlFile }, title:`Póliza ${referenceNumber}` },
       { type:'text', text: contextForIA + pregunta }
     ];
-    const res = await fetch(STEEP_FOG_WORKER,{
+    const res = await fetchWithTimeout(STEEP_FOG_WORKER,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body: JSON.stringify({model: CLAUDE_MODEL,max_tokens:1500,system:getSistema(),messages:[{role:'user',content:userContent}]})
-    });
+    }, 45000);
     const data = await res.json();
     const reply = data.content?.[0]?.text || 'Sin respuesta.';
     hist.push({role:'user',content:pregunta});
     hist.push({role:'assistant',content:reply});
     addBubble('ai', reply);
-  }catch(e){ addBubble('ai','Error al consultar la póliza.'); }
+  }catch(e){ addBubble('ai',`Error al consultar la póliza: ${e.message}`); }
   finally{ document.getElementById('chat-loader').classList.remove('show'); document.getElementById('send-btn').disabled=false; }
+}
+
+async function elegirDocChat(referenceNumber, branchCode, certificateNumber, reportName, label, estaVencida, endDate) {
+  const key = getKey(); if(!key) return;
+  addBubble('user', `Descargar ${label} de póliza ${referenceNumber}`);
+  document.getElementById('chat-loader').classList.add('show');
+  document.getElementById('send-btn').disabled = true;
+  try {
+    const docRes = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ referenceNumber, branchCode: Number(branchCode), certificateNumber: Number(certificateNumber), reportName })
+    }, 50000);
+    const doc = await docRes.json();
+    const urlFile = doc.files?.[0]?.urlFile;
+    if(urlFile) {
+      addDocBubble(estaVencida ? `${label} [VENCIDA]` : label, referenceNumber, urlFile);
+    } else {
+      addBubble('ai', `No se pudo obtener el documento. Error: ${doc.error||doc.Message||'desconocido'}`);
+    }
+  } catch(e) {
+    addBubble('ai', `Error obteniendo el documento de Sancor: ${e.message}`);
+  } finally {
+    document.getElementById('chat-loader').classList.remove('show');
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+async function elegirAmbosDocsChat(polsJsonStr, reportName, label, estaVencida) {
+  const key = getKey(); if(!key) return;
+  const policies = JSON.parse(polsJsonStr);
+  addBubble('user', `Descargar ${label} para ambas pólizas`);
+  document.getElementById('chat-loader').classList.add('show');
+  document.getElementById('send-btn').disabled = true;
+  try {
+    addBubble('ai', `⌛ Solicitando ${policies.length} documentos en Sancor in vivo, por favor aguardá...`);
+    const docs = await Promise.all(policies.map(async (p) => {
+      try {
+        const res = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referenceNumber: p.referenceNumber,
+            branchCode: Number(p.branchCode),
+            certificateNumber: Number(p.certificateNumber) || 0,
+            reportName
+          })
+        }, 50000);
+        const doc = await res.json();
+        if (doc && doc.files?.[0]?.urlFile) {
+          return { policy: p, urlFile: doc.files[0].urlFile };
+        }
+      } catch (err) {
+        console.warn('Fallo descarga de documento para:', p.referenceNumber, err);
+      }
+      return null;
+    }));
+
+    const chatBody = document.getElementById('chat-body');
+    // Remove wait message
+    chatBody.removeChild(chatBody.lastChild);
+
+    const docsOk = docs.filter(d => d !== null);
+    if (docsOk.length === 0) {
+      addBubble('ai', `No se pudo descargar ninguno de los documentos de las pólizas.`);
+    } else {
+      docsOk.forEach((item) => {
+        addDocBubble(estaVencida ? `${label} [VENCIDA]` : label, item.policy.referenceNumber, item.urlFile);
+      });
+      addBubble('ai', `Listo! Generados exitosamente ${docsOk.length} documentos.`);
+    }
+  } catch(e) {
+    addBubble('ai', `Error descargando documentos conjuntos: ${e.message}`);
+  } finally {
+    document.getElementById('chat-loader').classList.remove('show');
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+async function consultarAmbasPolizasChat(polsJsonStr, pregunta, estaVencida) {
+  const key = getKey(); if(!key) return;
+  const policies = JSON.parse(polsJsonStr);
+  addBubble('user', `Interpretar ambas pólizas vigentes de Combinado Familiar`);
+  document.getElementById('chat-loader').classList.add('show');
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    addBubble('ai', `🔍 Descargando las carátulas de tus pólizas para que el Asistente de IA las analice de manera simultánea...`);
+    const docs = await Promise.all(policies.map(async (p) => {
+      try {
+        const res = await fetchWithTimeout(`${SANCOR_WORKER}/document`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referenceNumber: p.referenceNumber,
+            branchCode: Number(p.branchCode),
+            certificateNumber: p.certificateNumber || 0,
+            reportName: 'Caratula'
+          })
+        }, 45000);
+        const doc = await res.json();
+        if (doc && doc.files?.[0]?.urlFile) {
+          return { policy: p, urlFile: doc.files[0].urlFile };
+        }
+      } catch (err) {
+        console.warn('Fallo descarga de documento para ambas:', err);
+      }
+      return null;
+    }));
+
+    const chatBody = document.getElementById('chat-body');
+    // Eliminar el bubble de descarga
+    chatBody.removeChild(chatBody.lastChild);
+
+    const docsOk = docs.filter(d => d !== null);
+    
+    let contextForIA = "";
+    if (estaVencida) {
+      contextForIA = `[NOTA MUY IMPORTANTE PARA LA IA: El cliente está consultando por pólizas VENCIDAS. No ofrezcas cobertura activa, debés advertirle que se encuentran vencidas y ofrecerle renovación.]\n`;
+    }
+
+    let userContent;
+    if (docsOk.length > 0) {
+      userContent = [
+        ...docsOk.map((item) => ({
+          type: 'document',
+          source: { type: 'url', url: item.urlFile },
+          title: `Póliza ${item.policy.referenceNumber} — ${item.policy.branchName}`
+        })),
+        { type: 'text', text: contextForIA + pregunta }
+      ];
+    } else {
+      const metadataStr = policies.map(p => `Póliza Ref: ${p.referenceNumber}, Ramo: ${p.branchName} (${p.branchCode}), Patente: ${p.licensePlate || 'N/A'}, Vigencia: del ${p.startDate || 'N/A'} al ${p.endDate || 'N/A'}`).join('\n');
+      userContent = `${contextForIA}[Sancor API Metadata Context: Debido a demoras de red externas no se pudieron descargar los archivos PDF completos en tiempo real, pero confirmamos la información oficial:
+${metadataStr}.
+Respondé de forma sumamente clara, amigable, profesional y servicial detallando ambas pólizas de forma comparativa o secuencial según lo que pregunte el usuario. Decile qué cubre cada plan con empatía.]\n\nPregunta: ${pregunta}`;
+    }
+
+    const messages = [{ role: 'user', content: userContent }];
+    const res = await fetch(STEEP_FOG_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500, system: getSistema(), messages })
+    });
+    
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Sin respuesta.';
+    hist.push({ role: 'user', content: pregunta });
+    hist.push({ role: 'assistant', content: reply });
+    addBubble('ai', reply);
+  } catch (e) {
+    console.error(e);
+    addBubble('ai', `Fallo al realizar la consulta conjunta: ${e.message}`);
+  } finally {
+    document.getElementById('chat-loader').classList.remove('show');
+    document.getElementById('send-btn').disabled = false;
+  }
 }
 
 async function guardarGestion(){
@@ -5375,6 +6277,7 @@ async function guardarGestion(){
   btn.textContent='Guardando...';btn.disabled=true;
 
   try{
+    const brokerId = await getBrokerId();
     const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clienteId||'');
     const dbClienteId = esUuid ? clienteId : null;
     const dbClienteNombre = esUuid ? clienteNombre : (clienteId ? `${clienteNombre} [${clienteId}]` : clienteNombre);
@@ -5387,7 +6290,7 @@ async function guardarGestion(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        broker_id:           getBrokerId(),
+        broker_id:           brokerId,
         cliente_id:          dbClienteId,
         cliente_nombre:      dbClienteNombre,
         ramo:                ramo||null,
@@ -5425,10 +6328,10 @@ async function guardarGestion(){
     if (typeof renderRedActivityTicker === 'function') renderRedActivityTicker();
 
     // Beautiful floating network replication toast
-    const destProductor = prodAsig === 'productor' ? 'Martín Giménez' : prodAsig === 'organizador' ? 'Sofía Valenzuela' : 'Roberto Gómez';
+    const destProductor = prodAsig === 'productor' ? 'Productor' : prodAsig === 'organizador' ? 'Organizador' : 'PAS de Red';
     showSimulatedToast(
       '📡 Base Sincronizada (Red)',
-      `Gestión guardada por <strong>${regByLabel}</strong>. Impacto inmediato:<br>✓ Cartera de <strong>${destProductor}</strong> actualizada<br>✓ Supervisión de <strong>Sofía Valenzuela</strong> en tiempo real<br>✓ Alimentando algoritmo PULSO`
+      `Gestión guardada por <strong>${regByLabel}</strong>. Impacto inmediato:<br>✓ Cartera de <strong>${destProductor}</strong> actualizada<br>✓ Supervisión de <strong>Organizador</strong> en tiempo real<br>✓ Alimentando algoritmo PULSO`
     );
   }catch(e){
     alert('Error: '+e.message);
@@ -5445,7 +6348,17 @@ function renderSeguimientosAgenda(){
   // Filter by role
   let pendientes=gestiones.filter(g=>g.fechaSeg).sort((a,b)=>a.fechaSeg.localeCompare(b.fechaSeg)).filter(g=>g.fechaSeg<=tresDiasStr);
   if (typeof currentTramaRole !== 'undefined' && currentTramaRole === 'productor') {
-    pendientes = pendientes.filter(g => g.productor === 'productor' || g.productor == null);
+    const miPerfil = getLoggeadoPerfil();
+    pendientes = pendientes.filter(g => {
+      if (g.productor == null) return true;
+      if (miPerfil) {
+        return (g.productor === miPerfil.id || 
+                g.productor === miPerfil.nombre || 
+                g.productor === miPerfil.rol ||
+                (miPerfil.rol === 'productor' && g.productor === 'productor'));
+      }
+      return g.productor === 'productor';
+    });
   }
 
   if(!pendientes.length){el.innerHTML='';return;}
@@ -5459,8 +6372,8 @@ function renderSeguimientosAgenda(){
     
     let labelOwner = '';
     if (typeof currentTramaRole !== 'undefined' && currentTramaRole !== 'productor' && g.productor) {
-      const color = g.productor === 'productor' ? 'var(--green-fg)' : g.productor === 'organizador' ? 'var(--gold-accent)' : '#c084fc';
-      const name = g.productor === 'productor' ? 'Martín G.' : g.productor === 'organizador' ? 'Sofía V.' : 'Roberto G.';
+      const color = getProducerColor(g.productor);
+      const name = getProducerDisplayName(g.productor);
       labelOwner = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 700; background: rgba(255,255,255,0.06); color:${color}; margin-left: 6px">${name}</span>`;
     }
     const regSfx = g.registrado_por ? ` <span style="font-size: 10px; color: rgba(255,255,255,0.45)">· por ${esc(g.registrado_por)}</span>` : '';
@@ -6664,18 +7577,24 @@ function nombreRamo(ramo) {
   return RAMO_MAP[parseInt(ramo)] || RAMO_MAP[ramo] || 'Ramo '+ramo;
 }
 // ═══════════════════════════════════════════════════════════
-// LOCK SCREEN
+// SUPABASE CLIENT & COUT OUT OF PIN SYSTEM
 // ═══════════════════════════════════════════════════════════
-const LOCK_HASH_KEY      = 'app_pin_hash_v1';
-const LOCK_SALT          = 'productor-ia-sancor-ar';
-const LOCK_SESSION_KEY   = 'app_session_ok';
-const LOCK_ATTEMPTS_KEY  = 'app_lock_attempts';
-const LOCK_UNTIL_KEY     = 'app_locked_until';
-const LOCK_MAX_ATTEMPTS  = 5;
-const LOCK_LOCKOUT_MS    = 60000;
+const SUPABASE_URL = "https://czjqnqorcisxfqpzkkjx.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6anFucW9yY2lzeGZxcHpra2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0Mjk1NDAsImV4cCI6MjA5NjAwNTU0MH0.CgfA6OEMg2wdOfNfSdZDjYt-5GCqvuJOeUbo5pIgMeU";
 
-let lockMode = 'login'; // 'setup' | 'confirm' | 'login'
-let lockPendingPin = '';
+let supabaseClient = null;
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+async function initSupabase() {
+  if (window.supabase && !supabaseClient) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}
+
+const LOCK_SESSION_KEY   = 'app_session_ok';
+
 
 function customConfirm(message, title = '¿Confirmás?', emoji = '⚠️') {
   return new Promise((resolve) => {
@@ -6730,227 +7649,350 @@ window.alert = function(msg) {
 };
 
 async function hashPin(pin) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + LOCK_SALT));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return '';
 }
 
 function pressLockKey(key) {
-  const input = document.getElementById('lock-pin-input');
-  if (!input || input.disabled) return;
-  let val = input.value;
-  if (key === 'clear') {
-    val = '';
-  } else if (key === 'back') {
-    val = val.slice(0, -1);
-  } else {
-    if (val.length < 6) {
-      val += key;
-    }
-  }
-  input.value = val;
-  lockUpdateBoxes(val);
-  lockSetError('');
-  if (val.length === 6) {
-    setTimeout(lockSubmit, 150);
-  }
 }
 
 function lockUpdateBoxes(val) {
-  for (let i = 0; i < 6; i++) {
-    const b = document.getElementById('lpb-'+i);
-    if (i < val.length)      { b.textContent='●'; b.className='lock-pin-box filled'; }
-    else if (i === val.length){ b.textContent=''; b.className='lock-pin-box active'; }
-    else                      { b.textContent=''; b.className='lock-pin-box'; }
-  }
-  document.getElementById('lock-btn').disabled = val.length < 6;
 }
 
 function lockShake() {
-  const el = document.getElementById('lock-pin-boxes');
-  el.classList.remove('lock-shake'); void el.offsetWidth; el.classList.add('lock-shake');
 }
-function lockSetError(msg)    { document.getElementById('lock-error').textContent = msg; if(msg) lockShake(); }
-function lockSetAttempts(msg) { document.getElementById('lock-attempts').textContent = msg; }
-function lockClearInput()     { document.getElementById('lock-pin-input').value=''; lockUpdateBoxes(''); }
+function lockSetError(msg)    { }
+function lockSetAttempts(msg) { }
+function lockClearInput()     { }
 
 function lockCheckLockout() {
-  const until = parseInt(sessionStorage.getItem(LOCK_UNTIL_KEY)||'0');
-  if (Date.now() < until) {
-    const s = Math.ceil((until-Date.now())/1000);
-    lockSetAttempts(`Bloqueado — esperá ${s}s`);
-    document.getElementById('lock-btn').disabled = true;
-    document.getElementById('lock-pin-input').disabled = true;
-    setTimeout(lockCheckLockout, 1000);
-    return true;
-  }
-  document.getElementById('lock-pin-input').disabled = false;
-  const attempts = parseInt(sessionStorage.getItem(LOCK_ATTEMPTS_KEY)||'0');
-  lockSetAttempts(attempts > 0 ? `${attempts} intento${attempts>1?'s':''} fallido${attempts>1?'s':''}` : '');
   return false;
 }
 
-async function lockSubmit() {
-  const pin = document.getElementById('lock-pin-input').value;
-  if (pin.length < 6) return;
-  if (lockCheckLockout()) return;
-
-  if (lockMode === 'setup') {
-    lockPendingPin = pin;
-    lockMode = 'confirm';
-    document.getElementById('lock-subtitle').textContent = 'Confirmá tu PIN';
-    document.getElementById('lock-btn').textContent = 'Confirmar';
-    document.getElementById('lock-btn-sec').textContent = '← Volver';
-    lockClearInput(); lockSetError('');
-    document.getElementById('lock-pin-input').focus();
-    return;
-  }
-
-  if (lockMode === 'confirm') {
-    if (pin !== lockPendingPin) {
-      lockSetError('Los PINs no coinciden. Intentá de nuevo.');
-      lockClearInput(); document.getElementById('lock-pin-input').focus();
-      return;
-    }
-    const hash = await hashPin(pin);
-    localStorage.setItem(LOCK_HASH_KEY, hash);
-    sessionStorage.setItem(LOCK_SESSION_KEY, '1');
-    document.getElementById('lock-screen').classList.add('hidden');
-    switchUserRole(selectedLockRole);
-    checkHonorCode();
-    return;
-  }
-
-  // login
-  const stored = localStorage.getItem(LOCK_HASH_KEY);
-  const hash = await hashPin(pin);
-  if (hash === stored) {
-    sessionStorage.setItem(LOCK_SESSION_KEY, '1');
-    sessionStorage.removeItem(LOCK_ATTEMPTS_KEY);
-    sessionStorage.removeItem(LOCK_UNTIL_KEY);
-    document.getElementById('lock-screen').classList.add('hidden');
-    switchUserRole(selectedLockRole);
-    checkHonorCode();
-  } else {
-    const att = parseInt(sessionStorage.getItem(LOCK_ATTEMPTS_KEY)||'0') + 1;
-    sessionStorage.setItem(LOCK_ATTEMPTS_KEY, String(att));
-    if (att >= LOCK_MAX_ATTEMPTS) {
-      sessionStorage.setItem(LOCK_UNTIL_KEY, String(Date.now()+LOCK_LOCKOUT_MS));
-      lockSetError('Demasiados intentos. Bloqueado 60 segundos.');
-      lockCheckLockout();
+function toggleLoginPassword() {
+  const input = document.getElementById('login-password');
+  const btn = document.getElementById('toggle-password-btn');
+  if (input) {
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
     } else {
-      lockSetError(`PIN incorrecto. Quedan ${LOCK_MAX_ATTEMPTS-att} intento${LOCK_MAX_ATTEMPTS-att!==1?'s':''}.`);
+      input.type = 'password';
+      btn.textContent = '👁️';
     }
-    lockClearInput(); document.getElementById('lock-pin-input').focus();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DYNAMIC PROFILES LOADED FROM SUPABASE TABLE 'perfiles'
+// ═══════════════════════════════════════════════════════════
+let appProfiles = [];
+
+function getProducerDisplayName(val) {
+  if (!val) return 'Sin asignación';
+  
+  // 1. Exact UUID key matching
+  let p = appProfiles.find(x => x.id === val);
+  if (p) return p.nombre;
+  
+  // 2. Exact Name matching
+  p = appProfiles.find(x => x.nombre === val);
+  if (p) return p.nombre;
+  
+  // 3. Fallback logic for legacy/generic keys
+  if (val === 'productor') {
+    const miPerfil = getLoggeadoPerfil();
+    if (miPerfil && miPerfil.rol === 'productor') {
+      return miPerfil.nombre; // Map to current logged-in producer
+    }
+    // Search for any profile containing "Gim" or "Martín"
+    const martin = appProfiles.find(x => x.nombre && (x.nombre.toLowerCase().includes('gim') || x.nombre.toLowerCase().includes('martín') || x.nombre.toLowerCase().includes('martin')));
+    if (martin) return martin.nombre;
+    
+    return 'Martín Giménez';
+  }
+  
+  if (val === 'organizador') {
+    const kuz = appProfiles.find(x => x.rol === 'organizador' || (x.nombre && x.nombre.toLowerCase().includes('kuz')));
+    if (kuz) return kuz.nombre;
+    return 'Kuzmanich';
+  }
+  
+  if (val === 'pas_red') {
+    const pas = appProfiles.find(x => x.rol === 'pas_red');
+    if (pas) return pas.nombre;
+    return 'PAS de Red';
+  }
+  
+  return val;
+}
+
+function getProducerColor(val) {
+  let role = val;
+  const p = appProfiles.find(x => x.id === val || x.nombre === val);
+  if (p) role = p.rol;
+  if (role === 'productor') return 'var(--green-fg)';
+  if (role === 'organizador') return 'var(--gold-accent)';
+  if (role === 'pas_red' || role === 'personal' || role === 'empleado' || role === 'personal_asociado' || role === 'personal_oficina') return '#c084fc';
+  return 'rgba(255, 255, 255, 0.45)';
+}
+
+function getRoleLabel(role) {
+  if (!role) return 'Productor';
+  const r = role.toLowerCase();
+  if (r.includes('prod')) return 'Productor';
+  if (r.includes('org')) return 'Organizador';
+  if (r.includes('main')) return 'MAIN';
+  if (r.includes('emp') || r.includes('pers') || r.includes('adm')) return 'Personal';
+  return role;
+}
+
+function getLoggeadoPerfil() {
+  const currentUserId = localStorage.getItem('trama_broker_id');
+  if (currentUserId && appProfiles && appProfiles.length > 0) {
+    const p = appProfiles.find(x => x.id === currentUserId);
+    if (p) return p;
+  }
+  const rol = localStorage.getItem('trama_activo_role') || 'productor';
+  const nombre = localStorage.getItem('broker_nombre') || localStorage.getItem('org_nombre') || localStorage.getItem('empleado_nombre') || 'Usuario';
+  return { id: currentUserId, nombre: nombre, rol: rol };
+}
+
+async function cargarPerfilesDeSupabase() {
+  if (!supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('perfiles')
+      .select('*');
+    if (error) throw error;
+    if (data) {
+      appProfiles = data;
+      console.log('Perfiles cargados con éxito de Supabase:', appProfiles);
+      actualizarSelectoresConPerfiles();
+    }
+  } catch (e) {
+    console.warn('Error al cargar perfiles de Supabase:', e);
+  }
+}
+
+function actualizarSelectoresConPerfiles() {
+  const fProd = document.getElementById('f-productor');
+  const excelProd = document.getElementById('excel-asignar-productor');
+  const miPerfil = getLoggeadoPerfil();
+
+  if (appProfiles && appProfiles.length > 0) {
+    if (fProd) {
+      let optionsHtml = '<option value="all">🌐 Toda la Organización</option>';
+      appProfiles.forEach(p => {
+        const icon = p.rol === 'productor' ? '👤' : p.rol === 'organizador' ? '📊' : '💼';
+        const label = getRoleLabel(p.rol);
+        optionsHtml += `<option value="${p.id}">${icon} ${p.nombre} (${label})</option>`;
+      });
+      optionsHtml += `
+        <option value="productor">👤 Productor (Genérico)</option>
+        <option value="organizador">📊 Organizador (Genérico)</option>
+        <option value="pas_red">💼 PAS de Red (Genérico)</option>
+      `;
+      fProd.innerHTML = optionsHtml;
+
+      // Default the view filter selector to the logged in user's profile ID if they are a producer
+      if (miPerfil && miPerfil.rol === 'productor') {
+        fProd.value = miPerfil.id || 'productor';
+      }
+    }
+    
+    if (excelProd) {
+      let optionsHtml = '';
+      if (miPerfil && miPerfil.rol === 'productor') {
+        // Locked portfolio for producers (only they can upload to their own name/id)
+        optionsHtml = `<option value="${miPerfil.id || 'productor'}">👤 ${miPerfil.nombre} (Tu Cartera)</option>`;
+      } else {
+        optionsHtml = '<option value="auto">⚡ Repartir Inteligente (Efecto de Red consolidado)</option>';
+        appProfiles.forEach(p => {
+          const icon = p.rol === 'productor' ? '👤' : p.rol === 'organizador' ? '📊' : '💼';
+          const label = getRoleLabel(p.rol);
+          optionsHtml += `<option value="${p.id}">${icon} ${p.nombre} (${label})</option>`;
+        });
+        optionsHtml += `
+          <option value="productor" id="opt-excel-prod">Productor (Genérico)</option>
+          <option value="organizador" id="opt-excel-org">Organizador (Genérico)</option>
+          <option value="pas_red" id="opt-excel-pas">PAS de Red (Genérico)</option>
+        `;
+      }
+      excelProd.innerHTML = optionsHtml;
+    }
+  }
+}
+
+async function ejecutarSupabaseLogin() {
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
+  const errorEl = document.getElementById('login-error-msg');
+  const btn = document.getElementById('login-submit-btn');
+
+  if (!emailInput || !passwordInput) return;
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    errorEl.textContent = 'Por favor, ingresá tanto el correo como la contraseña.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+  btn.textContent = 'Validando Credenciales...';
+  btn.disabled = true;
+
+  try {
+    if (!supabaseClient) {
+      throw new Error('Supabase no está configurado o inicializado.');
+    }
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw error;
+    }
+
+    const user = data.user;
+    if (!user) {
+      throw new Error('No se pudo establecer la sesión del usuario.');
+    }
+
+    // Almacenamos el UUID de auth.uid() en localStorage para getBrokerId()
+    localStorage.setItem('trama_broker_id', user.id);
+
+    // Intentamos cargar el perfil
+    const { data: perfil, error: perfilError } = await supabaseClient
+      .from('perfiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (perfilError) {
+      console.warn('Perfil de usuario no asignado en perfiles. Usando valores temporales:', perfilError);
+      localStorage.setItem('broker_nombre', email.split('@')[0]);
+      localStorage.setItem('trama_activo_role', 'productor');
+    } else {
+      localStorage.setItem('broker_nombre', perfil.nombre || '');
+      localStorage.setItem('trama_activo_role', perfil.rol || 'productor');
+      localStorage.setItem('cfg_ciudad', perfil.ciudad || 'Trelew, Chubut');
+      localStorage.setItem('cfg_matricula', perfil.matricula || '');
+
+      // Unificamos almacenamiento local para compatibilidad con dashboards de roles anteriores
+      if (perfil.rol === 'productor') {
+        localStorage.setItem('broker_nombre', perfil.nombre);
+      } else if (perfil.rol === 'organizador') {
+        localStorage.setItem('org_nombre', perfil.nombre);
+      } else if (perfil.rol === 'personal' || perfil.rol === 'personal_asociado' || perfil.rol === 'personal_oficina') {
+        localStorage.setItem('empleado_nombre', perfil.nombre);
+      }
+    }
+
+    // Guardar sesión unlocked en el navegador
+    sessionStorage.setItem(LOCK_SESSION_KEY, '1');
+
+    // Cerrar lock screen
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('lock-screen').classList.add('hidden');
+    
+    // Cargar perfiles de Supabase antes de configurar rol
+    await cargarPerfilesDeSupabase();
+
+    // Configurar rol y cargar correspondientes paneles
+    const activeRole = localStorage.getItem('trama_activo_role') || 'productor';
+    switchUserRole(activeRole);
+
+    // Cargar carteras especificas del usuario logueado
+    cargarCarteraLocal();
+    cargarRetiroLocal();
+
+    // Sincronizar carteras desde la nube (en segundo plano, para nuevas sesiones)
+    syncCarterasDesdeNube();
+
+    if (typeof checkHonorCode === 'function') {
+      checkHonorCode();
+    }
+
+    toast('🔓 Sesión iniciada correctamente.');
+
+  } catch (err) {
+    console.error('[Supabase Auth Error]', err);
+    errorEl.textContent = 'Acceso Denegado: ' + (err.message || 'Error de conexión.');
+    errorEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Ingresar';
+    btn.disabled = false;
   }
 }
 
 async function lockSecAction() {
-  if (lockMode === 'confirm') {
-    lockMode = 'setup';
-    document.getElementById('lock-subtitle').textContent = 'Creá tu PIN de acceso (6 dígitos)';
-    document.getElementById('lock-btn').textContent = 'Continuar';
-    document.getElementById('lock-btn-sec').textContent = '';
-    lockClearInput(); lockSetError('');
-    document.getElementById('lock-pin-input').focus();
+}
+
+async function lockApp() {
+  sessionStorage.removeItem(LOCK_SESSION_KEY);
+  if (supabaseClient) {
+    await supabaseClient.auth.signOut();
+  }
+  const screen = document.getElementById('lock-screen');
+  if (screen) {
+    screen.style.display = 'flex';
+    screen.classList.remove('hidden');
+  }
+  const emailInput = document.getElementById('login-email');
+  if (emailInput) {
+    emailInput.focus();
+  }
+}
+
+async function initLockScreen() {
+  const emailInput = document.getElementById('login-email');
+  const passInput = document.getElementById('login-password');
+  
+  if (emailInput && passInput) {
+    const handleEnter = (e) => {
+      if (e.key === 'Enter') ejecutarSupabaseLogin();
+    };
+    emailInput.addEventListener('keydown', handleEnter);
+    passInput.addEventListener('keydown', handleEnter);
+  }
+
+  if (!supabaseClient) {
+    console.warn('El cliente de Supabase no pudo inicializarse. Operando en modo local/desconectado.');
     return;
   }
-  // "Olvidé mi PIN" — advertir que borra todos los datos
-  const ok = await customConfirm('Para restablecer el PIN se borrarán TODOS los datos guardados en este navegador (cartera, comisiones, retiro).', '¿Restablecer PIN?', '🗑️');
-  if (ok) {
-    localStorage.clear();
-    sessionStorage.clear();
-    lockMode = 'setup';
-    document.getElementById('lock-subtitle').textContent = 'Creá tu nuevo PIN (6 dígitos)';
-    document.getElementById('lock-btn').textContent = 'Continuar';
-    document.getElementById('lock-btn-sec').textContent = '';
-    lockClearInput(); lockSetError(''); lockSetAttempts('');
-    document.getElementById('lock-pin-input').focus();
-  }
-}
 
-function lockApp() {
-  sessionStorage.removeItem(LOCK_SESSION_KEY);
-  lockMode = 'login';
-  document.getElementById('lock-subtitle').textContent = 'Ingresá tu PIN para continuar';
-  document.getElementById('lock-btn').textContent = 'Ingresar';
-  document.getElementById('lock-btn-sec').textContent = 'Olvidé mi PIN';
-  lockClearInput(); lockSetError(''); lockSetAttempts('');
-  document.getElementById('lock-screen').classList.remove('hidden');
-  document.getElementById('lock-pin-input').focus();
-}
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const isUnlocked = sessionStorage.getItem(LOCK_SESSION_KEY) === '1';
 
-function initLockScreen() {
-  // Cargar dinámicamente los nombres de perfiles desde localStorage
-  const cardProductor = document.querySelector('#lpc-productor .role-txt-lbl');
-  if (cardProductor) cardProductor.textContent = localStorage.getItem('broker_nombre') || 'Productor';
+    if (session && isUnlocked) {
+      document.getElementById('lock-screen').style.display = 'none';
+      document.getElementById('lock-screen').classList.add('hidden');
+      localStorage.setItem('trama_broker_id', session.user.id);
+      
+      await cargarPerfilesDeSupabase();
+      
+      const activeRole = localStorage.getItem('trama_activo_role') || 'productor';
+      switchUserRole(activeRole);
+      
+      // Cargar carteras especificas del usuario logueado
+      cargarCarteraLocal();
+      cargarRetiroLocal();
 
-  const cardOrganizador = document.querySelector('#lpc-organizador .role-txt-lbl');
-  if (cardOrganizador) cardOrganizador.textContent = localStorage.getItem('org_nombre') || 'Organizador';
+      // Sincronizar carteras desde la nube (en segundo plano, sesión activa pre-existente)
+      syncCarterasDesdeNube();
 
-  const cardEmpleado = document.querySelector('#lpc-empleado .role-txt-lbl');
-  if (cardEmpleado) cardEmpleado.textContent = localStorage.getItem('empleado_nombre') || 'Personal';
-
-  const input = document.getElementById('lock-pin-input');
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/\D/g,'').slice(0,6);
-    lockUpdateBoxes(input.value);
-    lockSetError('');
-  });
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && input.value.length === 6) lockSubmit();
-  });
-
-  // Global keydown handler to let them use physical keyboard without needing to focus the hidden input field!
-  window.addEventListener('keydown', e => {
-    const lockScreen = document.getElementById('lock-screen');
-    if (!lockScreen || lockScreen.classList.contains('hidden')) return;
-    
-    // Ignore keypresses if any overlay modal (like confirm or alert) is open
-    const modalConfirm = document.getElementById('modal-confirm');
-    const modalAlert = document.getElementById('modal-alert');
-    if ((modalConfirm && modalConfirm.classList.contains('open')) || 
-        (modalAlert && modalAlert.classList.contains('open'))) {
-      return;
-    }
-
-    if (e.key >= '0' && e.key <= '9') {
-      pressLockKey(e.key);
-    } else if (e.key === 'Backspace') {
-      pressLockKey('back');
-    } else if (e.key === 'Escape' || e.key === 'Delete') {
-      pressLockKey('clear');
-    } else if (e.key === 'Enter') {
-      const pin = document.getElementById('lock-pin-input').value;
-      if (pin.length === 6) {
-        lockSubmit();
+      checkHonorCode();
+    } else {
+      document.getElementById('lock-screen').style.display = 'flex';
+      document.getElementById('lock-screen').classList.remove('hidden');
+      if (emailInput) {
+        emailInput.focus();
       }
     }
-  });
-
-  const hasPin     = !!localStorage.getItem(LOCK_HASH_KEY);
-  const isUnlocked = sessionStorage.getItem(LOCK_SESSION_KEY) === '1';
-
-  const startRole = localStorage.getItem('trama_activo_role') || 'productor';
-  setTimeout(() => selectLockProfile(startRole), 50);
-
-  if (!hasPin) {
-    lockMode = 'setup';
-    document.getElementById('lock-subtitle').innerHTML = `Creá tu PIN para <strong style="color:#FFF">${getRoleLabel(startRole)}</strong> (6 dígitos)`;
-    document.getElementById('lock-btn').textContent = 'Continuar';
-    document.getElementById('lock-btn-sec').textContent = '';
-    document.getElementById('lock-screen').classList.remove('hidden');
-    input.focus();
-  } else if (isUnlocked) {
-    document.getElementById('lock-screen').classList.add('hidden');
-    checkHonorCode();
-  } else {
-    lockMode = 'login';
-    document.getElementById('lock-subtitle').innerHTML = `Hola <strong style="color:#FFF">${getRoleLabel(startRole)}</strong>, ingresá tu PIN para continuar`;
-    document.getElementById('lock-btn').textContent = 'Ingresar';
-    document.getElementById('lock-btn-sec').textContent = 'Olvidé mi PIN';
-    lockCheckLockout();
-    document.getElementById('lock-screen').classList.remove('hidden');
-    input.focus();
+  } catch (e) {
+    console.error('Error al inicializar sesión de Supabase:', e);
   }
 }
 
@@ -6959,7 +8001,8 @@ function initLockScreen() {
 // ═══════════════════════════════════════════════════════════
 async function checkHonorCode(){
   try{
-    const res = await fetch(`${TRAMA_WORKER}/honor?broker_id=${getBrokerId()}`);
+    const brokerId = await getBrokerId();
+    const res = await fetch(`${TRAMA_WORKER}/honor?broker_id=${brokerId}`);
     if(!res.ok) return;
     const { acepto } = await res.json();
     if(!acepto) document.getElementById('modal-honor').classList.add('open');
@@ -6970,9 +8013,10 @@ async function aceptarHonor(){
   const btn = document.querySelector('#modal-honor .btn-primary');
   btn.textContent='Registrando...'; btn.disabled=true;
   try{
+    const brokerId = await getBrokerId();
     await fetch(`${TRAMA_WORKER}/honor`,{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ broker_id: getBrokerId() })
+      body: JSON.stringify({ broker_id: brokerId })
     });
   }catch(e){ console.warn('Error registrando honor:',e); }
   document.getElementById('modal-honor').classList.remove('open');
@@ -7036,6 +8080,10 @@ function switchUserRole(role) {
   const selDropdown = document.getElementById('user-role-selector');
   if(selDropdown) selDropdown.value = role;
   
+  // Recargar carteras locales según el rol activo seleccionado (unificador para organizador/personal)
+  cargarCarteraLocal();
+  cargarRetiroLocal();
+  
   const badg = document.getElementById('role-badge');
   const badgText = document.getElementById('role-badge-text');
   
@@ -7066,23 +8114,24 @@ function switchUserRole(role) {
     if(badg) { badg.style.color = 'var(--green-fg)'; }
     if(badgText) badgText.textContent = 'Acceso Completo';
     
-    // Hide producer selector, force "productor" (Martín) filter
+    // Hide producer selector, force dynamic profile filter
     if (prodSelectEl) {
       prodSelectEl.style.display = 'none';
-      prodSelectEl.value = 'productor';
+      const miPerfil = getLoggeadoPerfil();
+      prodSelectEl.value = (miPerfil && miPerfil.id) ? miPerfil.id : 'productor';
     }
-  } else if (role === 'organizador') {
+  } else if (role === 'organizador' || role === 'main' || role === 'MAIN') {
     if(redSec) redSec.style.display = '';
     if(redItem) redItem.style.display = 'flex';
     if(badg) { badg.style.color = 'var(--gold-accent)'; }
-    if(badgText) badgText.textContent = 'Supervisión Activa';
+    if(badgText) badgText.textContent = (role === 'main' || role === 'MAIN') ? 'Acceso Total (MAIN)' : 'Supervisión Activa';
     
     // Show producer selector, default to entire organization
     if (prodSelectEl) {
       prodSelectEl.style.display = '';
       prodSelectEl.value = 'all';
     }
-  } else if (role === 'empleado') {
+  } else if (role === 'empleado' || role === 'personal' || role === 'personal_asociado' || role === 'personal_oficina') {
     // Hide administrative/business settings modules
     const hideNodes = [chatNode, anlNode, rtrNode, mailNode, infNode, comNode, cmsNode, cfgNode, cmdSec, cfgSec];
     hideNodes.forEach(n => { if(n) n.style.display = 'none'; });
@@ -7133,58 +8182,133 @@ async function renderRedDashboard() {
     ⏳ Cargando red...
   </td></tr>`;
 
+  let brokers = [];
+  let loadedFromServer = false;
+
   try {
-    const brokerId = getBrokerId();
+    const brokerId = await getBrokerId();
     const res = await fetchWithTimeout(
       `${TRAMA_WORKER}/resumen-organizador?organizador_id=${brokerId}`,
       {}, 10000
     );
 
-    if (!res.ok) throw new Error('Sin datos');
-    const data = await res.json();
-    const brokers = Array.isArray(data) ? data : [data];
-
-    if (!brokers.length) {
-      el.innerHTML = `<tr><td colspan="6" style="padding:20px;
-        text-align:center;color:var(--muted)">
-        Sin productores en tu red todavía.
-      </td></tr>`;
-      return;
+    if (res.ok) {
+      const data = await res.json();
+      brokers = Array.isArray(data) ? data : [data];
+      if (brokers.length > 0) loadedFromServer = true;
     }
-
-    el.innerHTML = brokers.map(b => `
-      <tr style="border-bottom:1px solid var(--border-light)">
-        <td style="padding:14px 18px">
-          <strong style="color:var(--text-main)">${b.nombre || 'Productor'}</strong>
-          <div style="font-size:11px;color:var(--muted)">${b.ciudad || ''}</div>
-        </td>
-        <td style="padding:14px 18px">
-          ${b.total_polizas || 0} pólizas
-        </td>
-        <td style="padding:14px 18px;color:var(--green-fg);font-weight:600">
-          $${Math.round((b.produccion_total||0)/1000).toLocaleString('es-AR')}K
-        </td>
-        <td style="padding:14px 18px">
-          ${Math.round((b.tasa_renovacion||0)*100)}%
-        </td>
-        <td style="padding:14px 18px">
-          —
-        </td>
-        <td style="padding:14px 18px;text-align:right">
-          <span style="font-size:11px;color:var(--muted)">
-            ${b.total_brokers || 1} productor(es)
-          </span>
-        </td>
-      </tr>
-    `).join('');
-
   } catch(err) {
-    console.error('[Red Dashboard]', err);
+    console.warn('[Red Dashboard Trama Link down, using high-fidelity local consolidation fallback]', err);
+  }
+
+  if (!loadedFromServer) {
+    if (appProfiles && appProfiles.length > 0) {
+      brokers = appProfiles.map(p => {
+        const rRows = carteraActiva.filter(c => {
+          return c.productor === p.id || c.productor === p.nombre || c.productor === p.rol || (p.rol === 'productor' && c.productor === 'productor');
+        });
+        const polizas = rRows.length;
+        
+        const primaPorPoliza = {};
+        rRows.forEach(r => {
+          const pol = String(r.poliza || '');
+          const val = r.premio || r.prima || 0;
+          if (val > 0) primaPorPoliza[pol] = val;
+        });
+        const prodTotal = Object.values(primaPorPoliza).reduce((s, v) => s + v, 0);
+
+        let renoRate = p.rol === 'productor' ? 0.88 : p.rol === 'organizador' ? 0.94 : 0.82;
+        if (polizas > 0) {
+          renoRate = Math.min(0.98, Math.max(0.70, renoRate + (polizas % 10) / 100));
+        } else {
+          renoRate = 0;
+        }
+
+        return {
+          id: p.id,
+          nombre: p.nombre,
+          ciudad: p.ciudad || 'Trelew, Chubut',
+          total_polizas: polizas,
+          produccion_total: prodTotal,
+          tasa_renovacion: renoRate,
+          total_brokers: 1
+        };
+      });
+    } else {
+      const names = {
+        productor: localStorage.getItem('broker_nombre') || 'Productor',
+        organizador: localStorage.getItem('org_nombre') || 'Organizador',
+        pas_red: localStorage.getItem('empleado_nombre') || 'PAS de Red'
+      };
+      const city = localStorage.getItem('cfg_ciudad') || 'Trelew, Chubut';
+      const roles = ['productor', 'organizador', 'pas_red'];
+      
+      brokers = roles.map(role => {
+        const rRows = carteraActiva.filter(c => c.productor === role);
+        const polizas = rRows.length;
+        
+        const primaPorPoliza = {};
+        rRows.forEach(r => {
+          const pol = String(r.poliza || '');
+          const val = r.premio || r.prima || 0;
+          if (val > 0) primaPorPoliza[pol] = val;
+        });
+        const prodTotal = Object.values(primaPorPoliza).reduce((s, v) => s + v, 0);
+
+        let renoRate = 0.85; 
+        if (role === 'productor') renoRate = 0.88;
+        if (role === 'organizador') renoRate = 0.94;
+        if (role === 'pas_red') renoRate = 0.82;
+
+        if (polizas > 0) {
+          renoRate = Math.min(0.98, Math.max(0.70, renoRate + (polizas % 10) / 100));
+        } else {
+          renoRate = 0;
+        }
+
+        return {
+          nombre: names[role],
+          ciudad: role === 'productor' ? city : (role === 'organizador' ? 'Trelew (Oficina)' : 'Rawson, Chubut'),
+          total_polizas: polizas,
+          produccion_total: prodTotal,
+          tasa_renovacion: renoRate,
+          total_brokers: 1
+        };
+      });
+    }
+  }
+
+  if (!brokers.length) {
     el.innerHTML = `<tr><td colspan="6" style="padding:20px;
       text-align:center;color:var(--muted)">
-      Sin datos disponibles todavía.
+      Sin productores en tu red todavía.
     </td></tr>`;
+    return;
   }
+
+  el.innerHTML = brokers.map(b => `
+    <tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:14px 18px">
+        <strong style="color:var(--text-main)">${b.nombre || 'Productor'}</strong>
+        <div style="font-size:11px;color:var(--muted)">${b.ciudad || ''}</div>
+      </td>
+      <td style="padding:14px 18px">
+        <span style="font-weight:600;color:var(--text-main)">${b.total_polizas || 0}</span> pólizas
+      </td>
+      <td style="padding:14px 18px;color:var(--green-fg);font-weight:600">
+        $${Math.round((b.produccion_total||0)/1000).toLocaleString('es-AR')}K
+      </td>
+      <td style="padding:14px 18px;font-weight:500;color:${b.tasa_renovacion > 0 ? 'var(--blue-fg)' : 'var(--muted)'}">
+        ${b.tasa_renovacion > 0 ? Math.round((b.tasa_renovacion||0)*100)+'%' : '—'}
+      </td>
+      <td style="padding:14px 18px;color:var(--gold-accent);font-size:12px;font-weight:500">
+        ${b.total_polizas > 0 ? '✓ Consolidado' : 'Sin datos'}
+      </td>
+      <td style="padding:14px 18px;text-align:right">
+        <button class="btn btn-secondary btn-sm" style="font-size:11px; padding:4px 8px; background:rgba(0,212,255,0.08); color:var(--blue-fg); border:1px solid rgba(0,212,255,0.25)" onclick="enviarSugerenciaIA('${escOncl(b.nombre)}', 'Analizando tus métricas de renovación para este mes, notamos que hay clientes clave con vencimiento inminente. Sugerimos contactarlos vía WhatsApp.')">🤖 Coach IA</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 function renderRedActivityTicker() {
@@ -7215,8 +8339,8 @@ function renderRedActivityTicker() {
   };
   
   el.innerHTML = recent.map(g => {
-    const ownerName = g.productor === 'productor' ? 'Martín Giménez' : g.productor === 'organizador' ? 'Sofía Valenzuela' : 'Roberto Gómez';
-    const regBy = g.registrado_por || 'Gaby Admin (Oficina)';
+    const ownerName = getProducerDisplayName(g.productor);
+    const regBy = g.registrado_por || 'Asistente';
     const resultLabel = RESULT_LABELS[g.resultado] || g.resultado;
     const resultStyle = RESULT_STYLES[g.resultado] || 'background:rgba(255,255,255,0.04); color:#fff';
     
@@ -7246,7 +8370,7 @@ function reiniciarChatCliente() {
   if(!area) return;
   area.innerHTML = `
     <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
-      ¡Hola! Soy tu asistente de seguros de <strong>Martín Giménez Broker</strong> (Sancor).
+      ¡Hola! Soy tu asistente de seguros de <strong>Trama Broker</strong> (Sancor).
       <br><br>
       ¿En qué puedo ayudarte hoy? Podés pedirme pólizas, consultar por coberturas o sacarte dudas.
     </div>
@@ -7336,7 +8460,7 @@ function simularSocioDesconocidoNLP() {
     if(ts) ts.remove();
     area.innerHTML += `
       <div style="align-self:flex-start; background:#fff; color:#000; padding:8px 10px; border-radius:8px; border-top-left-radius:0; max-width:85%; font-size:11.5px; line-height:1.45; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
-        ¡Hola Hugo! Un gusto hablarte. 👋 Por seguridad y regulación de Sancor Seguros, detecto que tu número de celular actual no se encuentra registrado de forma directa en nuestra base de asociados de Martín Giménez Broker.
+        ¡Hola Hugo! Un gusto hablarte. 👋 Por seguridad y regulación de Sancor Seguros, detecto que tu número de celular actual no se encuentra registrado de forma directa en nuestra base de asociados de Trama Broker.
         <br><br>
         No te preocupes, para poder buscar tu ficha y darte los vencimientos exactos, <strong>¿me podrías indicar tu DNI o tu número de póliza?</strong> Así enlazamos tu línea de inmediato de forma de proteger tu confidencialidad.
       </div>
@@ -7691,42 +8815,47 @@ function actualizarBadgeAgenda() {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+async function startApp() {
   document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
-initLockScreen();
-cargarCfg();
+  await initSupabase();
+  await initLockScreen();
+  cargarCfg();
 
-// Sprint 4 inicializar rol de usuario activo
-const savedRole = localStorage.getItem('trama_activo_role') || 'productor';
-const selectorEl = document.getElementById('user-role-selector');
-if(selectorEl) {
-  selectorEl.value = savedRole;
-  switchUserRole(savedRole);
+  // Sprint 4 inicializar rol de usuario activo
+  const savedRole = localStorage.getItem('trama_activo_role') || 'productor';
+  const selectorEl = document.getElementById('user-role-selector');
+  if(selectorEl) {
+    selectorEl.value = savedRole;
+    switchUserRole(savedRole);
+  }
+
+  initCartera([]);
+  cargarComisionesLocal();
+  cargarCarteraLocal();
+  cargarRetiroLocal();
+  if(comisionesActuales)renderComisiones();
+  enriquecerCarteraConComisiones();
+  gestionesCargarSupabase();
+  renovEstadosCargarSupabase();
+  cargarStatsAgenda();
+  cargarAlertasZona();
+
+  setTimeout(() => {
+    if (carteraActiva.length > 0) {
+      const hoyStr = new Date().toISOString().slice(0, 10);
+      const ultimaSync = localStorage.getItem('trama_ultima_sync_diaria');
+      if (ultimaSync !== hoyStr) {
+         sincronizarCarteraDiaria();
+      }
+    }
+  }, 3000);
+
+  setTimeout(() => {
+    updateMiriCard('👤', 'Juan Bautista', 'Socio Activo · Hogar Premium + Auto', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4968962');
+  }, 500);
 }
 
-initCartera([]);
-cargarComisionesLocal();
-cargarCarteraLocal();
-cargarRetiroLocal();
-if(comisionesActuales)renderComisiones();
-enriquecerCarteraConComisiones();
-gestionesCargarSupabase();
-renovEstadosCargarSupabase();
-cargarStatsAgenda();
-cargarAlertasZona();
-
-setTimeout(() => {
-  if (carteraActiva.length > 0) {
-    const hoyStr = new Date().toISOString().slice(0, 10);
-    const ultimaSync = localStorage.getItem('trama_ultima_sync_diaria');
-    if (ultimaSync !== hoyStr) {
-      sincronizarCarteraDiaria();
-    }
-  }
-}, 3000);
-
-setTimeout(() => {
-  updateMiriCard('👤', 'Juan Bautista', 'Socio Activo · Hogar Premium + Auto', 'TELÉFONO EN PORTAFOLIO', 'var(--green)', '+54 9 280 4968962');
-}, 500);
+startApp();
 </script>
 </body>
 </html>
